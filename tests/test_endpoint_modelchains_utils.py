@@ -40,9 +40,11 @@ class TestGetFilePathsInFolder:
     @pytest.mark.parametrize("pattern", ["*.PAN", "*.pan", "*.Pan"])
     def test_wildcard_pattern_case_insensitive(self, tmp_path, pattern):
         """Test that wildcard patterns are case-insensitive."""
-        # Create files with different case extensions
-        (tmp_path / "module.PAN").touch()
-        (tmp_path / "module.pan").touch()
+        # Create files with different case extensions (using distinct names
+        # so they remain separate on case-insensitive filesystems like
+        # macOS HFS+/APFS and Windows NTFS)
+        (tmp_path / "module_a.PAN").touch()
+        (tmp_path / "module_b.pan").touch()
         (tmp_path / "inverter.OND").touch()
 
         # All patterns should match all case variations
@@ -50,10 +52,10 @@ class TestGetFilePathsInFolder:
         assert len(result) == 2
 
         # Verify the right files are matched
-        filenames = [pathlib.Path(p).name for p in result]
-        assert "module.PAN" in filenames
-        assert "module.pan" in filenames
-        assert "inverter.OND" not in filenames
+        filenames = [pathlib.Path(p).name.lower() for p in result]
+        assert "module_a.pan" in filenames
+        assert "module_b.pan" in filenames
+        assert "inverter.ond" not in filenames
 
     def test_specific_filename_pattern(self, tmp_path):
         """Test that non-wildcard patterns match specific filenames."""
