@@ -1,0 +1,192 @@
+{
+  "location": {
+    "longitude": 7.371682,
+    "latitude": 46.955067,
+    "altitude": 575.0
+  },
+  "pvPlant": {
+    "transformers": [
+      {
+        "transformerSpecID": "Transformer Specification 1",
+        "transformerCount": 1,
+        "inverters": [
+          {
+            "name": "Sungrow SG125HV APP01",
+            "inverterSpecID": "Sungrow_SG125HV_APP",
+            "inverterCount": 1,
+            "layouts": [
+              {
+                "layoutCount": 1,
+                "inverterInput": [
+                  0
+                ],
+                "moduleSpecificationID": "CanadianSolar_CS6U-330M_APP",
+                "mountingTypeID": "Fixed-Tilt Rack Template 1",
+                "isTrackers": false,
+                "azimuth": 180.0,
+                "pitch": 10.0,
+                "totalNumberOfStrings": 15,
+                "numberOfStringsInFrontRow": 0,
+                "numberOfStringsInBackRow": 6,
+                "numberOfStringsInRightRow": 0,
+                "numberOfStringsInLeftRow": 0,
+                "numberOfStringsInIsolatedRow": 0,
+                "stringLength": 30,
+                "dcOhmicConnectorLoss": 0.0,
+                "moduleMismatchLoss": 0.01,
+                "terrainAzimuth": 0.0,
+                "terrainSlope": 0.0
+              }
+            ],
+            "acWiringOhmicLoss": 0.0
+          },
+          {
+            "name": "Sungrow SG125HV APP01",
+            "inverterSpecID": "Sungrow_SG125HV_APP",
+            "inverterCount": 1,
+            "layouts": [
+              {
+                "layoutCount": 1,
+                "inverterInput": [
+                  0
+                ],
+                "moduleSpecificationID": "CanadianSolar_CS6U-330M_APP",
+                "mountingTypeID": "Fixed-Tilt Rack Template 1",
+                "isTrackers": false,
+                "azimuth": 180.0,
+                "pitch": 10.0,
+                "totalNumberOfStrings": 15,
+                "numberOfStringsInFrontRow": 0,
+                "numberOfStringsInBackRow": 0,
+                "numberOfStringsInRightRow": 0,
+                "numberOfStringsInLeftRow": 0,
+                "numberOfStringsInIsolatedRow": 0,
+                "stringLength": 30,
+                "dcOhmicConnectorLoss": 0.0,
+                "moduleMismatchLoss": 0.01,
+                "terrainAzimuth": 0.0,
+                "terrainSlope": 0.0
+              }
+            ],
+            "acWiringOhmicLoss": 0.0
+          },
+          {
+            "name": "Sungrow SG125HV APP01",
+            "inverterSpecID": "Sungrow_SG125HV_APP",
+            "inverterCount": 1,
+            "layouts": [
+              {
+                "layoutCount": 1,
+                "inverterInput": [
+                  0
+                ],
+                "moduleSpecificationID": "CanadianSolar_CS6U-330M_APP",
+                "mountingTypeID": "Fixed-Tilt Rack Template 1",
+                "isTrackers": false,
+                "azimuth": 180.0,
+                "pitch": 10.0,
+                "totalNumberOfStrings": 15,
+                "numberOfStringsInFrontRow": 6,
+                "numberOfStringsInBackRow": 0,
+                "numberOfStringsInRightRow": 0,
+                "numberOfStringsInLeftRow": 0,
+                "numberOfStringsInIsolatedRow": 0,
+                "stringLength": 30,
+                "dcOhmicConnectorLoss": 0.0,
+                "moduleMismatchLoss": 0.01,
+                "terrainAzimuth": 0.0,
+                "terrainSlope": 0.0
+              }
+            ],
+            "acWiringOhmicLoss": 0.0
+          }
+        ]
+      }
+    ],
+    "moduleSpecifications": {},
+    "inverterSpecifications": {},
+    "mountingTypeSpecifications": {
+      "Fixed-Tilt Rack Template 1": {
+        "isTracker": false,
+        "numberOfModulesHigh": 3,
+        "modulesAreLandscape": true,
+        "rackHeight": 2.976,
+        "ySpacingBetweenModules": 0.992,
+        "frameBottomWidth": 0.0,
+        "constantHeatTransferCoefficient": 29.0,
+        "convectiveHeatTransferCoefficient": 0.0,
+        "monthlySoilingLoss": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tilt": 38.79,
+        "heightOfLowestEdgeFromGround": 1.0,
+        "transmissionFactor": 0.0,
+        "bifacialShadeLossFactor": 0.02,
+        "bifacialMismatchLossFactor": 0.005
+      }
+    },
+    "transformerSpecifications": {
+      "Transformer Specification 1": {
+        "modelType": "SimpleLossFactor",
+        "lossFactor": 0.015
+      }
+    }
+  },
+  "monthlyAlbedo": [
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2
+  ],
+  "energyCalculationOptions": {
+    "calculationYear": 2017,
+    "defaultWindSpeed": 0.0,
+    "calculateDHI": false,
+    "includeHorizon": false,
+    "diffuseModel": "Perez",
+    "treatCircumsolarAsDirect": false,
+    "useMostShadedCellForDiffuse": false,
+    "modelBackRowSeparately": true,
+    "applyIAM": true,
+    "applySpectralMismatchModifier": false,
+    "includeModulePerformance": true,
+    "includeCellTemperatureModel": true,
+    "includeSoilingLossInTemperatureModel": true,
+    "useIAMForTemperatureModel": false,
+    "includeArrayIV": true,
+    "includeInverterModel": true,
+    "includeACModel": true,
+    "gridAvailabilityLoss": 0.017,
+    "addTareLossToInverterEfficiencyModel": true,
+    "ignoreLowPowerPointInEfficiencyData": false,
+	"returnPvSystFormatTimeSeriesResults": true,
+    "returnDetailedTimeSeriesResults": true,
+    "returnLossTreeTimeSeriesResults": true
+  },
+  "panFileSupplements": {
+    "CanadianSolar_CS6U-330M_APP": {
+      "modelingCorrectionFactor": 1.0,
+      "recalculateModelingCorrectionFactor": false,
+      "moduleQualityFactor": 0.0
+    }
+  }
+}

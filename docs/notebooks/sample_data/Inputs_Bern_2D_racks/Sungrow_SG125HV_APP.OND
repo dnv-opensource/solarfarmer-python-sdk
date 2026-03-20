@@ -1,0 +1,143 @@
+PVObject_=pvGInverter
+  Comment=Sungrow	SG125HV APP01	Datasheet 2017
+  Version=6.63
+  ParObj1=2016
+  Flags=$11E2
+
+  PVObject_Commercial=pvCommercial
+    Comment=www.sungrowpower.com  (China)
+    Flags=$0041
+    Manufacturer=Sungrow
+    Model=SG125HV APP01
+    DataSource=Datasheet 2017
+    YearBeg=2016
+    Width=0.670
+    Height=0.296
+    Depth=0.890
+    Weight=72.00
+    NPieces=0
+    PriceDate=02/11/17 17:11
+    Currency=EUR
+    Remarks, Count=5
+      Str_1=Created by: KEVHOL (11/2/2017)
+      Str_2=Approved by: MINLEU 11/6/17
+      Str_3
+      Str_4=*inverter derates above 3000m altitude
+      Str_5=*inverter derates above 1250V array MPPT voltage
+    End of Remarks=*inverter derates above 1250V array MPPT voltage
+  End of PVObject pvCommercial
+
+  Converter=TConverter
+    PNomConv=125.000
+    PMaxOUT=125.000
+    VOutConv=600.0
+    VMppMin=860
+    VMPPMax=1450
+    VmppNom=960.0
+    Vmpp_PMax=860.0
+    VAbsMax=1500
+    PSeuil=625.0
+    EfficMax=97.00
+    EfficEuro=95.00
+    FResNorm=3.00
+    ModeOper=MPPT
+    CompPMax=Lim
+    CompVMax=Lim
+    MonoTri=Tri
+    ModeAffEnum=Efficiencyf_PIn
+    UnitAffEnum=kW
+    IDCMax=0.0
+    IMaxDC=240.0
+    INomAC=120.0
+    IMaxAC=120.0
+    TPNom=50.0
+    TPMax=25.0
+    TPLim1=60.0
+    TPLimAbs=70.0
+    PInEffMax =37420.000
+    PThreshEff=4921.5
+    HasdefaultPThresh=True
+
+    ProfilPIO=TCubicProfile
+      NPtsMax=11
+      NPtsEff=6
+      LastCompile=$8089
+      Mode=1
+      Point_1=4797.0,0.0
+      Point_2=12500.0,8203.3
+      Point_3=25000.0,21412.6
+      Point_4=37500.0,34472.0
+      Point_5=75000.0,72750.0
+      Point_6=125000.0,121250.0
+      Point_7=0.0,0.0
+      Point_8=0.0,0.0
+      Point_9=0.0,0.0
+      Point_10=0.0,0.0
+      Point_11=0.0,0.0
+    End of TCubicProfile
+    VNomEff=865.0,960.0,1200.0,
+    EfficMaxV=98.800,98.600,98.500,
+    EfficEuroV=98.569,98.364,98.255,
+
+    ProfilPIOV1=TCubicProfile
+      NPtsMax=11
+      NPtsEff=7
+      LastCompile=$8089
+      Mode=1
+      Point_1=625.0,0.0
+      Point_2=12490.0,12290.2
+      Point_3=24880.0,24581.4
+      Point_4=37310.0,36862.3
+      Point_5=62250.0,61440.7
+      Point_6=93560.0,92156.6
+      Point_7=125010.0,122884.8
+      Point_8=0.0,0.0
+      Point_9=0.0,0.0
+      Point_10=0.0,0.0
+      Point_11=0.0,0.0
+    End of TCubicProfile
+
+    ProfilPIOV2=TCubicProfile
+      NPtsMax=11
+      NPtsEff=7
+      LastCompile=$8089
+      Mode=1
+      Point_1=625.0,0.0
+      Point_2=12520.0,12294.6
+      Point_3=24950.0,24575.8
+      Point_4=37380.0,36856.7
+      Point_5=62380.0,61444.3
+      Point_6=93750.0,92156.3
+      Point_7=125260.0,122880.1
+      Point_8=0.0,0.0
+      Point_9=0.0,0.0
+      Point_10=0.0,0.0
+      Point_11=0.0,0.0
+    End of TCubicProfile
+
+    ProfilPIOV3=TCubicProfile
+      NPtsMax=11
+      NPtsEff=7
+      LastCompile=$8089
+      Mode=1
+      Point_1=625.0,0.0
+      Point_2=12530.0,12291.9
+      Point_3=24980.0,24580.3
+      Point_4=37420.0,36858.7
+      Point_5=62440.0,61441.0
+      Point_6=93850.0,92160.7
+      Point_7=125520.0,122884.1
+      Point_8=0.0,0.0
+      Point_9=0.0,0.0
+      Point_10=0.0,0.0
+      Point_11=0.0,0.0
+    End of TCubicProfile
+  End of TConverter
+  NbInputs=10
+  NbMPPT=1
+  NbMSInterne=2
+  MasterSlave=No_M_S
+  DiscAdjust=Yes
+  MS_Thresh=0.8
+  Night_Loss=7.00
+End of PVObject pvGInverter

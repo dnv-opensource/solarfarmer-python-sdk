@@ -1,0 +1,77 @@
+{
+  "systemAttributes": {
+    "location": {
+      "longitude": 7.368291,
+      "latitude": 46.893301,
+      "altitude": 714.25
+    },
+    "acCapacityInMegawatts": 0.84,
+    "dcCapacityInMegawatts": 1.197,
+    "is3D": true,
+    "mounting": "Single-axis trackers",
+    "solarFarmerCoreVersion": "0.4.429.0",
+    "solarFarmerApiVersion": "6.0.21"
+  },
+  "inputDerivedData": {
+    "DiffuseModel": {},
+    "FixedCases": {},
+    "UpFrontCalcResults": {
+      "LocConsts": {
+        "sinOfLatitude": 0.7300823835293915,
+        "cosOfLatitude": 0.6833591392964922,
+        "u": 46.7972882576672,
+        "x": 0.6846581317253263,
+        "y": 0.726574000704002
+      },
+      "TotalModuleArea": 6206.269439999292,
+      "InverterData": {
+        "60_10_APP02": {
+          "ModelType": 0,
+          "CecCurveSplines": {
+            "vMin": 570,
+            "vNom": 630,
+            "vMax": 800,
+            "minCurveLossesSpline": {},
+            "nominalCurveLossesSpline": {},
+            "maxCurveLossesSpline": {}
+          },
+          "MaxAndWeightedData": null
+        }
+      },
+      "PVsystDiodeParameters": {
+        "TrinaSolar_TSM-375DE14A(II)_APP": {
+          "SeriesResistance": 0.0038750000000000004,
+          "ShuntResistance": 6.944444444444445,
+          "ShuntResistanceAtZeroIrradiance": 27.77777777777778,
+          "ShuntResistanceExponentialParameter": 5.5,
+          "PhotoCurrent": 9.885513040217399,
+          "DiodeReverseSaturationCurrent": 6.555951743490188e-11,
+          "EnergyGap": 1.12,
+          "DiodeIdealityFactor": 1.019,
+          "DiodeIdealityTemperatureCoefficient": -0.0007,
+          "RecombinationCurrentScaleFactorD2mutau": 0,
+          "TemperatureSensitivityFactorForRecombCurrentMuD2mutau": 0,
+          "BaseToIntrinsicLayerVoltageVbi": 0,
+          "ShortCircuitCurrent": 9.88,
+          "OpenCircuitVoltage": 0.6736111111111112,
+          "ShortCircuitCurrentTemperatureCoeff": 0.00488,
+          "ModelingCorrectionFactor": 1
+        }
+      },
+      "ModeledEfficienciesUnderSTC": {
+        "TrinaSolar_TSM-375DE14A(II)_APP": 0.19277654034359704
+      },
+      "VocEstUnderSTC": {
+        "TrinaSolar_TSM-375DE14A(II)_APP": 0.6738692739602735
+      },
+      "ModuleAreaPerModuleType": {
+        "TrinaSolar_TSM-375DE14A(II)_APP": 6206.269439999992
+      },
+      "BifacialityCoefficients": {
+        "TrinaSolar_TSM-375DE14A(II)_APP": 0
+      },
+      "HorizonSkyViewFactor": 1
+    }
+  },
+  "totalModuleArea": 6206.269439999292
+}

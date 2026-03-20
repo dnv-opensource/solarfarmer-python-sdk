@@ -1,0 +1,114 @@
+site_name: SolarFarmer Python SDK
+site_description: Official Python SDK for DNV SolarFarmer. Build PV plant configurations and run energy calculations.
+site_author: DNV
+#site_url: https://github.com/dnv-opensource/solarfarmer-python-sdk
+copyright: '&copy; 2026 DNV AS. All rights reserved.'
+repo_url: https://github.com/dnv-opensource/solarfarmer-python-sdk
+docs_dir: docs
+site_dir: site
+
+extra:
+  pypi_url: https://pypi.org/project/dnv-solarfarmer/
+  pypi_name: dnv-solarfarmer
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/dnv-opensource/solarfarmer-python-sdk
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/dnv-solarfarmer/
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/feed/hashtag/solarfarmer/
+    - icon: fontawesome/solid/envelope
+      link: mailto:solarfarmer@dnv.com
+
+theme:
+  name: material
+  locale: en
+  logo: 'img/SolarFarmerLogo.png'
+  palette:
+    - scheme: default
+      primary: teal
+      accent: deep_orange
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: indigo
+      icon: material/brightness-4
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.footer.prev_next
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+  color_mode: auto
+  user_color_mode_toggle: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - codehilite
+  - fenced_code
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+  # - analytics:
+  #     provider: google
+  #     property: G-  # Placeholder - replace with actual GA4 Property ID
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            merge_init_into_class: true
+            show_source: false
+            separate_signature: true
+            extra:
+              line_by_line: false
+              show_bases: false
+  - mkdocs-jupyter
+
+nav:
+- Home: index.md
+- Getting started:
+    - Overview: getting-started/index.md
+    - Workflow 1 - Load Existing API Files: getting-started/workflow-1-existing-api-files.md
+    - Workflow 2 - Design Plants with PVSystem: getting-started/workflow-2-pvplant-builder.md
+    - Workflow 3 - Advanced Integration: getting-started/workflow-3-plantbuilder-advanced.md
+    - Quick Start Examples: getting-started/quick-start-examples.md
+    - End-to-End Examples: getting-started/end-to-end-examples.md
+- Example Notebooks:
+    - 'Using the About and Service Endpoints': 'notebooks/Example_About_Service_endpoints.ipynb'
+    - 'Running 2D and 3D Calculations': 'notebooks/Example_EnergyCalculations.ipynb'
+    - 'Creating Plants with PVSystem (using metadata)': 'notebooks/Example_PVSystem.ipynb'
+    - 'Terminating Asynchronous Calculations': 'notebooks/Example_TerminateAsync_endpoint.ipynb'
+- API Reference: api.md
+- External Resources:
+    - Endpoint definitions:
+        - About: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/AboutEndpoint.html
+        - ModelChain: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/ModelChainEndpoint.html
+        - ModelChainAsync: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/ModelChainAsyncEndpoint.html
+        - Service: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/ServiceEndpoint.html
+        - TerminateModelChainAsync: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/TerminateModelChainAsyncEndpoint.html
+    - Tutorials in SolarFarmer docs:
+        - ModelChain endpoint tutorial: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Tutorials/ModelChainEndpointTutorial.html
+        - ModelChainAsync endpoint tutorial: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Tutorials/ModelChainAsyncEndpointTutorial.html
+    - Troubleshooting:
+        - Validation service: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Troubleshooting/ValidationService.html
+- License: license.md
+- Frequently Asked Questions: faq.md

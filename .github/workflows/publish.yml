@@ -1,0 +1,85 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:  # Manual trigger for testing builds
+    inputs:
+      dry_run:
+        description: "Dry run (build only, skip publish)"
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    name: Build Package
+    if: github.repository == 'dnv-opensource/solarfarmer-python-sdk'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Verify tag matches pyproject.toml version
+        if: github.event_name == 'push'
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          PYPROJECT_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "Tag version:       $TAG_VERSION"
+          echo "pyproject version: $PYPROJECT_VERSION"
+          if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
+            echo "ERROR: git tag v${TAG_VERSION} does not match pyproject.toml version ${PYPROJECT_VERSION}."
+            echo "Bump the version in pyproject.toml and commit before tagging."
+            exit 1
+          fi
+
+      - name: Build package
+        run: uv build --sdist --wheel --out-dir dist/
+
+      - name: List distribution file sizes
+        run: du -h dist/*
+
+      - name: Check distribution metadata
+        run: uv run --with twine twine check --strict dist/*
+
+      - name: Install wheel into isolated directory
+        run: |
+          mkdir ./tmp_install
+          uv pip install --target=./tmp_install $(find dist -type f -name "*.whl" | head -1)
+
+      - name: Verify package imports and list installed sizes
+        run: |
+          PYTHONPATH=./tmp_install uv run python -c "import solarfarmer; print(solarfarmer.__version__)"
+          du -h solarfarmer
+        working-directory: ./tmp_install
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && !inputs.dry_run
+    environment:
+      name: pypi
+      url: https://pypi.org/p/dnv-solarfarmer
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

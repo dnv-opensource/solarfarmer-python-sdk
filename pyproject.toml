@@ -1,0 +1,123 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dnv-solarfarmer"
+version = "0.1.0"
+description = "SDK for SolarFarmer software, bankable solar PV calculation engine developed by DNV."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "DNV Green Power Monitor, Green Data Products", email = "solarfarmer@dnv.com" }]
+maintainers = [{ name = "Green Data Products", email = "solarfarmer@dnv.com" }]
+keywords = ["sdk", "api", "solarfarmer", "dnv", "python"]
+classifiers = [
+  "Intended Audience :: Information Technology",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Topic :: Internet",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering"
+]
+
+dependencies = [
+  "pydantic>=2.0",
+  "requests>=2.28",
+  "tabulate>=0.9.0",
+  ]
+
+[project.optional-dependencies]
+docs = [
+  "zensical>=0.0.20",
+  "mkdocstrings[python]>=0.26.1",
+  "mkdocs-jupyter>=0.24",
+]
+
+test = [
+  "pytest>=7.0",
+]
+
+dev = [
+  "dnv-solarfarmer[test]",
+  "pre-commit>=3.0",
+  "ruff>=0.5",
+]
+
+notebooks = [
+  "ipykernel>=6.29,<8",
+  "jupyterlab>=4.0,<6",
+  "notebook>=7.0,<9"
+]
+
+all = [
+  "dnv-solarfarmer[docs,dev,notebooks]",
+  "pandas>=2.0",
+  "matplotlib>=3.5",
+]
+
+[project.urls]
+Homepage = "https://www.dnv.com/software/services/solarfarmer/"
+Repository = "https://github.com/dnv-opensource/solarfarmer-python-sdk"
+Issues = "https://github.com/dnv-opensource/solarfarmer-python-sdk/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["solarfarmer*"]
+
+[tool.ruff]
+# Target Python 3.10+
+target-version = "py310"
+line-length = 100
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+    "docs",
+]
+
+[tool.ruff.lint]
+# Enable these rule sets
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "PTH",    # flake8-use-pathlib
+]
+
+# Disable specific rules if needed
+ignore = [
+    "E501",   # line too long (handled by formatter)
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Indent with spaces
+indent-style = "space"
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests that require SF_API_KEY and a live API connection (deselect with '-m not integration')",
+]

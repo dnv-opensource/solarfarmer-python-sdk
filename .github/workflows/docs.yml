@@ -1,0 +1,87 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Documentation
+    if: github.repository == 'dnv-opensource/solarfarmer-python-sdk'
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Set up Python with uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.11"
+
+      - name: Set cache key
+        run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          key: uv-solarfarmer-${{ env.cache_id }}
+          path: ~/.cache/uv
+          restore-keys: |
+            uv-solarfarmer-
+
+      - name: Install documentation dependencies
+        run: uv sync --extra docs
+
+      - name: Determine version from git
+        id: version
+        run: |
+          # Use tag version if on a tagged commit, otherwise use dev
+          if git describe --tags --exact-match 2>/dev/null; then
+            VERSION=$(git describe --tags --exact-match | sed 's/^v//')
+          else
+            VERSION="dev"
+          fi
+          echo "DOCS_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Building documentation with version: $VERSION"
+
+      - name: Build documentation
+        run: uv run zensical build --clean
+
+      - name: Validate build output
+        run: |
+          if [ ! -d "site" ]; then
+            echo "Error: site/ directory not found"
+            exit 1
+          fi
+          if [ -z "$(ls -A site)" ]; then
+            echo "Error: site/ directory is empty"
+            exit 1
+          fi
+          echo "Build validation successful"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

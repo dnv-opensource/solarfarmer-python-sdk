@@ -1,0 +1,40 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# uv
+uv.lock
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Coverage / test
+.coverage
+htmlcov/
+.pytest_cache
+tests/__pycache__
+\tpytest -q
+
+# MkDocs site output
+site/
+\tmkdocs build
+
+# OS junk
+.DS_Store
+
+public
+*.ipynb_checkpoints
+api_call_endpoints.py

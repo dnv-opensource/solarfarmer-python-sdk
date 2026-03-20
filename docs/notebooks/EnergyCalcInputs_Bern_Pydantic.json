@@ -1,0 +1,141 @@
+{
+  "location": {
+    "longitude": 7.37,
+    "latitude": 46.95,
+    "altitude": 575.0
+  },
+  "pvPlant": {
+    "transformers": [
+      {
+        "transformerCount": 1,
+        "inverters": [
+          {
+            "inverterSpecID": "Sungrow_SG125HV_APP",
+            "inverterCount": 1,
+            "layouts": [
+              {
+                "layoutCount": 1,
+                "moduleSpecificationID": "CanadianSolar_CS6U-330M_APP",
+                "mountingTypeID": "MountingSpec1",
+                "isTrackers": true,
+                "azimuth": 180.0,
+                "pitch": 10.0,
+                "totalNumberOfStrings": 14,
+                "stringLength": 30,
+                "inverterInput": [
+                  0
+                ],
+                "dcOhmicConnectorLoss": 0.015,
+                "moduleMismatchLoss": 0.005,
+                "name": "LayoutSpec1",
+                "trackerSystemID": "TrackerSpec1",
+                "numberOfStringsInFrontRow": 0,
+                "numberOfStringsInBackRow": 0,
+                "numberOfStringsInRightRow": 1,
+                "numberOfStringsInLeftRow": 1,
+                "numberOfStringsInIsolatedRow": 0,
+                "terrainAzimuth": 0.0,
+                "terrainSlope": 0.0,
+                "moduleQualityFactor": 0.01
+              }
+            ],
+            "acWiringOhmicLoss": 0.005,
+            "name": "InverterSpec1"
+          }
+        ],
+        "transformerSpecID": "TransformerSpec1"
+      }
+    ],
+    "mountingTypeSpecifications": {
+      "MountingSpec1": {
+        "isTracker": true,
+        "numberOfModulesHigh": 1,
+        "modulesAreLandscape": false,
+        "rackHeight": 1.96,
+        "ySpacingBetweenModules": 0.0,
+        "frameBottomWidth": 0.0,
+        "constantHeatTransferCoefficient": 25.0,
+        "convectiveHeatTransferCoefficient": 1.2,
+        "monthlySoilingLoss": [
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01
+        ],
+        "frameTopWidth": 0.0,
+        "frameEndWidth": 0.0,
+        "heightOfTrackerCenterFromGround": 2.0,
+        "transmissionFactor": 0.05,
+        "bifacialShadeLossFactor": 0.02,
+        "bifacialMismatchLossFactor": 0.01
+      }
+    },
+    "trackerSystems": {
+      "TrackerSpec1": {
+        "systemPlaneAzimuth": 0.0,
+        "systemPlaneTilt": 0.0,
+        "rotationMinDeg": -60.0,
+        "rotationMaxDeg": 60.0,
+        "isBacktracking": true
+      }
+    },
+    "transformerSpecifications": {
+      "TransformerSpec1": {
+        "modelType": "SimpleLossFactor",
+        "lossFactor": 0.01
+      }
+    }
+  },
+  "monthlyAlbedo": [
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2
+  ],
+  "energyCalculationOptions": {
+    "diffuseModel": "Perez",
+    "includeHorizon": false,
+    "calculationYear": 1990,
+    "defaultWindSpeed": 0.0,
+    "calculateDHI": false,
+    "treatCircumsolarAsDirect": true,
+    "useMostShadedCellForDiffuse": false,
+    "modelBackRowSeparately": true,
+    "applyIAM": true,
+    "applySpectralMismatchModifier": false,
+    "includeModulePerformance": true,
+    "includeCellTemperatureModel": true,
+    "includeSoilingLossInTemperatureModel": true,
+    "useIAMForTemperatureModel": true,
+    "includeArrayIV": true,
+    "includeInverterModel": true,
+    "includeACModel": true,
+    "systemAvailabilityLoss": 0.0,
+    "gridAvailabilityLoss": 0.0,
+    "addTareLossToInverterEfficiencyModel": false,
+    "ignoreLowPowerPointInEfficiencyData": false,
+    "solarMeasurementPlaneAzimuth": 0.0,
+    "solarMeasurementPlaneTilt": 0.0,
+    "solarZenithAngleLimit": 88.0,
+    "returnPvSystFormatTimeSeriesResults": true,
+    "returnDetailedTimeSeriesResults": true,
+    "returnLossTreeTimeSeriesResults": true,
+    "desiredVariablesForPvSystFormatTimeSeries": []
+  }
+}

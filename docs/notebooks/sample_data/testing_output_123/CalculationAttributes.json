@@ -1,0 +1,77 @@
+{
+  "systemAttributes": {
+    "location": {
+      "longitude": 7.371682,
+      "latitude": 46.955067,
+      "altitude": 575
+    },
+    "acCapacityInMegawatts": 0.375,
+    "dcCapacityInMegawatts": 0.4455,
+    "is3D": false,
+    "mounting": "Fixed-tilt racks",
+    "solarFarmerCoreVersion": "0.4.429.0",
+    "solarFarmerApiVersion": "6.0.21"
+  },
+  "inputDerivedData": {
+    "DiffuseModel": {},
+    "FixedCases": {},
+    "UpFrontCalcResults": {
+      "LocConsts": {
+        "sinOfLatitude": 0.7308186340267272,
+        "cosOfLatitude": 0.6825716989147064,
+        "u": 46.85906783476492,
+        "x": 0.6838567629566157,
+        "y": 0.7272933852101727
+      },
+      "TotalModuleArea": 2624.832,
+      "InverterData": {
+        "Sungrow_SG125HV_APP": {
+          "ModelType": 0,
+          "CecCurveSplines": {
+            "vMin": 865,
+            "vNom": 960,
+            "vMax": 1200,
+            "minCurveLossesSpline": {},
+            "nominalCurveLossesSpline": {},
+            "maxCurveLossesSpline": {}
+          },
+          "MaxAndWeightedData": null
+        }
+      },
+      "PVsystDiodeParameters": {
+        "CanadianSolar_CS6U-330M_APP": {
+          "SeriesResistance": 0.004402777777777778,
+          "ShuntResistance": 4.861111111111111,
+          "ShuntResistanceAtZeroIrradiance": 19.444444444444443,
+          "ShuntResistanceExponentialParameter": 5.5,
+          "PhotoCurrent": 9.318432200305912,
+          "DiodeReverseSaturationCurrent": 7.334430609957127e-11,
+          "EnergyGap": 1.12,
+          "DiodeIdealityFactor": 0.971,
+          "DiodeIdealityTemperatureCoefficient": -0.0006,
+          "RecombinationCurrentScaleFactorD2mutau": 0,
+          "TemperatureSensitivityFactorForRecombCurrentMuD2mutau": 0,
+          "BaseToIntrinsicLayerVoltageVbi": 0,
+          "ShortCircuitCurrent": 9.31,
+          "OpenCircuitVoltage": 0.6375,
+          "ShortCircuitCurrentTemperatureCoeff": 0.0049299999999999995,
+          "ModelingCorrectionFactor": 1
+        }
+      },
+      "ModeledEfficienciesUnderSTC": {
+        "CanadianSolar_CS6U-330M_APP": 0.16974826455341713
+      },
+      "VocEstUnderSTC": {
+        "CanadianSolar_CS6U-330M_APP": 0.6378535921942909
+      },
+      "ModuleAreaPerModuleType": {
+        "CanadianSolar_CS6U-330M_APP": 2624.8320000000003
+      },
+      "BifacialityCoefficients": {
+        "CanadianSolar_CS6U-330M_APP": 0
+      },
+      "HorizonSkyViewFactor": 1
+    }
+  },
+  "totalModuleArea": 2624.832
+}
