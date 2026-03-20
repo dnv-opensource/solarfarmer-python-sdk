@@ -1,4 +1,5 @@
 import logging
+import os
 
 import pytest
 
@@ -50,7 +51,7 @@ class TestConfigureLogging:
         assert len(real_handlers) == 1
 
     def test_custom_handler_is_added(self):
-        custom_handler = logging.FileHandler("/dev/null")
+        custom_handler = logging.FileHandler(os.devnull)
         try:
             logger = configure_logging(handler=custom_handler)
             assert custom_handler in logger.handlers
