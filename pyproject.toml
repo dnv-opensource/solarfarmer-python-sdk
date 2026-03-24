@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dnv-solarfarmer"
-version = "0.1.0"
+version = "0.2.0rc1"
 description = "SDK for SolarFarmer software, bankable solar PV calculation engine developed by DNV."
 readme = "README.md"
 requires-python = ">=3.10"
