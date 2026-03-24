@@ -74,6 +74,12 @@ class PVSystem:
     The class is designed to be flexible and user-friendly, with sensible defaults and validation
     to ensure that the provided data is consistent and complete for the API calculation.
 
+    .. note::
+       ``PVSystem`` generates an approximated plant design from high-level specifications.
+       It infers layout geometry, string sizing, and loss parameters using simplified
+       assumptions (e.g., uniform mid-row shading). Results are suitable for early-stage
+       energy yield screening but do not represent a fully detailed design.
+
     Basic Metadata
     --------------
     name: str | None

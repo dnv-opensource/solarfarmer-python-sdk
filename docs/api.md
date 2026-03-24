@@ -72,7 +72,7 @@ These are the primary functions for interacting with the SolarFarmer API.
 
 The core classes handle the complete workflow from plant design to results analysis:
 
-- [**PVSystem**](#pvsystem): Main class for defining and configuring PV plant designs with all technical specifications
+- [**PVSystem**](#pvsystem): Main class for constructing approximated PV plant designs from high-level specifications (location, capacity, equipment). Infers layout geometry and losses using simplified assumptions; results are suitable for screening, not detailed design
 - [**EnergyCalculationInputs**](#energycalculationinputs): Root Pydantic model composing all inputs for a calculation run
 - [**PVPlant**](#pvplant): Pydantic model describing the PV plant structure (transformers, mounting specs, etc.)
 - [**ModelChainResponse**](#modelchainresponse): Container for raw API response data from energy calculations

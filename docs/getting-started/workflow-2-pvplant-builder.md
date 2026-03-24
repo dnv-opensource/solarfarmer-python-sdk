@@ -13,6 +13,9 @@ description: Create plant configurations and automatically build API payloads
 
 ## Overview
 
+!!! info "Approximated Design"
+    `PVSystem` constructs a plant layout from high-level inputs (location, capacity, equipment files) using simplified assumptions — including uniform mid-row shading for all strings and inferred string sizing. This is well-suited for early-stage yield screening and scenario comparison. For full design fidelity, use [Workflow 1](workflow-1-existing-api-files.md) with a SolarFarmer Desktop–exported payload or [Workflow 3](workflow-3-plantbuilder-advanced.md) for direct data model mapping.
+
 This workflow involves four steps:
 
 1. **Design** your plant using the `PVSystem` class
