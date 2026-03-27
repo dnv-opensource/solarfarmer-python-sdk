@@ -5,7 +5,7 @@ description: Real-world examples showing how classes interact in complete workfl
 
 # Quick Start Examples
 
-Below are complete, runnable examples demonstrating real-world use cases. Each example shows how the core classes work together.
+Below are real-world example patterns showing how classes interact in complete workflows. Each serves as a template for your own implementation. Adapt these examples with your data files and API credentials to get started.
 
 ## Quick Reference
 

@@ -1,13 +1,13 @@
 ---
 title: Workflow 3 - Advanced Integration with EnergyCalculationInputs
-description: Manually construct API payloads for custom workflows and data model integration
+description: Manually construct API payloads for specific workflows and data model integration
 ---
 
-# Workflow 3: Advanced Integration and Custom Data Models
+# Workflow 3: Advanced Integration
 
-**Best for:** Software developers, system integrators, and advanced users with custom workflows.
+**Best for:** Software developers, system integrators, and advanced users with specific workflows.
 
-**Scenario:** You're building a software system that needs to integrate SolarFarmer calculations. You want full control over payload construction, custom data model mapping, or complex multi-step workflows.
+**Scenario:** You're building a software system that needs to integrate SolarFarmer calculations. You want full control over payload construction, data model mapping, or complex multi-step workflows.
 
 ---
 
@@ -17,7 +17,7 @@ This workflow gives you complete control over API object construction:
 
 1. **Understand** SolarFarmer's API data model
 2. **Manually construct** API objects using `EnergyCalculationInputs`, `PVPlant`, and component classes
-3. **Map** your custom data models to SolarFarmer objects
+3. **Map** your data models to SolarFarmer objects
 4. **Integrate** calculations into your larger workflow
 
 <div align="center" markdown="1">
@@ -25,7 +25,7 @@ This workflow gives you complete control over API object construction:
 ```mermaid
 graph TB
     A["🗄️ Your Data Model<br/>(database, file, API, etc.)"]
-    B["Custom Mapper/Builder"]
+    B["Mapper/Builder"]
     C["EnergyCalculationInputs + PVPlant<br/>+ Component Classes<br/>(Inverter, Layout, Location, etc.)"]
     D["SolarFarmer API"]
     E["CalculationResults"]
@@ -92,13 +92,13 @@ from solarfarmer.models import (
 
 ## Step 1: Map Your Data Model
 
-Create a mapping layer between your custom objects and SolarFarmer objects:
+Create a mapping layer between your objects and SolarFarmer objects:
 
 ```python
 from dataclasses import dataclass
-from typing import List
+from solarfarmer import Location
 
-# Your custom data model
+# Your data model
 @dataclass
 class SolarProject:
     name: str
@@ -110,13 +110,12 @@ class SolarProject:
     annual_irradiance: float
 
 class ProjectMapper:
-    """Maps your custom project to SolarFarmer SDK objects"""
+    """Maps your project to SolarFarmer SDK objects"""
 
     def __init__(self, project: SolarProject):
         self.project = project
 
-    def to_location(self) -> "Location":
-        from solarfarmer import Location
+    def to_location(self) -> Location:
         return Location(
             latitude=self.project.latitude,
             longitude=self.project.longitude,
@@ -146,7 +145,7 @@ from solarfarmer import (
     DiffuseModel, MonthlyAlbedo,
 )
 
-def build_custom_payload(project_mapper: ProjectMapper) -> str:
+def build_my_payload(project_mapper: ProjectMapper) -> str:
     """Manually construct SolarFarmer API payload as a JSON string"""
 
     # 1. Build location
@@ -175,7 +174,7 @@ def build_custom_payload(project_mapper: ProjectMapper) -> str:
     return inputs.model_dump_json(by_alias=True, exclude_none=True)
 
 def _build_pv_plant(mapper: ProjectMapper) -> PVPlant:
-    """Construct the pvPlant section with custom logic"""
+    """Construct the PVPlant section with your logic"""
 
     # Create layouts (DC combiner boxes)
     layouts = [
@@ -230,18 +229,18 @@ def _build_pv_plant(mapper: ProjectMapper) -> PVPlant:
 ```python
 import solarfarmer as sf
 
-# Create your custom payload (returns a JSON string)
+# Create your customized payload (returns a JSON string)
 mapper = ProjectMapper(your_project)
-payload_json = build_custom_payload(mapper)
+payload_json = build_my_payload(mapper)
 
 # Option 1: Save to file and run via Workflow 1
-with open('custom_payload.json', 'w') as f:
+with open('my_payload.json', 'w') as f:
     f.write(payload_json)
 
 # Option 2: Pass the JSON string directly to run_energy_calculation()
 results = sf.run_energy_calculation(
     plant_builder=payload_json,
-    project_id="custom_project",
+    project_id="my_project",
     api_key=api_key,
 )
 ```
@@ -294,14 +293,15 @@ payload_json = inputs.model_dump_json(by_alias=True, exclude_none=True)
 ### Batch Processing Multiple Projects
 
 ```python
-def batch_calculate(projects: List[dict], api_key: str):
-    """Process multiple custom projects efficiently"""
+def batch_calculate(projects: list[dict], api_key: str):
+    """Process multiple projects efficiently"""
 
     results = []
 
     for project_data in projects:
-        mapper = ProjectMapper(project_data)
-        payload_json = build_custom_payload(mapper)
+        project = SolarProject(**project_data)
+        mapper = ProjectMapper(project)
+        payload_json = build_my_payload(mapper)
 
         # Save payload (optional)
         payload_file = f"payloads/{project_data['id']}_payload.json"
@@ -326,14 +326,14 @@ def batch_calculate(projects: List[dict], api_key: str):
     return results
 ```
 
-### Custom Workflow Orchestration
+### Workflow Orchestration
 
 !!! info
     For production workflows involving multiple API calls, consider using asynchronous functions (async/await) or concurrent programming patterns to improve performance. The example below is synchronous and illustrative; your implementation should handle concurrent requests and network timeouts appropriately.
 
 ```python
 class SolarDesignWorkflow:
-    """Custom workflow orchestrating multiple steps"""
+    """Multi-step workflow orchestration"""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -363,7 +363,6 @@ class SolarDesignWorkflow:
         return results
 
     def _build_inputs(self, config: dict) -> EnergyCalculationInputs:
-        # Your custom inputs building
         pass
 
     def _submit(self, inputs: EnergyCalculationInputs, project_id: str):

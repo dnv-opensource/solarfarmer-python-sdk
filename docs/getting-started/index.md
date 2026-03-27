@@ -19,9 +19,9 @@ The SolarFarmer SDK supports three distinct user workflows. Choose the one that 
 
 ### [Workflow 1: Load and Execute Existing API Files](workflow-1-existing-api-files.md)
 
-**For:** Solar data analysts and engineers with existing SolarFarmer API JSON files.
+**For:** Solar data analysts and engineers with existing SolarFarmer API JSON files
 
-**Goal:** Run energy calculations using available pre-configured payloads.
+**Goal:** Run energy calculations using available pre-configured payloads
 
 **Key Classes and Functions:**
 
@@ -39,9 +39,9 @@ The SolarFarmer SDK supports three distinct user workflows. Choose the one that 
 
 ### [Workflow 2: Design Plants with PVSystem](workflow-2-pvplant-builder.md)
 
-**For:** Solar engineers and designers creating new plant configurations.
+**For:** Solar engineers and designers creating new plant configurations
 
-**Goal:** Define high-level plant specifications and automatically construct API payloads.
+**Goal:** Define high-level plant specifications and automatically construct API payloads
 
 **Key Classes:**
 
@@ -60,16 +60,16 @@ Results from `PVSystem` are approximations based on simplified layout assumption
 
 ### [Workflow 3: Advanced Integration and Custom Data Models](workflow-3-plantbuilder-advanced.md)
 
-**For:** Software developers integrating SolarFarmer into custom applications.
+**For:** Software developers integrating SolarFarmer into custom applications
 
-**Goal:** Manually build and customize API payloads for complex workflows.
+**Goal:** Manually build and customize API payloads for complex workflows
 
 **Key Classes:**
 
 - `EnergyCalculationInputs` - Compose and serialize the complete API payload
 - `PVPlant` - Describe the PV plant structure
 - Component classes (`Inverter`, `Layout`, `Transformer`, etc.)
-- Custom data model mapping and workflow orchestration
+- Data model mapping and workflow orchestration
 
 **Prerequisites:** Familiarity with SolarFarmer's API structure and data model.
 

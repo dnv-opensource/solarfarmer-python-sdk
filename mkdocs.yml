@@ -79,7 +79,6 @@ plugins:
             extra:
               line_by_line: false
               show_bases: false
-  - mkdocs-jupyter
 
 nav:
 - Home: index.md
@@ -90,11 +89,6 @@ nav:
     - Workflow 3 - Advanced Integration: getting-started/workflow-3-plantbuilder-advanced.md
     - Quick Start Examples: getting-started/quick-start-examples.md
     - End-to-End Examples: getting-started/end-to-end-examples.md
-- Example Notebooks:
-    - 'Using the About and Service Endpoints': 'notebooks/Example_About_Service_endpoints.ipynb'
-    - 'Running 2D and 3D Calculations': 'notebooks/Example_EnergyCalculations.ipynb'
-    - 'Creating Plants with PVSystem (using metadata)': 'notebooks/Example_PVSystem.ipynb'
-    - 'Terminating Asynchronous Calculations': 'notebooks/Example_TerminateAsync_endpoint.ipynb'
 - API Reference: api.md
 - External Resources:
     - Endpoint definitions:
