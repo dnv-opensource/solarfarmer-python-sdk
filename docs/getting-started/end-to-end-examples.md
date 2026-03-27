@@ -21,7 +21,7 @@ These examples provide detailed explorations of specific API features and workfl
 
 ## Using the About and Service Endpoints
 
-**Notebook:** [Example_About_Service_endpoints.ipynb](../notebooks/Example_About_Service_endpoints.ipynb){ target="_blank" .external }
+**Notebook:** [Example_About_Service_endpoints.ipynb](https://github.com/dnv-opensource/solarfarmer-python-sdk/blob/main/docs/notebooks/Example_About_Service_endpoints.ipynb){ target="_blank" .external }
 
 **Topics Covered:**
 
@@ -34,7 +34,7 @@ These examples provide detailed explorations of specific API features and workfl
 
 ## Running 2D and 3D Calculations
 
-**Notebook:** [Example_EnergyCalculations.ipynb](../notebooks/Example_EnergyCalculations.ipynb){ target="_blank" .external }
+**Notebook:** [Example_EnergyCalculations.ipynb](https://github.com/dnv-opensource/solarfarmer-python-sdk/blob/main/docs/notebooks/Example_EnergyCalculations.ipynb){ target="_blank" .external }
 
 **Topics Covered:**
 
@@ -49,7 +49,7 @@ These examples provide detailed explorations of specific API features and workfl
 
 ## Creating Plants with PVSystem
 
-**Notebook:** [Example_PVSystem.ipynb](../notebooks/Example_PVSystem.ipynb){ target="_blank" .external }
+**Notebook:** [Example_PVSystem.ipynb](https://github.com/dnv-opensource/solarfarmer-python-sdk/blob/main/docs/notebooks/Example_PVSystem.ipynb){ target="_blank" .external }
 
 **Topics Covered:**
 
@@ -64,7 +64,7 @@ These examples provide detailed explorations of specific API features and workfl
 
 ## Creating Plants with EnergyCalculationInputs
 
-**Notebook:** [Example_Compose_Plant.ipynb](../notebooks/Example_Compose_Plant.ipynb){ target="_blank" .external }
+**Notebook:** [Example_Compose_Plant.ipynb](https://github.com/dnv-opensource/solarfarmer-python-sdk/blob/main/docs/notebooks/Example_Compose_Plant.ipynb){ target="_blank" .external }
 
 **Topics Covered:**
 
@@ -79,7 +79,7 @@ These examples provide detailed explorations of specific API features and workfl
 
 ## Terminating Asynchronous Calculations
 
-**Notebook:** [Example_TerminateAsync_endpoint.ipynb](../notebooks/Example_TerminateAsync_endpoint.ipynb){ target="_blank" .external }
+**Notebook:** [Example_TerminateAsync_endpoint.ipynb](https://github.com/dnv-opensource/solarfarmer-python-sdk/blob/main/docs/notebooks/Example_TerminateAsync_endpoint.ipynb){ target="_blank" .external }
 
 **Topics Covered:**
 

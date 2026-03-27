@@ -39,7 +39,6 @@ dependencies = [
 docs = [
   "zensical>=0.0.20",
   "mkdocstrings[python]>=0.26.1",
-  "mkdocs-jupyter>=0.24",
 ]
 
 test = [
