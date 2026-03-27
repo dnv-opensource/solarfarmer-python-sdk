@@ -24,7 +24,7 @@ pip install dnv-solarfarmer
 ```
 
 !!! tip
-    For full functionality install **all**: `pip install dnv-solarfarmer[all]`
+    For full functionality install **all**: `pip install "dnv-solarfarmer[all]"`
 
 !!! note
     This package is periodically updated to remain compatible with the latest SolarFarmer API releases.
