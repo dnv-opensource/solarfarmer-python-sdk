@@ -15,9 +15,22 @@ class MountingTypeSpecification(SolarFarmerBaseModel):
     modules_are_landscape : bool
         Whether modules are mounted in landscape orientation
     rack_height : float
-        Height of the rack structure in metres, range [0, 100]
+        Height of the rack structure in meters, range [0, 100]. Must satisfy::
+
+            rack_height >= frame_bottom_width
+                         + (module_side × number_of_modules_high)
+                         + ((y_spacing_between_modules - module_side) × (number_of_modules_high - 1))
+                         + frame_top_width
+
+        where ``module_side`` is the module length (if portrait) or width (if landscape)
+        as defined in the PAN file. Note: ``y_spacing_between_modules`` is the edge-to-edge
+        pitch (not gap), so ``(y_spacing_between_modules - module_side)`` gives the actual
+        gap. Violating this constraint causes a validation error.
     y_spacing_between_modules : float
-        Vertical gap between modules in metres, range [0, 5]
+        Edge-to-edge distance from the bottom of one module to the bottom of the
+        module above it, in metres, range [0, 5]. This is the **pitch**, not the gap.
+        For portrait orientation, this equals module length + gap. For landscape,
+        module width + gap. If ``number_of_modules_high = 1``, this parameter is ignored.
     frame_bottom_width : float
         Frame width at the bottom edge in metres, range [0, 0.5]
     constant_heat_transfer_coefficient : float
@@ -29,7 +42,10 @@ class MountingTypeSpecification(SolarFarmerBaseModel):
     number_of_modules_long : int or None
         Number of modules along the rack length (3D only)
     x_spacing_between_modules : float or None
-        Horizontal gap between modules in metres, range [0, 5]
+        Edge-to-edge distance from the left edge of one module to the left edge
+        of the neighboring module in the same row, in metres, range [0, 5].
+        This is the **pitch**, not the gap. For portrait, equals module width + gap.
+        For landscape, module length + gap. Required for 3D calculations only.
     frame_top_width : float or None
         Frame width at the top edge in metres, range [0, 0.5]
     frame_end_width : float or None
@@ -41,11 +57,17 @@ class MountingTypeSpecification(SolarFarmerBaseModel):
     height_of_tracker_center_from_ground : float or None
         Tracker rotation axis height in metres (trackers only)
     transmission_factor : float or None
-        Bifacial rear-side transmission factor, range [0, 1]
+        Bifacial rear-side transmission factor, range [0, 1]. **Required**
+        when the module PAN file has a non-zero ``BifacialityFactor``.
+        Omitting this field for bifacial modules causes a validation error.
     bifacial_shade_loss_factor : float or None
-        Bifacial rear-side shade loss, range [0, 1]
+        Bifacial rear-side shade loss, range [0, 1]. **Required** when
+        the module PAN file has a non-zero ``BifacialityFactor``.
+        Omitting this field for bifacial modules causes a validation error.
     bifacial_mismatch_loss_factor : float or None
-        Bifacial rear-side mismatch loss, range [0, 1]
+        Bifacial rear-side mismatch loss, range [0, 1]. **Required** when
+        the module PAN file has a non-zero ``BifacialityFactor``.
+        Omitting this field for bifacial modules causes a validation error.
     """
 
     is_tracker: bool
