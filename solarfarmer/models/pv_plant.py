@@ -21,7 +21,8 @@ class PVPlant(SolarFarmerBaseModel):
     mounting_type_specifications : dict[str, MountingTypeSpecification]
         Mounting type specs keyed by ID
     grid_connection_limit : float or None
-        Maximum power that can be exported from the transformers in MW
+        Maximum power that can be exported from the transformers, in Watts (W).
+        Example: 17.6 MW → ``grid_connection_limit=17600000``
     tracker_systems : dict[str, TrackerSystem] or None
         Tracker system specs keyed by ID. Required when layouts use trackers
     transformer_specifications : dict[str, TransformerSpecification] or None
