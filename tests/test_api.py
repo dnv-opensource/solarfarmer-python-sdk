@@ -368,6 +368,20 @@ class TestMakeRequestGet:
         assert resp.code == 0
         assert "Network error" in resp.exception
 
+    def test_400_non_json_body_sets_problem_details_to_none(self, client):
+        error_response = MagicMock()
+        error_response.ok = False
+        error_response.status_code = 400
+        error_response.url = f"{BASE_URL}/About"
+        error_response.text = "Bad Request"
+        error_response.json.side_effect = ValueError("No JSON")
+
+        with patch("solarfarmer.api.requests.request", return_value=error_response):
+            resp = client.get({"api_key": FAKE_KEY})
+
+        assert resp.success is False
+        assert resp.problem_details_json is None
+
 
 class TestMakeRequestPost:
     def test_200_post_returns_success_response(self, monkeypatch, mock_http_response):
@@ -410,3 +424,25 @@ class TestMakeRequestPost:
 
         assert resp.success is False
         assert "Invalid panel count" in resp.exception
+
+    def test_400_non_json_body_sets_problem_details_to_none(self, monkeypatch):
+        monkeypatch.setattr(api_module, "API_TOKEN", FAKE_KEY)
+        c = Client(
+            base_url=BASE_URL,
+            endpoint="ModelChain",
+            response_type=Response,
+            timeout=MODELCHAIN_TIMEOUT,
+        )
+
+        error_response = MagicMock()
+        error_response.ok = False
+        error_response.status_code = 400
+        error_response.url = f"{BASE_URL}/ModelChain"
+        error_response.text = "Bad Request"
+        error_response.json.side_effect = ValueError("No JSON")
+
+        with patch("solarfarmer.api.requests.post", return_value=error_response):
+            resp = c.post({"api_key": FAKE_KEY}, request_content="{}", files=None)
+
+        assert resp.success is False
+        assert resp.problem_details_json is None

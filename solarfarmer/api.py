@@ -25,7 +25,7 @@ class Response:
     success: bool
     method: str
     exception: str | None = None
-    problem_details_json: str | None = None
+    problem_details_json: dict | None = None
 
     def __repr__(self) -> str:
         return f"status code={self.code}, url={self.url}, method={self.method}"
@@ -237,7 +237,7 @@ class Client:
                 try:
                     problem_details_json = response.json()
                 except Exception:
-                    problem_details_json = ""
+                    problem_details_json = None
 
                 return self.response_class(
                     code=response.status_code,

@@ -225,19 +225,20 @@ def _log_api_failure(response: Response, elapsed_time: float) -> None:
         elapsed_time,
     )
     _logger.error("Failure message: %s", response.exception)
-    try:
-        json_response = response.problem_details_json
-        if json_response is not None and "title" in json_response:
-            _logger.error("Title: %s", json_response["title"])
-        if json_response.get("errors") is not None:
-            _logger.error("Errors:")
-            for _errorKey, errors in json_response["errors"].items():
-                for error in errors:
-                    _logger.error(" - %s", error)
-        if json_response.get("detail") is not None:
-            _logger.error("Detail: %s", json_response["detail"])
-    except Exception:
-        pass
+    json_response = response.problem_details_json
+    if json_response is None:
+        return
+    if "title" in json_response:
+        _logger.error("Title: %s", json_response["title"])
+    errors = json_response.get("errors")
+    if errors is not None:
+        _logger.error("Errors:")
+        for _errorKey, error_list in errors.items():
+            for error in error_list:
+                _logger.error(" - %s", error)
+    detail = json_response.get("detail")
+    if detail is not None:
+        _logger.error("Detail: %s", detail)
 
 
 def run_energy_calculation(
