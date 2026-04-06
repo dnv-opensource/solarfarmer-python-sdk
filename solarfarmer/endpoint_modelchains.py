@@ -28,6 +28,69 @@ from .models._base import SolarFarmerBaseModel
 _logger = get_logger("endpoint.modelchains")
 
 
+def _validate_spec_ids_match_files(
+    request_content: str,
+    files: list[tuple[str, IO[bytes]]],
+) -> None:
+    """
+    Validate that module and inverter spec IDs in the payload match uploaded file stems.
+
+    The SolarFarmer API resolves ``moduleSpecificationID`` and ``inverterSpecID``
+    by matching them against the filename stems of uploaded PAN and OND files
+    (i.e. filename without extension). A mismatch causes a KeyNotFoundException
+    on the server. This check catches the error client-side before the HTTP call.
+
+    Parameters
+    ----------
+    request_content : str
+        JSON-serialized API payload.
+    files : list of tuple[str, IO[bytes]]
+        Multipart upload files as ``(field_name, file_handle)`` pairs.
+
+    Raises
+    ------
+    ValueError
+        If a spec ID in the payload has no matching uploaded file.
+    """
+    import json
+
+    pan_stems = {
+        pathlib.Path(f.name).stem
+        for field, f in files
+        if field == "panFiles" and hasattr(f, "name")
+    }
+    ond_stems = {
+        pathlib.Path(f.name).stem
+        for field, f in files
+        if field == "ondFiles" and hasattr(f, "name")
+    }
+
+    # Nothing to validate if no PAN/OND files were uploaded (e.g. inline payload)
+    if not pan_stems and not ond_stems:
+        return
+
+    payload = json.loads(request_content)
+    pv_plant = payload.get("pvPlant", {})
+
+    for transformer in pv_plant.get("transformers", []):
+        for inverter in transformer.get("inverters", []):
+            if ond_stems:
+                inv_id = inverter.get("inverterSpecID")
+                if inv_id and inv_id not in ond_stems:
+                    raise ValueError(
+                        f"Inverter references spec ID '{inv_id}' but no matching OND file "
+                        f"was uploaded. Available stems: {sorted(ond_stems)}"
+                    )
+            for layout in inverter.get("layouts") or []:
+                if pan_stems:
+                    mod_id = layout.get("moduleSpecificationID")
+                    if mod_id and mod_id not in pan_stems:
+                        raise ValueError(
+                            f"Layout references module spec '{mod_id}' but no matching PAN file "
+                            f"was uploaded. Available stems: {sorted(pan_stems)}"
+                        )
+
+
 def _resolve_request_payload(
     inputs_folder_path: str | pathlib.Path | None,
     energy_calculation_inputs_file_path: str | None,
@@ -381,6 +444,7 @@ def run_energy_calculation(
         )
 
         # 2. Dispatch to the appropriate endpoint
+        _validate_spec_ids_match_files(request_content, files)
         are_files_3d = check_for_3d_files(request_content)
         start_time = time.time()
         if force_async_call or are_files_3d:

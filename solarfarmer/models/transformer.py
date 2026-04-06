@@ -18,7 +18,10 @@ class Transformer(SolarFarmerBaseModel):
     name : str or None
         Optional descriptive name
     transformer_spec_id : str or None
-        Reference to a transformer specification
+        Reference to a transformer specification. Must match a key in
+        ``PVPlant.transformer_specifications``. Required by the API when
+        the AC model is enabled (``EnergyCalculationOptions.include_inverter_model=True``,
+        which is the default). Omitting it causes a runtime error.
     """
 
     transformer_count: int = Field(1, ge=1)

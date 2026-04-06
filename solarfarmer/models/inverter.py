@@ -14,7 +14,10 @@ class Inverter(SolarFarmerBaseModel):
     Attributes
     ----------
     inverter_spec_id : str
-        Reference to an inverter specification (OND file key)
+        Reference to an inverter specification. Must exactly match the
+        filename stem of the uploaded OND file (filename without the
+        ``.OND`` extension). Example: ``"Sungrow_SG125HV_APP"`` for a
+        file named ``Sungrow_SG125HV_APP.OND``.
     inverter_count : int
         Number of identical inverters, >= 1
     layouts : list[Layout] or None

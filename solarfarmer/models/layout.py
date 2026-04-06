@@ -14,7 +14,10 @@ class Layout(SolarFarmerBaseModel):
     layout_count : int
         Number of identical copies of this layout, >= 1
     module_specification_id : str
-        Reference to a module specification (PAN file key)
+        Reference to a module specification. Must exactly match the
+        filename stem of the uploaded PAN file (filename without the
+        ``.PAN`` extension). Example: ``"Trina_TSM-DEG19C.20-550_APP"``
+        for a file named ``Trina_TSM-DEG19C.20-550_APP.PAN``.
     mounting_type_id : str
         Reference to a mounting type specification
     is_trackers : bool
