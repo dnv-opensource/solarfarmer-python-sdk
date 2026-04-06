@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 from typing import IO, Any
 
-from .api import Client, Response, build_api_url
+from .api import Client, Response, SolarFarmerAPIError, build_api_url
 from .config import (
     MODELCHAIN_ASYNC_ENDPOINT_URL,
     MODELCHAIN_ASYNC_TIMEOUT_CONNECTION,
@@ -201,7 +201,14 @@ def _handle_successful_response(
             runtime_status,
             elapsed_time,
         )
-    return None
+    # "Terminated" means the user explicitly cancelled via terminate_calculation() — not an error.
+    # All other non-Completed statuses (Failed, Canceled, Unknown) are unexpected failures.
+    if runtime_status == "Terminated":
+        return None
+    message = f"Async calculation ended with status '{runtime_status}'"
+    if output_message:
+        message += f": {output_message}"
+    raise SolarFarmerAPIError(status_code=200, message=message)
 
 
 def _log_api_failure(response: Response, elapsed_time: float) -> None:
@@ -343,7 +350,13 @@ def run_energy_calculation(
     -------
     CalculationResults or None
         An instance of CalculationResults with the API results for the project,
-        or None if the calculation failed or was terminated
+        or None if the calculation was terminated or cancelled
+
+    Raises
+    ------
+    SolarFarmerAPIError
+        If the API returns a non-2xx response. The exception carries
+        ``status_code``, ``message``, and the full ``problem_details`` body.
     """
 
     # Fold explicit API params into kwargs for the downstream request functions
@@ -399,7 +412,11 @@ def run_energy_calculation(
         )
     else:
         _log_api_failure(response, elapsed_time)
-        return None
+        raise SolarFarmerAPIError(
+            status_code=response.code,
+            message=response.exception or "API request failed",
+            problem_details=response.problem_details_json,
+        )
 
 
 def modelchain_call(

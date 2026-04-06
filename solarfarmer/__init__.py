@@ -24,6 +24,7 @@ from .endpoint_about import about
 from .endpoint_modelchains import run_energy_calculation
 from .endpoint_service import service
 from .endpoint_terminate_async import terminate_calculation
+from .api import SolarFarmerAPIError
 from .logging import configure_logging
 from .models import (
     AuxiliaryLosses,
@@ -104,6 +105,7 @@ __all__ = [
     "PVSystem",
     "run_energy_calculation",
     "service",
+    "SolarFarmerAPIError",
     "terminate_calculation",
     "TrackerSystem",
     "Transformer",
