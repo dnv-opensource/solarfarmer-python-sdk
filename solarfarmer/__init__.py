@@ -26,6 +26,7 @@ from .endpoint_service import service
 from .endpoint_terminate_async import terminate_calculation
 from .api import SolarFarmerAPIError
 from .logging import configure_logging
+from .weather import TSV_COLUMNS
 from .models import (
     AuxiliaryLosses,
     CalculationResults,
@@ -108,6 +109,7 @@ __all__ = [
     "SolarFarmerAPIError",
     "terminate_calculation",
     "TrackerSystem",
+    "TSV_COLUMNS",
     "Transformer",
     "TransformerLossModelTypes",
     "TransformerSpecification",
