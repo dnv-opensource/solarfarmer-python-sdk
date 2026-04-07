@@ -87,8 +87,9 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
     solar_zenith_angle_limit : float or None
         Maximum solar zenith angle in degrees, range [75, 89.9]
     missing_met_data_handling : MissingMetDataMethod or None
-        How to handle missing meteorological data (NaN values or empty cells in
-        required columns: ``GHI``, ``DHI``, ``TAmb``, ``WS``). Options:
+        How to handle missing meteorological data (NaN values, empty cells, or
+        the sentinel value ``9999`` / ``-9999`` in TSV files) in required columns:
+        ``GHI``, ``DHI``, ``TAmb``, ``WS``. Options:
 
         - ``MissingMetDataMethod.FAIL_ON_VALIDATION``: Raise an error if any
           required data is missing.
@@ -96,6 +97,7 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
           data and continue the calculation.
 
         If ``None`` (default), the engine uses ``FAIL_ON_VALIDATION``.
+        See :data:`solarfarmer.weather.TSV_COLUMNS` for TSV sentinel value details.
     return_pv_syst_format_time_series_results : bool
         Return PVsyst-format time-series results
     return_detailed_time_series_results : bool
