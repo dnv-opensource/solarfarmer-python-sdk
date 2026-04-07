@@ -5,8 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import solarfarmer
-from solarfarmer.api import Response
-from solarfarmer.api import SolarFarmerAPIError
+from solarfarmer.api import Response, SolarFarmerAPIError
 from solarfarmer.endpoint_modelchains import (
     _handle_successful_response,
     _log_api_failure,

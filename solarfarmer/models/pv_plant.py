@@ -43,7 +43,7 @@ class PVPlant(SolarFarmerBaseModel):
     auxiliary_losses: AuxiliaryLosses | None = None
 
     @model_validator(mode="after")
-    def _check_transformer_spec_references(self) -> "PVPlant":
+    def _check_transformer_spec_references(self) -> PVPlant:
         """Validate that referenced transformer spec IDs exist in transformer_specifications."""
         for i, transformer in enumerate(self.transformers):
             spec_id = transformer.transformer_spec_id
