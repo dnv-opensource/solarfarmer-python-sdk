@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import solarfarmer
-from solarfarmer.api import Response
+from solarfarmer.api import Response, SolarFarmerAPIError
 from solarfarmer.endpoint_modelchains import (
     _handle_successful_response,
     _log_api_failure,
@@ -179,12 +179,11 @@ class TestHandleSuccessfulResponse:
         [
             ("Failed", "Out of memory"),
             ("Canceled", None),
-            ("Terminated", "Manual stop"),
             ("Unknown", None),
         ],
-        ids=["failed_with_output", "canceled_no_output", "terminated_via_post", "unknown"],
+        ids=["failed_with_output", "canceled_no_output", "unknown"],
     )
-    def test_non_completed_status_returns_none_and_logs(self, status, output, caplog):
+    def test_non_completed_status_raises_and_logs(self, status, output, caplog):
         data: dict = {"runtimeStatus": status}
         if output is not None:
             data["output"] = output
@@ -193,14 +192,31 @@ class TestHandleSuccessfulResponse:
             url="https://api.example.com/modelchainasync",
             data=data,
             success=True,
-            method="POST",  # POST bypasses the early-exit Terminated guard
+            method="POST",
+        )
+        with caplog.at_level(logging.ERROR):
+            with pytest.raises(SolarFarmerAPIError) as exc_info:
+                _handle_successful_response(response, 3.0, "proj1", None, None, None, False, False)
+        assert f"Runtime status = {status}" in caplog.text
+        assert status in str(exc_info.value)
+        if output:
+            assert output in str(exc_info.value)
+
+    def test_terminated_via_post_returns_none_and_logs(self, caplog):
+        """Terminated via POST (e.g. polled after user cancel) returns None, does not raise."""
+        response = Response(
+            code=200,
+            url="https://api.example.com/modelchainasync",
+            data={"runtimeStatus": "Terminated", "output": "Manual stop"},
+            success=True,
+            method="POST",
         )
         with caplog.at_level(logging.ERROR):
             result = _handle_successful_response(
                 response, 3.0, "proj1", None, None, None, False, False
             )
         assert result is None
-        assert f"Runtime status = {status}" in caplog.text
+        assert "Runtime status = Terminated" in caplog.text
 
     def test_terminated_guard_requires_async_url(self):
         """GET + Terminated on a sync URL must NOT trigger the early-exit guard."""
@@ -356,7 +372,7 @@ class TestRunEnergyCalculation:
     @patch("solarfarmer.endpoint_modelchains.modelchain_call")
     @patch("solarfarmer.endpoint_modelchains.check_for_3d_files", return_value=False)
     @patch("solarfarmer.endpoint_modelchains._resolve_request_payload")
-    def test_failed_response_logs_and_returns_none(
+    def test_failed_response_logs_and_raises(
         self, mock_resolve_payload, _mock_check_for_3d, mock_modelchain_call, mock_log_failure
     ):
         mock_resolve_payload.return_value = ('{"pvPlant":{}}', [])
@@ -369,12 +385,38 @@ class TestRunEnergyCalculation:
             exception="Server error",
         )
 
-        result = run_energy_calculation(
-            inputs_folder_path="/tmp/input-folder", project_id="project-1"
+        with pytest.raises(SolarFarmerAPIError) as exc_info:
+            run_energy_calculation(inputs_folder_path="/tmp/input-folder", project_id="project-1")
+
+        mock_log_failure.assert_called_once()
+        assert exc_info.value.status_code == 500
+        assert exc_info.value.message == "Server error"
+
+    @patch("solarfarmer.endpoint_modelchains._log_api_failure")
+    @patch("solarfarmer.endpoint_modelchains.modelchain_call")
+    @patch("solarfarmer.endpoint_modelchains.check_for_3d_files", return_value=False)
+    @patch("solarfarmer.endpoint_modelchains._resolve_request_payload")
+    def test_failed_response_carries_problem_details(
+        self, mock_resolve_payload, _mock_check_for_3d, mock_modelchain_call, _mock_log_failure
+    ):
+        mock_resolve_payload.return_value = ('{"pvPlant":{}}', [])
+        problem_details = {"title": "Validation failed", "detail": "rack height too small"}
+        mock_modelchain_call.return_value = Response(
+            code=400,
+            url="https://api.example.com/modelchain",
+            data=None,
+            success=False,
+            method="POST",
+            exception="Bad Request",
+            problem_details_json=problem_details,
         )
 
-        assert result is None
-        mock_log_failure.assert_called_once()
+        with pytest.raises(SolarFarmerAPIError) as exc_info:
+            run_energy_calculation(inputs_folder_path="/tmp/input-folder", project_id="project-1")
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.problem_details == problem_details
+        assert "rack height too small" in str(exc_info.value)
 
     @patch("solarfarmer.endpoint_modelchains.modelchain_call", side_effect=RuntimeError("boom"))
     @patch("solarfarmer.endpoint_modelchains.check_for_3d_files", return_value=False)
@@ -405,12 +447,13 @@ class TestRunEnergyCalculation:
             method="POST",
             exception="error",
         )
-        run_energy_calculation(
-            inputs_folder_path="/tmp/input-folder",
-            api_key=None,
-            time_out=None,
-            async_poll_time=None,
-        )
+        with pytest.raises(SolarFarmerAPIError):
+            run_energy_calculation(
+                inputs_folder_path="/tmp/input-folder",
+                api_key=None,
+                time_out=None,
+                async_poll_time=None,
+            )
         kwargs_passed = mock_modelchain_call.call_args.kwargs
         assert "api_key" not in kwargs_passed
         assert "time_out" not in kwargs_passed

@@ -21,11 +21,29 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
     include_horizon : bool
         Whether to include horizon shading. Required
     calculation_year : int
-        Year to use for the calculation
+        Year to use for the calculation. Default is 1990. Behavior depends on
+        meteorological file format:
+
+        - **TSV format**: Ignored — timestamps in the file are used as-is.
+        - **Meteonorm .dat format**: All timestamps are replaced with this year
+          while preserving month/day/hour. Used for calculating solar position.
+        - **PVsyst CSV format with TMY data**: If the file header contains
+          ``#TMY hourly data``, timestamps are replaced with this year. If the
+          header is ``#Meteo hourly data`` (non-TMY), original years are preserved.
+
+        **Warning for TMY files**: When using typical meteorological year (TMY)
+        data with mixed years per month (common in NSRDB, PVGIS datasets), ensure
+        the file is properly formatted with the ``#TMY hourly data`` header, or
+        manually remap all timestamps to a single year. Otherwise, only rows
+        matching ``calculation_year`` may be processed, causing silent partial-year
+        calculations with incorrect results.
     default_wind_speed : float
         Wind speed (m/s) when met data has no wind
     calculate_dhi : bool
-        Whether to calculate DHI from GHI
+        Whether to calculate diffuse horizontal irradiance (DHI) from global
+        horizontal irradiance (GHI) when the ``DHI`` column is missing from the
+        meteorological file. If ``False`` and ``DHI`` is missing, the calculation
+        will fail. Set to ``True`` when using weather files that only provide GHI.
     apply_diffuse_to_horizon : bool or None
         Apply diffuse irradiance to the horizon model. Engine default is True
     horizon_type : HorizonType or None
@@ -69,7 +87,17 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
     solar_zenith_angle_limit : float or None
         Maximum solar zenith angle in degrees, range [75, 89.9]
     missing_met_data_handling : MissingMetDataMethod or None
-        How to handle missing meteorological data
+        How to handle missing meteorological data (NaN values, empty cells, or
+        the sentinel value ``9999`` / ``-9999`` in TSV files) in required columns:
+        ``GHI``, ``DHI``, ``TAmb``, ``WS``. Options:
+
+        - ``MissingMetDataMethod.FAIL_ON_VALIDATION``: Raise an error if any
+          required data is missing.
+        - ``MissingMetDataMethod.REMOVE_TIMESTAMP``: Skip timesteps with missing
+          data and continue the calculation.
+
+        If ``None`` (default), the engine uses ``FAIL_ON_VALIDATION``.
+        See :data:`solarfarmer.weather.TSV_COLUMNS` for TSV sentinel value details.
     return_pv_syst_format_time_series_results : bool
         Return PVsyst-format time-series results
     return_detailed_time_series_results : bool
@@ -81,9 +109,16 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
     choice_columns_order_pv_syst_format_time_series : OrderColumnsPvSystFormatTimeSeries or None
         Column ordering for PVsyst-format output
     use_albedo_from_met_data_when_available : bool or None
-        Use albedo from met data when available. Engine default is True
+        Use albedo from the meteorological file's ``Albedo`` column when available,
+        instead of the ``MonthlyAlbedo`` payload values. If ``True`` and the
+        ``Albedo`` column is present, monthly albedo values are ignored. If the
+        column is absent, falls back to ``MonthlyAlbedo``. Engine default is ``True``.
     use_soiling_from_met_data_when_available : bool or None
-        Use soiling from met data when available. Engine default is True
+        Use soiling loss from the meteorological file's ``Soiling`` column when
+        available, instead of the ``MountingTypeSpecification.monthly_soiling_loss``
+        values. If ``True`` and the ``Soiling`` column is present, monthly soiling
+        values are ignored. If the column is absent, falls back to
+        ``monthly_soiling_loss``. Engine default is ``True``.
     module_mismatch_bin_width : float or None
         Bin width for module mismatch deduplication. Advanced setting
     connector_resistance_bin_width : float or None

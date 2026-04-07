@@ -25,10 +25,53 @@ class Response:
     success: bool
     method: str
     exception: str | None = None
-    problem_details_json: str | None = None
+    problem_details_json: dict | None = None
 
     def __repr__(self) -> str:
         return f"status code={self.code}, url={self.url}, method={self.method}"
+
+
+class SolarFarmerAPIError(Exception):
+    """Raised when the SolarFarmer API returns a non-2xx response.
+
+    Attributes
+    ----------
+    status_code : int
+        HTTP status code returned by the API.
+    message : str
+        Human-readable error message extracted from the response.
+    problem_details : dict or None
+        Full ProblemDetails JSON body from the API, if available.
+        May contain ``title``, ``detail``, and ``errors`` fields.
+
+    Examples
+    --------
+    >>> import solarfarmer as sf
+    >>> try:
+    ...     result = sf.run_energy_calculation(inputs_folder_path="my_inputs/")
+    ... except sf.SolarFarmerAPIError as e:
+    ...     logger.error("API error %s: %s", e.status_code, e)
+    ...     raise
+    """
+
+    def __init__(
+        self,
+        status_code: int,
+        message: str,
+        problem_details: dict | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.message = message
+        self.problem_details = problem_details
+
+    def __str__(self) -> str:
+        base = f"HTTP {self.status_code}: {self.message}"
+        if self.problem_details:
+            detail = self.problem_details.get("detail")
+            if detail:
+                base += f" — {detail}"
+        return base
 
 
 class Client:
@@ -237,7 +280,7 @@ class Client:
                 try:
                     problem_details_json = response.json()
                 except Exception:
-                    problem_details_json = ""
+                    problem_details_json = None
 
                 return self.response_class(
                     code=response.status_code,

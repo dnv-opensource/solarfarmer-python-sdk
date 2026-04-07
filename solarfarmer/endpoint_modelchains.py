@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 from typing import IO, Any
 
-from .api import Client, Response, build_api_url
+from .api import Client, Response, SolarFarmerAPIError, build_api_url
 from .config import (
     MODELCHAIN_ASYNC_ENDPOINT_URL,
     MODELCHAIN_ASYNC_TIMEOUT_CONNECTION,
@@ -26,6 +26,69 @@ from .models import CalculationResults, ModelChainResponse
 from .models._base import SolarFarmerBaseModel
 
 _logger = get_logger("endpoint.modelchains")
+
+
+def _validate_spec_ids_match_files(
+    request_content: str,
+    files: list[tuple[str, IO[bytes]]],
+) -> None:
+    """
+    Validate that module and inverter spec IDs in the payload match uploaded file stems.
+
+    The SolarFarmer API resolves ``moduleSpecificationID`` and ``inverterSpecID``
+    by matching them against the filename stems of uploaded PAN and OND files
+    (i.e. filename without extension). A mismatch causes a KeyNotFoundException
+    on the server. This check catches the error client-side before the HTTP call.
+
+    Parameters
+    ----------
+    request_content : str
+        JSON-serialized API payload.
+    files : list of tuple[str, IO[bytes]]
+        Multipart upload files as ``(field_name, file_handle)`` pairs.
+
+    Raises
+    ------
+    ValueError
+        If a spec ID in the payload has no matching uploaded file.
+    """
+    import json
+
+    pan_stems = {
+        pathlib.Path(f.name).stem
+        for field, f in files
+        if field == "panFiles" and hasattr(f, "name")
+    }
+    ond_stems = {
+        pathlib.Path(f.name).stem
+        for field, f in files
+        if field == "ondFiles" and hasattr(f, "name")
+    }
+
+    # Nothing to validate if no PAN/OND files were uploaded (e.g. inline payload)
+    if not pan_stems and not ond_stems:
+        return
+
+    payload = json.loads(request_content)
+    pv_plant = payload.get("pvPlant", {})
+
+    for transformer in pv_plant.get("transformers", []):
+        for inverter in transformer.get("inverters", []):
+            if ond_stems:
+                inv_id = inverter.get("inverterSpecID")
+                if inv_id and inv_id not in ond_stems:
+                    raise ValueError(
+                        f"Inverter references spec ID '{inv_id}' but no matching OND file "
+                        f"was uploaded. Available stems: {sorted(ond_stems)}"
+                    )
+            for layout in inverter.get("layouts") or []:
+                if pan_stems:
+                    mod_id = layout.get("moduleSpecificationID")
+                    if mod_id and mod_id not in pan_stems:
+                        raise ValueError(
+                            f"Layout references module spec '{mod_id}' but no matching PAN file "
+                            f"was uploaded. Available stems: {sorted(pan_stems)}"
+                        )
 
 
 def _resolve_request_payload(
@@ -201,7 +264,14 @@ def _handle_successful_response(
             runtime_status,
             elapsed_time,
         )
-    return None
+    # "Terminated" means the user explicitly cancelled via terminate_calculation() — not an error.
+    # All other non-Completed statuses (Failed, Canceled, Unknown) are unexpected failures.
+    if runtime_status == "Terminated":
+        return None
+    message = f"Async calculation ended with status '{runtime_status}'"
+    if output_message:
+        message += f": {output_message}"
+    raise SolarFarmerAPIError(status_code=200, message=message)
 
 
 def _log_api_failure(response: Response, elapsed_time: float) -> None:
@@ -225,19 +295,20 @@ def _log_api_failure(response: Response, elapsed_time: float) -> None:
         elapsed_time,
     )
     _logger.error("Failure message: %s", response.exception)
-    try:
-        json_response = response.problem_details_json
-        if json_response is not None and "title" in json_response:
-            _logger.error("Title: %s", json_response["title"])
-        if json_response.get("errors") is not None:
-            _logger.error("Errors:")
-            for _errorKey, errors in json_response["errors"].items():
-                for error in errors:
-                    _logger.error(" - %s", error)
-        if json_response.get("detail") is not None:
-            _logger.error("Detail: %s", json_response["detail"])
-    except Exception:
-        pass
+    json_response = response.problem_details_json
+    if json_response is None:
+        return
+    if "title" in json_response:
+        _logger.error("Title: %s", json_response["title"])
+    errors = json_response.get("errors")
+    if errors is not None:
+        _logger.error("Errors:")
+        for _errorKey, error_list in errors.items():
+            for error in error_list:
+                _logger.error(" - %s", error)
+    detail = json_response.get("detail")
+    if detail is not None:
+        _logger.error("Detail: %s", detail)
 
 
 def run_energy_calculation(
@@ -342,7 +413,13 @@ def run_energy_calculation(
     -------
     CalculationResults or None
         An instance of CalculationResults with the API results for the project,
-        or None if the calculation failed or was terminated
+        or None if the calculation was terminated or cancelled
+
+    Raises
+    ------
+    SolarFarmerAPIError
+        If the API returns a non-2xx response. The exception carries
+        ``status_code``, ``message``, and the full ``problem_details`` body.
     """
 
     # Fold explicit API params into kwargs for the downstream request functions
@@ -367,6 +444,7 @@ def run_energy_calculation(
         )
 
         # 2. Dispatch to the appropriate endpoint
+        _validate_spec_ids_match_files(request_content, files)
         are_files_3d = check_for_3d_files(request_content)
         start_time = time.time()
         if force_async_call or are_files_3d:
@@ -398,7 +476,11 @@ def run_energy_calculation(
         )
     else:
         _log_api_failure(response, elapsed_time)
-        return None
+        raise SolarFarmerAPIError(
+            status_code=response.code,
+            message=response.exception or "API request failed",
+            problem_details=response.problem_details_json,
+        )
 
 
 def modelchain_call(

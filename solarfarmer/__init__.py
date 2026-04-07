@@ -1,4 +1,5 @@
 from .__version__ import __version__
+from .api import SolarFarmerAPIError
 from .config import (
     ABOUT_ENDPOINT_URL,
     ANNUAL_MONTHLY_RESULTS_FILENAME,
@@ -54,6 +55,7 @@ from .models import (
     TransformerSpecification,
     ValidationMessage,
 )
+from .weather import TSV_COLUMNS
 
 __all__ = [
     "__version__",
@@ -104,8 +106,10 @@ __all__ = [
     "PVSystem",
     "run_energy_calculation",
     "service",
+    "SolarFarmerAPIError",
     "terminate_calculation",
     "TrackerSystem",
+    "TSV_COLUMNS",
     "Transformer",
     "TransformerLossModelTypes",
     "TransformerSpecification",

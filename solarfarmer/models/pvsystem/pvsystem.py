@@ -941,7 +941,7 @@ class PVSystem:
         force_async_call=False,
         api_version="latest",
         **kwargs,
-    ) -> None:
+    ) -> CalculationResults | None:
         """
         Runs the SolarFArmer API calculation for the defined PV plant.
 
@@ -975,8 +975,14 @@ class PVSystem:
 
         Returns
         -------
-        CalculationResults:
-            An instance of CalculationResults with the 2D API results for the PV plant.
+        CalculationResults or None
+            The calculation results on success, or None if the async calculation
+            was terminated by the user. Results are also stored in ``self.results``.
+
+        Raises
+        ------
+        SolarFarmerAPIError
+            If the API returns a non-2xx response or the async calculation fails.
         """
         from ...endpoint_modelchains import run_energy_calculation
 
@@ -1005,7 +1011,7 @@ class PVSystem:
         # Store API results
         self.results = results
 
-        return None
+        return self.results
 
 
 def construct_plant(pvplant: PVSystem) -> str:
