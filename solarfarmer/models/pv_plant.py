@@ -49,7 +49,10 @@ class PVPlant(SolarFarmerBaseModel):
             spec_id = transformer.transformer_spec_id
             if spec_id is None:
                 continue
-            if self.transformer_specifications is None or spec_id not in self.transformer_specifications:
+            if (
+                self.transformer_specifications is None
+                or spec_id not in self.transformer_specifications
+            ):
                 available = sorted(self.transformer_specifications or {})
                 raise ValueError(
                     f"Transformer {i} references spec ID '{spec_id}' which is "

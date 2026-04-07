@@ -196,9 +196,7 @@ class TestHandleSuccessfulResponse:
         )
         with caplog.at_level(logging.ERROR):
             with pytest.raises(SolarFarmerAPIError) as exc_info:
-                _handle_successful_response(
-                    response, 3.0, "proj1", None, None, None, False, False
-                )
+                _handle_successful_response(response, 3.0, "proj1", None, None, None, False, False)
         assert f"Runtime status = {status}" in caplog.text
         assert status in str(exc_info.value)
         if output:
@@ -374,7 +372,9 @@ class TestRunEnergyCalculation:
     @patch("solarfarmer.endpoint_modelchains.modelchain_call")
     @patch("solarfarmer.endpoint_modelchains.check_for_3d_files", return_value=False)
     @patch("solarfarmer.endpoint_modelchains._resolve_request_payload")
-    def test_failed_response_logs_and_raises(self, mock_resolve_payload, _mock_check_for_3d, mock_modelchain_call, mock_log_failure):
+    def test_failed_response_logs_and_raises(
+        self, mock_resolve_payload, _mock_check_for_3d, mock_modelchain_call, mock_log_failure
+    ):
         mock_resolve_payload.return_value = ('{"pvPlant":{}}', [])
         mock_modelchain_call.return_value = Response(
             code=500,
@@ -386,9 +386,7 @@ class TestRunEnergyCalculation:
         )
 
         with pytest.raises(SolarFarmerAPIError) as exc_info:
-            run_energy_calculation(
-                inputs_folder_path="/tmp/input-folder", project_id="project-1"
-            )
+            run_energy_calculation(inputs_folder_path="/tmp/input-folder", project_id="project-1")
 
         mock_log_failure.assert_called_once()
         assert exc_info.value.status_code == 500
@@ -414,9 +412,7 @@ class TestRunEnergyCalculation:
         )
 
         with pytest.raises(SolarFarmerAPIError) as exc_info:
-            run_energy_calculation(
-                inputs_folder_path="/tmp/input-folder", project_id="project-1"
-            )
+            run_energy_calculation(inputs_folder_path="/tmp/input-folder", project_id="project-1")
 
         assert exc_info.value.status_code == 400
         assert exc_info.value.problem_details == problem_details
