@@ -6,11 +6,11 @@
 [![CI](https://github.com/dnv-opensource/solarfarmer-python-sdk/actions/workflows/test.yml/badge.svg)](https://github.com/dnv-opensource/solarfarmer-python-sdk/actions/workflows/test.yml)
 [![Documentation](https://img.shields.io/badge/docs-online-teal)](https://dnv-opensource.github.io/solarfarmer-python-sdk/)
 
-The official Python SDK for [DNV SolarFarmer](https://www.dnv.com/software/services/solarfarmer/), a bankable solar PV energy yield calculation engine. Build API payloads, run cloud-based 2D and 3D energy calculations, and analyse results from Python.
+The official Python SDK for [SolarFarmer](https://www.dnv.com/software/services/solarfarmer/), a bankable solar PV design and energy yield assessment software from DNV. This SDK provides a typed Python interface that simplifies calling SolarFarmer APIs: build payloads, run 2D and 3D energy calculations, and process results programmatically.
 
 ## Key Features
 
-- **Data models that mirror the API schema.** Pydantic classes with field validation catch payload errors locally before the API call.
+- **Data models that mirror the API schema.** Pydantic classes with field validation catch payload errors locally before the API call. Field descriptions and type hints improve discoverability in IDEs and AI coding agents alike.
 - **Two plant-building paths.** Full control via `EnergyCalculationInputs` and component classes, or quick screening via `PVSystem` from high-level specs (capacity, tilt, GCR, equipment files).
 - **Structured results.** `CalculationResults` gives direct access to annual/monthly metrics, loss trees, and time series without parsing raw JSON.
 - **Automatic endpoint handling.** One function call runs 2D or 3D calculations. The SDK selects the right endpoint, polls async jobs, and supports cancellation via `terminate_calculation()`.
@@ -79,25 +79,17 @@ Install the `weather` extra for DataFrame-based features:
 pip install "dnv-solarfarmer[weather]"
 ```
 
-**Functions that require pandas:**
-
-| Function / Feature | Module | What it does |
-|---|---|---|
-| `sf.from_dataframe()` | `solarfarmer.weather` | Write a DataFrame to SolarFarmer TSV weather file |
-| `sf.from_pvlib()` | `solarfarmer.weather` | Convert a pvlib DataFrame to TSV (column rename + unit conversion) |
-| `CalculationResults` timeseries parsing | `solarfarmer.models` | Parse loss-tree, PVsyst-format, and detailed timeseries into DataFrames |
-
-Without pandas, weather utilities raise `ImportError` and timeseries result parsing returns `None` with a warning. Everything else (payload construction, API calls, annual/monthly summaries) works without it.
+This unlocks `sf.from_dataframe()` and `sf.from_pvlib()` for writing weather files from DataFrames, and enables `CalculationResults` to parse timeseries outputs into DataFrames. Without pandas, those functions raise `ImportError` or return `None`. All other SDK features work without it.
 
 ## Getting Started
 
 The SDK supports three workflows for different use cases:
 
-| Workflow | Best for | Primary entry point |
+| Workflow | Best for | Entry point |
 |---|---|---|
 | 1. Load existing files | Users with pre-built API payloads from the SolarFarmer desktop app or a previous export | `sf.run_energy_calculation(inputs_folder_path=...)` |
-| 2. PVSystem builder | Quick screening from high-level specs (capacity, tilt, equipment files). The design is approximate: string sizing and inverter count are inferred, so DC/AC capacity may not match the target exactly. | `sf.PVSystem(...)` then `plant.run_energy_calculation()` |
-| 3. Custom integration | Developers mapping internal databases or proprietary formats to the SolarFarmer API | `sf.EnergyCalculationInputs(location=..., pv_plant=..., ...)` |
+| 2. PVSystem builder | Quick screening from high-level specs (capacity, tilt, equipment files). The design is approximate: string sizing and inverter count are inferred, so DC/AC capacity may not match the target exactly. | `plant = sf.PVSystem(...)` then `plant.run_energy_calculation()` |
+| 3. Custom integration | Developers mapping internal databases or proprietary formats to the SolarFarmer API | `params = sf.EnergyCalculationInputs(...)` then `sf.run_energy_calculation(plant_builder=params)` |
 
 See the [Getting Started guide](https://dnv-opensource.github.io/solarfarmer-python-sdk/getting-started/) for full per-workflow walkthroughs, and the [example notebooks](https://dnv-opensource.github.io/solarfarmer-python-sdk/notebooks/Example_EnergyCalculations/) for runnable end-to-end examples.
 
