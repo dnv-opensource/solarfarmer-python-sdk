@@ -127,6 +127,24 @@ class CalculationResults:
         SolarFarmer performance model. Useful for debugging.
     Name: str or None
         Name of project. It is populated with the ``project_id`` property if availabe.
+
+    Examples
+    --------
+    Retrieve key performance metrics for the first project year:
+
+    >>> perf = results.get_performance(project_year=1)
+    >>> print(f"Net energy:         {perf['net_energy']:.2f} MWh/year")
+    >>> print(f"Performance ratio:  {perf['performance_ratio']:.3f}")
+    >>> print(f"Specific yield:     {perf['energy_yield']:.1f} kWh/kWp")
+
+    Print a summary table:
+
+    >>> results.describe()
+
+    Access monthly or annual DataFrames:
+
+    >>> annual_df  = results.get_annual_results_table()
+    >>> monthly_df = results.get_monthly_results_table()
     """
 
     ModelChainResponse: ModelChainResponse

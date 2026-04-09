@@ -13,6 +13,43 @@ Example (tab-separated, from SF-Core test data)::
 
 Timestamp format: ``YYYY-MM-DDThh:mm+OO:OO`` — mandatory UTC offset,
 ``T`` separator required, no seconds (e.g. ``2011-02-02T13:40+00:00``).
+
+TMY Data Warning
+~~~~~~~~~~~~~~~~
+Typical Meteorological Year (TMY) datasets (e.g., from NSRDB PSM or PVGIS)
+contain timestamps drawn from different source years. When writing a TSV file,
+**all timestamps must belong to a single contiguous calendar year**. Remap
+mixed-year timestamps to one year (e.g., 1990) before export; otherwise the
+SolarFarmer API will return an HTTP 400 error with no field-level detail.
+
+pvlib Column Mapping
+~~~~~~~~~~~~~~~~~~~~
+When converting a ``pvlib`` DataFrame to SolarFarmer TSV format, use the
+following column name mapping and note the unit for Pressure:
+
+==============  ===========  ==========================
+pvlib column    SF column    Notes
+==============  ===========  ==========================
+``ghi``         ``GHI``      W/m²
+``dhi``         ``DHI``      W/m²
+``temp_air``    ``TAmb``     °C
+``wind_speed``  ``WS``       m/s
+``pressure``    ``Pressure`` **Convert Pa → mbar** (÷ 100)
+==============  ===========  ==========================
+
+Minimal conversion example::
+
+    import pandas as pd
+
+    rename = {"ghi": "GHI", "dhi": "DHI", "temp_air": "TAmb",
+              "wind_speed": "WS", "pressure": "Pressure"}
+    df = pvlib_df.rename(columns=rename)
+    df["Pressure"] = df["Pressure"] / 100          # Pa → mbar
+    df.index = df.index.map(
+        lambda t: t.replace(year=1990).strftime("%Y-%m-%dT%H:%M+00:00")
+    )
+    df.index.name = "DateTime"
+    df.to_csv("weather.tsv", sep="\\t")
 """
 
 __all__ = ["TSV_COLUMNS"]

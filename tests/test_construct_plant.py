@@ -106,3 +106,55 @@ class TestDesignPlant:
         small_plant, _ = design_plant(small)
         large_plant, _ = design_plant(large)
         assert total_inverters(small_plant) < total_inverters(large_plant)
+
+
+class TestSpecIdDerivation:
+    """Verify spec IDs are derived via Path.stem (last-dot split), not split('.')[0]."""
+
+    def test_multi_dot_pan_filename_produces_correct_spec_id(self, bern_2d_racks_inputs):
+        """PAN filenames with multiple dots must use Path.stem for spec ID."""
+        from pathlib import Path
+
+        from solarfarmer.models.pvsystem.pvsystem import get_module_info_from_pan
+
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        original = Path(bern_2d_racks_inputs) / "CanadianSolar_CS6U-330M_APP.PAN"
+        multi_dot = Path(bern_2d_racks_inputs) / "Trina_TSM-DEG19C.20-550_APP.PAN"
+
+        created_link = False
+        try:
+            if not multi_dot.exists():
+                multi_dot.symlink_to(original)
+                created_link = True
+            p.pan_files = {"TestModule": str(multi_dot)}
+            info = get_module_info_from_pan(p)
+            # Path.stem gives "Trina_TSM-DEG19C.20-550_APP"
+            # split(".")[0] would give "Trina_TSM-DEG19C" — wrong
+            assert info["pan_filename"] == "Trina_TSM-DEG19C.20-550_APP"
+        finally:
+            if created_link and multi_dot.exists():
+                multi_dot.unlink()
+
+    def test_multi_dot_ond_filename_produces_correct_spec_id(self, bern_2d_racks_inputs):
+        """OND filenames with multiple dots must use Path.stem for spec ID."""
+        from pathlib import Path
+
+        from solarfarmer.models.pvsystem.pvsystem import get_inverter_info_from_ond
+
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        original = Path(bern_2d_racks_inputs) / "Sungrow_SG125HV_APP.OND"
+        multi_dot = Path(bern_2d_racks_inputs) / "SMA_Sunny-Central.2200-UP.OND"
+
+        created_link = False
+        try:
+            if not multi_dot.exists():
+                multi_dot.symlink_to(original)
+                created_link = True
+            p.ond_files = {"TestInverter": str(multi_dot)}
+            info = get_inverter_info_from_ond(p)
+            # Path.stem gives "SMA_Sunny-Central.2200-UP"
+            # split(".")[0] would give "SMA_Sunny-Central" — wrong
+            assert info["ond_filename"] == "SMA_Sunny-Central.2200-UP"
+        finally:
+            if created_link and multi_dot.exists():
+                multi_dot.unlink()

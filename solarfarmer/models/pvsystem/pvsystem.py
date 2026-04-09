@@ -115,6 +115,7 @@ class PVSystem:
         Array azimuth in degrees (default 180, i.e., south-facing).
     mounting: str
         Mounting configuration: 'Fixed' for fixed-tilt or 'Tracker' for single-axis trackers.
+        Available as ``solarfarmer.MountingType`` enum (e.g., ``sf.MountingType.FIXED``).
     flush_mount : bool
         If True, indicates flush-mounted arrays (default is False).
     bifacial: bool
@@ -318,6 +319,20 @@ class PVSystem:
     # -----------------------------
     @property
     def weather_file(self) -> Path | None:
+        """Path to a meteorological data file (TSV, Meteonorm .dat, or PVsyst CSV).
+
+        .. warning::
+           TMY (Typical Meteorological Year) data from sources like NSRDB or
+           PVGIS contains timestamps from multiple source years. When using TSV
+           format, all timestamps must belong to a single contiguous calendar
+           year. Remap mixed-year TMY timestamps to one year (e.g., 1990)
+           before submission; otherwise the API will return a 400 error.
+
+        See Also
+        --------
+        EnergyCalculationOptions.calculation_year : Controls year handling
+            for Meteonorm and PVsyst TMY formats.
+        """
         return self._weather_file
 
     @weather_file.setter
@@ -428,6 +443,9 @@ class PVSystem:
         ----------
         mapping : dict[str, str|Path]
             Mapping 'Name of Module' -> file path (string or Path).
+            Keys are user-facing labels only. The spec ID sent to the API
+            is derived from the filename via ``Path.stem`` (everything
+            before the last dot), not from the dict key.
         """
         self._pan_files.clear()
         for name, p in mapping.items():
@@ -468,6 +486,9 @@ class PVSystem:
         ----------
         mapping : dict[str, str|Path]
             Mapping 'Name of Inverter' -> file path (string or Path).
+            Keys are user-facing labels only. The spec ID sent to the API
+            is derived from the filename via ``Path.stem`` (everything
+            before the last dot), not from the dict key.
         """
         self._ond_files.clear()
         for name, p in mapping.items():
@@ -1707,7 +1728,7 @@ def get_inverter_info_from_ond(plant: PVSystem) -> dict[str, Any]:
         # Store the data indexed by inverter name
         inverter_info[inverter_name] = {
             "name": inverter_name,
-            "ond_filename": ond_filename.split(".")[0],  # Use filename without extension as spec ID
+            "ond_filename": Path(ond_filename).stem,  # Use filename without extension as spec ID
             "path": ond_file_path,
             "data": ond_dict,
         }
@@ -1734,7 +1755,7 @@ def get_module_info_from_pan(plant: PVSystem) -> dict[str, Any]:
         module_info[module_name] = {
             "name": module_name,
             "path": pan_file_path,
-            "pan_filename": pan_filename.split(".")[0],  # Use filename without extension as spec ID
+            "pan_filename": Path(pan_filename).stem,  # Use filename without extension as spec ID
             "data": pan_dict,
         }
 

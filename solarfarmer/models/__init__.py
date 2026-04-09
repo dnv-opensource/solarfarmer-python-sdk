@@ -26,6 +26,7 @@ from .ond_supplements import OndFileSupplements
 from .pan_supplements import PanFileSupplements
 from .pv_plant import PVPlant
 from .pvsystem.pvsystem import PVSystem
+from .pvsystem.plant_defaults import InverterType, MountingType, OrientationType
 from .pvsystem.validation import ValidationMessage
 from .tracker_system import TrackerSystem
 from .transformer import Transformer
@@ -42,15 +43,18 @@ __all__ = [
     "IAMModelTypeForOverride",
     "Inverter",
     "InverterOverPowerShutdownMode",
+    "InverterType",
     "Layout",
     "Location",
     "MeteoFileFormat",
     "MissingMetDataMethod",
     "ModelChainResponse",
     "MonthlyAlbedo",
+    "MountingType",
     "MountingTypeSpecification",
     "OndFileSupplements",
     "OrderColumnsPvSystFormatTimeSeries",
+    "OrientationType",
     "PanFileSupplements",
     "PVPlant",
     "PVSystem",
