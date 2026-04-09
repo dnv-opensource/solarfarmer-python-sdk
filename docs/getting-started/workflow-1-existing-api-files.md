@@ -145,17 +145,15 @@ results.describe()
 ### Access Key Metrics
 
 ```python
-# Access annual data for the calculation period
+# Convenience properties (year 1)
+print(f"Net Energy: {results.net_energy_MWh:.1f} MWh/year")
+print(f"Performance Ratio: {results.performance_ratio:.3f}")
+print(f"Specific Yield: {results.energy_yield_kWh_per_kWp:.1f} kWh/kWp")
+
+# Or access full annual data dicts directly
 annual_data = results.AnnualData[0]
-
-# Get net energy yield (MWh/year)
 net_energy_mwh = annual_data['energyYieldResults']['netEnergy']
-
-# Get performance ratio (%)
 performance_ratio = annual_data['energyYieldResults']['performanceRatio']
-
-print(f"Net Energy: {net_energy_mwh} MWh/year")
-print(f"Performance Ratio: {performance_ratio}%")
 ```
 
 ### Access Simulation Results
