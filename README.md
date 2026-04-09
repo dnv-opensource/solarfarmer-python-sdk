@@ -10,7 +10,7 @@ The official Python SDK for [SolarFarmer](https://www.dnv.com/software/services/
 
 ## Key Features
 
-- **Data models that mirror the API schema.** Pydantic classes with field validation catch payload errors locally before the API call. Field descriptions and type hints improve discoverability in IDEs and AI coding agents alike.
+- **Data models that mirror the API schema.** Pydantic classes with field validation catch payload errors locally before the API call. Field descriptions and type hints improve discoverability.
 - **Two plant-building paths.** Full control via `EnergyCalculationInputs` and component classes, or quick screening via `PVSystem` from high-level specs (capacity, tilt, GCR, equipment files).
 - **Structured results.** `CalculationResults` gives direct access to annual/monthly metrics, loss trees, and time series without parsing raw JSON.
 - **Automatic endpoint handling.** One function call runs 2D or 3D calculations. The SDK selects the right endpoint, polls async jobs, and supports cancellation via `terminate_calculation()`.
