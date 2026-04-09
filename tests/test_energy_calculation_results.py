@@ -741,3 +741,37 @@ class TestPrintMethods:
         """print_monthly_results(project_years=[1]) should not raise."""
         results.print_monthly_results(project_years=[1])
         assert capsys.readouterr().out.strip() != ""
+
+
+class TestConvenienceProperties:
+    """Test cases for convenience properties on CalculationResults."""
+
+    @pytest.fixture
+    def results(self):
+        return _two_year_results()
+
+    def test_net_energy_MWh(self, results):
+        """net_energy_MWh should return year-1 net energy."""
+        assert results.net_energy_MWh == results.get_performance()["net_energy"]
+
+    def test_performance_ratio(self, results):
+        """performance_ratio should return year-1 PR."""
+        assert results.performance_ratio == results.get_performance()["performance_ratio"]
+
+    def test_energy_yield_kWh_per_kWp(self, results):
+        """energy_yield_kWh_per_kWp should return year-1 specific yield."""
+        assert results.energy_yield_kWh_per_kWp == results.get_performance()["energy_yield"]
+
+    def test_empty_results_return_nan(self):
+        """Convenience properties should return NaN when no data is available."""
+        import math
+
+        results = CalculationResults(
+            ModelChainResponse=ModelChainResponse(Name=None),
+            AnnualData=[],
+            MonthlyData=[],
+            CalculationAttributes={},
+        )
+        assert math.isnan(results.net_energy_MWh)
+        assert math.isnan(results.performance_ratio)
+        assert math.isnan(results.energy_yield_kWh_per_kWp)

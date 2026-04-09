@@ -15,6 +15,15 @@ The SolarFarmer SDK supports three distinct user workflows. Choose the one that 
 
     Once you have your API key, provide it to the SDK using either the **SF_API_KEY** environment variable or pass it directly as the `api_key` argument when calling the energy calculation function.
 
+!!! tip "Optional: pandas for weather conversion and timeseries results"
+
+    The core SDK works without pandas. To use `sf.from_dataframe()`, `sf.from_pvlib()`,
+    or to parse timeseries results as DataFrames, install the `weather` extra:
+
+    ```bash
+    pip install "dnv-solarfarmer[weather]"
+    ```
+
 ## Choose Your Path
 
 ### [Workflow 1: Load and Execute Existing API Files](workflow-1-existing-api-files.md)

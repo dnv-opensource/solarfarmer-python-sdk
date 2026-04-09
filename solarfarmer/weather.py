@@ -52,11 +52,173 @@ Minimal conversion example::
     df.to_csv("weather.tsv", sep="\\t")
 """
 
-__all__ = ["TSV_COLUMNS"]
+from __future__ import annotations
+
+import pathlib
+import re
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+_PANDAS_INSTALL_MSG = (
+    "pandas is required for this function. "
+    "Install it with: pip install 'dnv-solarfarmer[weather]'"
+)
+
+__all__ = ["TSV_COLUMNS", "validate_tsv_timestamps", "from_dataframe", "from_pvlib"]
+
+
+def validate_tsv_timestamps(file_path: str | pathlib.Path) -> None:
+    """Check that all timestamps in a TSV weather file belong to a single year.
+
+    Parameters
+    ----------
+    file_path : str or Path
+        Path to the TSV weather file.
+
+    Raises
+    ------
+    ValueError
+        If timestamps span more than one calendar year.
+    """
+    path = pathlib.Path(file_path)
+    year_pattern = re.compile(r"^(\d{4})-")
+    years: set[str] = set()
+
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            m = year_pattern.match(line)
+            if m:
+                years.add(m.group(1))
+
+    if len(years) > 1:
+        sorted_years = sorted(years)
+        raise ValueError(
+            f"TSV weather file contains timestamps from multiple years: "
+            f"{sorted_years}. SolarFarmer requires all timestamps to belong "
+            f"to a single contiguous calendar year. Remap timestamps to one "
+            f"year (e.g., 1990) before submission."
+        )
+
+
+PVLIB_COLUMN_MAP: dict[str, str] = {
+    "ghi": "GHI",
+    "dhi": "DHI",
+    "temp_air": "TAmb",
+    "wind_speed": "WS",
+    "pressure": "Pressure",
+}
+
+
+def from_dataframe(
+    df: pd.DataFrame,
+    output_path: str | pathlib.Path,
+    *,
+    column_map: dict[str, str] | None = None,
+    year: int | None = None,
+    pressure_pa_to_mbar: bool = False,
+) -> pathlib.Path:
+    """Write a DataFrame to a SolarFarmer TSV weather file.
+
+    .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[weather]'``.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame with a DatetimeIndex and meteorological columns.
+    output_path : str or Path
+        Destination file path.
+    column_map : dict[str, str], optional
+        DataFrame column names → SolarFarmer TSV column names.
+        Columns not in the map are passed through unchanged.
+    year : int, optional
+        Remap all timestamps to this calendar year (needed for TMY data).
+    pressure_pa_to_mbar : bool, default False
+        Divide the ``Pressure`` column by 100 (Pa → mbar) after renaming.
+
+    Returns
+    -------
+    pathlib.Path
+
+    Raises
+    ------
+    ValueError
+        If the DataFrame has no DatetimeIndex.
+    ImportError
+        If pandas is not installed.
+    """
+    try:
+        import pandas as pd
+    except ImportError:
+        raise ImportError(_PANDAS_INSTALL_MSG) from None
+
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError(
+            "DataFrame must have a DatetimeIndex. "
+            "Use df.set_index(pd.to_datetime(df['timestamp'])) or similar."
+        )
+
+    out = df.copy()
+
+    if column_map:
+        out = out.rename(columns=column_map)
+
+    if pressure_pa_to_mbar and "Pressure" in out.columns:
+        out["Pressure"] = out["Pressure"] / 100
+
+    if year is not None:
+        out.index = out.index.map(lambda t: t.replace(year=year))
+
+    out.index = out.index.map(
+        lambda t: t.strftime("%Y-%m-%dT%H:%M") + t.strftime("%z")[:3] + ":" + t.strftime("%z")[3:]
+    )
+    out.index.name = "DateTime"
+
+    path = pathlib.Path(output_path)
+    out.to_csv(path, sep="\t")
+    return path
+
+
+def from_pvlib(
+    df: pd.DataFrame,
+    output_path: str | pathlib.Path,
+    *,
+    year: int = 1990,
+) -> pathlib.Path:
+    """Convert a pvlib DataFrame to a SolarFarmer TSV weather file.
+
+    Wrapper around :func:`from_dataframe` with the standard pvlib column
+    mapping and Pa → mbar pressure conversion.
+
+    .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[weather]'``.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        pvlib-style DataFrame (``ghi``, ``dhi``, ``temp_air``,
+        ``wind_speed``, ``pressure``) with a DatetimeIndex.
+    output_path : str or Path
+        Destination file path.
+    year : int, default 1990
+        Remap all timestamps to this calendar year.
+
+    Returns
+    -------
+    pathlib.Path
+    """
+    return from_dataframe(
+        df,
+        output_path,
+        column_map=PVLIB_COLUMN_MAP,
+        year=year,
+        pressure_pa_to_mbar=True,
+    )
 
 TSV_COLUMNS: dict = {
-    # Required columns — parser raises FormatException if absent.
-    # DateTime must be the first column; others may appear in any order.
     "required": [
         {
             "name": "DateTime",
@@ -79,7 +241,6 @@ TSV_COLUMNS: dict = {
             "aliases": ["TAmb", "Temp", "T"],
         },
     ],
-    # Optional columns — omitting them is accepted.
     "optional": [
         {
             "name": "DHI",
@@ -132,7 +293,5 @@ TSV_COLUMNS: dict = {
         },
     ],
     "delimiter": "\t",
-    # Both 9999 and -9999 are treated as missing; 9999.0 / -9999.000 also accepted.
-    # Behaviour on missing data is controlled by EnergyCalculationOptions.missing_met_data_handling.
     "missing_value_sentinel": 9999,
 }

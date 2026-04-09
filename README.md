@@ -38,9 +38,10 @@ import solarfarmer as sf
 Install with optional extras:
 
 ```bash
+pip install "dnv-solarfarmer[weather]"    # pandas for weather file conversion and DataFrame results
 pip install "dnv-solarfarmer[notebooks]"  # JupyterLab and notebook support
-pip install "dnv-solarfarmer[all]"         # full installation including pandas and matplotlib
-pip install "dnv-solarfarmer[dev]"         # linting and testing tools (for contributors)
+pip install "dnv-solarfarmer[all]"        # full installation including pandas and matplotlib
+pip install "dnv-solarfarmer[dev]"        # linting and testing tools (for contributors)
 ```
 
 Install from source:
@@ -69,6 +70,25 @@ Alternatively, pass it directly as the `api_key` parameter to any function that 
 |---|---|---|
 | `SF_API_KEY` | *(none — required for calculations)* | API authentication token |
 | `SF_API_URL` | `https://solarfarmer.dnv.com/latest/api` | Override the base API URL for custom deployments |
+
+## Optional Dependencies
+
+The core SDK (`pydantic`, `requests`, `tabulate`) has no dependency on `pandas`.
+Install the `weather` extra to unlock DataFrame-based features:
+
+```bash
+pip install "dnv-solarfarmer[weather]"
+```
+
+**Functions that require pandas:**
+
+| Function / Feature | Module | What it does |
+|---|---|---|
+| `sf.from_dataframe()` | `solarfarmer.weather` | Write a DataFrame to SolarFarmer TSV weather file |
+| `sf.from_pvlib()` | `solarfarmer.weather` | Convert a pvlib DataFrame to TSV (column rename + unit conversion) |
+| `CalculationResults` timeseries parsing | `solarfarmer.models` | Parse loss-tree, PVsyst-format, and detailed timeseries into DataFrames |
+
+Without pandas these functions raise `ImportError` (weather utilities) or return `None` with a warning (result timeseries parsing). All other SDK functionality — building payloads, running calculations, accessing annual/monthly summary data — works without pandas.
 
 ## Getting Started
 

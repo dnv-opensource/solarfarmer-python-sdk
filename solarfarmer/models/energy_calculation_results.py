@@ -30,10 +30,10 @@ _logger = get_logger("models.results")
 
 try:
     import pandas as pd
+
+    _PANDAS = True
 except ImportError:
     _PANDAS = False
-else:
-    _PANDAS = True
 
 # Constants for accessing the results data
 ANNUAL_ENERGY_YIELD_RESULTS_KEY = "energyYieldResults"
@@ -155,6 +155,23 @@ class CalculationResults:
     PVsystTimeseries: pd.DataFrame | None = None
     DetailedTimeseries: pd.DataFrame | None = None
     Name: str | None = None
+
+    # ----- Convenience properties for common metrics (year 1) -----
+
+    @property
+    def net_energy_MWh(self) -> float:
+        """Net energy production for year 1 in MWh/year."""
+        return self.get_performance(project_year=1).get("net_energy", float("nan"))
+
+    @property
+    def performance_ratio(self) -> float:
+        """Performance ratio for year 1 (0–1)."""
+        return self.get_performance(project_year=1).get("performance_ratio", float("nan"))
+
+    @property
+    def energy_yield_kWh_per_kWp(self) -> float:
+        """Specific energy yield for year 1 in kWh/kWp."""
+        return self.get_performance(project_year=1).get("energy_yield", float("nan"))
 
     def __repr__(self) -> str:
         """Return a concise string representation of the CalculationResults."""
@@ -1710,9 +1727,8 @@ def _handle_losstree_results(
             return data
         else:
             warnings.warn(
-                "Warning: Pandas library is needed to "
-                "read the loss tree results timeseries. "
-                "Please run 'pip install pandas'.",
+                "pandas is required to parse loss tree timeseries. "
+                "Install with: pip install 'dnv-solarfarmer[weather]'",
                 stacklevel=2,
             )
             return None
@@ -1767,9 +1783,8 @@ def _handle_pvsyst_results(
             return data
         else:
             warnings.warn(
-                "Warning: Pandas library is needed to "
-                "read the pvsyst-style results timeseries. "
-                "Please run 'pip install pandas'.",
+                "pandas is required to parse PVsyst-format timeseries. "
+                "Install with: pip install 'dnv-solarfarmer[weather]'",
                 stacklevel=2,
             )
             return None
@@ -1820,9 +1835,8 @@ def _handle_timeseries_results(
             return data
         else:
             warnings.warn(
-                "Warning: Pandas library is needed to "
-                "read the detailed results timeseries. "
-                "Please run 'pip install pandas'.",
+                "pandas is required to parse detailed timeseries. "
+                "Install with: pip install 'dnv-solarfarmer[weather]'",
                 stacklevel=2,
             )
             return None
@@ -1956,8 +1970,8 @@ def _read_dataframe_pandas_safe(
             return dataframe
         else:
             warnings.warn(
-                "Warning: Pandas library is needed to "
-                "read the file. Please run 'pip install pandas'.",
+                "pandas is required to read result files. "
+                "Install with: pip install 'dnv-solarfarmer[weather]'",
                 stacklevel=2,
             )
             return None

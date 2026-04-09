@@ -51,6 +51,10 @@ dev = [
   "ruff>=0.5",
 ]
 
+weather = [
+  "pandas>=2.0",
+]
+
 notebooks = [
   "ipykernel>=6.29,<8",
   "jupyterlab>=4.0,<6",
@@ -58,8 +62,7 @@ notebooks = [
 ]
 
 all = [
-  "dnv-solarfarmer[docs,dev,notebooks]",
-  "pandas>=2.0",
+  "dnv-solarfarmer[docs,dev,notebooks,weather]",
   "matplotlib>=3.5",
 ]
 

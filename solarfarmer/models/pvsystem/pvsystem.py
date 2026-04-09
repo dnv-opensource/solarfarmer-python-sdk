@@ -436,18 +436,25 @@ class PVSystem:
         return dict(self._pan_files)
 
     @pan_files.setter
-    def pan_files(self, mapping: Mapping[str, PathLike]) -> None:
+    def pan_files(self, mapping: Mapping[str, PathLike] | Sequence[PathLike]) -> None:
         """Set PAN files, replacing any existing mappings.
 
         Parameters
         ----------
-        mapping : dict[str, str|Path]
-            Mapping 'Name of Module' -> file path (string or Path).
+        mapping : dict[str, str|Path] or list[str|Path]
+            Mapping 'Name of Module' -> file path (string or Path), or a list
+            of file paths. When a list is provided, keys are derived from
+            each filename via ``Path.stem``.
             Keys are user-facing labels only. The spec ID sent to the API
             is derived from the filename via ``Path.stem`` (everything
             before the last dot), not from the dict key.
         """
         self._pan_files.clear()
+        if isinstance(mapping, (list, tuple)):
+            for p in mapping:
+                path = Path(p)
+                self._pan_files[path.stem] = path
+            return
         for name, p in mapping.items():
             key = str(name).strip()
             if not key:
@@ -479,18 +486,25 @@ class PVSystem:
         return dict(self._ond_files)
 
     @ond_files.setter
-    def ond_files(self, mapping: Mapping[str, PathLike]) -> None:
+    def ond_files(self, mapping: Mapping[str, PathLike] | Sequence[PathLike]) -> None:
         """Set OND files, replacing any existing mappings.
 
         Parameters
         ----------
-        mapping : dict[str, str|Path]
-            Mapping 'Name of Inverter' -> file path (string or Path).
+        mapping : dict[str, str|Path] or list[str|Path]
+            Mapping 'Name of Inverter' -> file path (string or Path), or a
+            list of file paths. When a list is provided, keys are derived
+            from each filename via ``Path.stem``.
             Keys are user-facing labels only. The spec ID sent to the API
             is derived from the filename via ``Path.stem`` (everything
             before the last dot), not from the dict key.
         """
         self._ond_files.clear()
+        if isinstance(mapping, (list, tuple)):
+            for p in mapping:
+                path = Path(p)
+                self._ond_files[path.stem] = path
+            return
         for name, p in mapping.items():
             key = str(name).strip()
             if not key:
