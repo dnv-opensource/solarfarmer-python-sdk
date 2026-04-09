@@ -62,8 +62,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
 _PANDAS_INSTALL_MSG = (
-    "pandas is required for this function. "
-    "Install it with: pip install 'dnv-solarfarmer[weather]'"
+    "pandas is required for this function. Install it with: pip install 'dnv-solarfarmer[weather]'"
 )
 
 __all__ = ["TSV_COLUMNS", "validate_tsv_timestamps", "from_dataframe", "from_pvlib"]
@@ -217,6 +216,7 @@ def from_pvlib(
         year=year,
         pressure_pa_to_mbar=True,
     )
+
 
 TSV_COLUMNS: dict = {
     "required": [

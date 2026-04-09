@@ -188,9 +188,7 @@ class TestListPathInput:
 
     def test_dict_still_works(self, bern_2d_racks_inputs):
         p = PVSystem(latitude=46.95, longitude=7.44)
-        p.pan_files = {
-            "MyLabel": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"
-        }
+        p.pan_files = {"MyLabel": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"}
         assert "MyLabel" in p.pan_files
 
     def test_list_input_constructs_valid_plant(self, bern_2d_racks_inputs):

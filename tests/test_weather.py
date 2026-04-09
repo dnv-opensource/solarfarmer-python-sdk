@@ -18,22 +18,26 @@ class TestValidateTsvTimestamps:
 
     def test_single_year_passes(self, tmp_path):
         tsv = tmp_path / "good.tsv"
-        tsv.write_text(textwrap.dedent("""\
+        tsv.write_text(
+            textwrap.dedent("""\
             DateTime\tGHI\tTAmb
             1990-01-01T00:00+00:00\t0\t5.0
             1990-06-15T12:00+00:00\t800\t25.0
             1990-12-31T23:00+00:00\t0\t3.0
-        """))
+        """)
+        )
         validate_tsv_timestamps(tsv)  # should not raise
 
     def test_mixed_years_raises(self, tmp_path):
         tsv = tmp_path / "bad.tsv"
-        tsv.write_text(textwrap.dedent("""\
+        tsv.write_text(
+            textwrap.dedent("""\
             DateTime\tGHI\tTAmb
             2003-01-01T00:00+00:00\t0\t5.0
             2010-06-15T12:00+00:00\t800\t25.0
             2016-12-31T23:00+00:00\t0\t3.0
-        """))
+        """)
+        )
         with pytest.raises(ValueError, match="multiple years"):
             validate_tsv_timestamps(tsv)
 
@@ -44,10 +48,12 @@ class TestValidateTsvTimestamps:
 
     def test_string_path_accepted(self, tmp_path):
         tsv = tmp_path / "str_path.tsv"
-        tsv.write_text(textwrap.dedent("""\
+        tsv.write_text(
+            textwrap.dedent("""\
             DateTime\tGHI\tTAmb
             1990-01-01T00:00+00:00\t0\t5.0
-        """))
+        """)
+        )
         validate_tsv_timestamps(str(tsv))  # str path should work
 
 
