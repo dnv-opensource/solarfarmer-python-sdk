@@ -6,20 +6,19 @@
 [![CI](https://github.com/dnv-opensource/solarfarmer-python-sdk/actions/workflows/test.yml/badge.svg)](https://github.com/dnv-opensource/solarfarmer-python-sdk/actions/workflows/test.yml)
 [![Documentation](https://img.shields.io/badge/docs-online-teal)](https://dnv-opensource.github.io/solarfarmer-python-sdk/)
 
-The official Python SDK for [DNV SolarFarmer](https://www.dnv.com/software/services/solarfarmer/), a bankable solar PV calculation engine. Use it to build validated API payloads, run cloud-based 2D and 3D energy calculations, and analyse simulation results — all from Python.
+The official Python SDK for [DNV SolarFarmer](https://www.dnv.com/software/services/solarfarmer/), a bankable solar PV energy yield calculation engine. Build API payloads, run cloud-based 2D and 3D energy calculations, and analyse results from Python.
 
 ## Key Features
 
-- **API-faithful data models** that closely mirror the SolarFarmer API schema, with serialization conveniences (snake_case Python fields serialized to the correct camelCase JSON automatically) to reduce integration friction
-- **Two plant-building approaches:** a bottom-up route using `EnergyCalculationInputs`, `PVPlant`, and component classes (`Inverter`, `Layout`, `Transformer`, etc.) for full control over the plant topology; and a `PVSystem` convenience class that accepts high-level parameters (capacity, tilt, GCR, equipment files) and constructs the payload automatically, suited to indicative simulations where exhaustive detail is not required
-- **`CalculationResults` encapsulation** — the API response is wrapped in a `CalculationResults` object that provides structured access to annual and monthly energy metrics, loss trees, PVsyst-format time-series, and detailed time-series output without manual JSON parsing
-- **ModelChain and ModelChainAsync endpoint support** — the SDK dispatches to the synchronous `ModelChain` endpoint or the asynchronous `ModelChainAsync` endpoint as appropriate, and handles polling automatically for long-running jobs
-- **Async job management** — poll, monitor, and terminate async calculations via `terminate_calculation()`
+- **Data models that mirror the API schema.** Pydantic classes with field validation catch payload errors locally before the API call.
+- **Two plant-building paths.** Full control via `EnergyCalculationInputs` and component classes, or quick screening via `PVSystem` from high-level specs (capacity, tilt, GCR, equipment files).
+- **Structured results.** `CalculationResults` gives direct access to annual/monthly metrics, loss trees, and time series without parsing raw JSON.
+- **Automatic endpoint handling.** One function call runs 2D or 3D calculations. The SDK selects the right endpoint, polls async jobs, and supports cancellation via `terminate_calculation()`.
 
 ## Requirements
 
 - Python >= 3.10 (tested on 3.10, 3.11, 3.12, 3.13)
-- A SolarFarmer API key (commercial licence required) — see [API Key](#api-key)
+- A SolarFarmer API key (commercial licence required; see [API Key](#api-key))
 
 ## Installation
 
@@ -68,13 +67,13 @@ Alternatively, pass it directly as the `api_key` parameter to any function that 
 
 | Environment Variable | Default | Description |
 |---|---|---|
-| `SF_API_KEY` | *(none — required for calculations)* | API authentication token |
+| `SF_API_KEY` | *(none; required for calculations)* | API authentication token |
 | `SF_API_URL` | `https://solarfarmer.dnv.com/latest/api` | Override the base API URL for custom deployments |
 
 ## Optional Dependencies
 
-The core SDK (`pydantic`, `requests`, `tabulate`) has no dependency on `pandas`.
-Install the `weather` extra to unlock DataFrame-based features:
+The core SDK (`pydantic`, `requests`, `tabulate`) does not depend on `pandas`.
+Install the `weather` extra for DataFrame-based features:
 
 ```bash
 pip install "dnv-solarfarmer[weather]"
@@ -88,23 +87,23 @@ pip install "dnv-solarfarmer[weather]"
 | `sf.from_pvlib()` | `solarfarmer.weather` | Convert a pvlib DataFrame to TSV (column rename + unit conversion) |
 | `CalculationResults` timeseries parsing | `solarfarmer.models` | Parse loss-tree, PVsyst-format, and detailed timeseries into DataFrames |
 
-Without pandas these functions raise `ImportError` (weather utilities) or return `None` with a warning (result timeseries parsing). All other SDK functionality — building payloads, running calculations, accessing annual/monthly summary data — works without pandas.
+Without pandas, weather utilities raise `ImportError` and timeseries result parsing returns `None` with a warning. Everything else (payload construction, API calls, annual/monthly summaries) works without it.
 
 ## Getting Started
 
-The SDK is built around three workflows suited to different use cases:
+The SDK supports three workflows for different use cases:
 
 | Workflow | Best for | Primary entry point |
 |---|---|---|
 | 1. Load existing files | Users with pre-built API payloads from the SolarFarmer desktop app or a previous export | `sf.run_energy_calculation(inputs_folder_path=...)` |
-| 2. PVSystem builder | Solar engineers designing new plants programmatically with automatic payload generation | `sf.PVSystem(...)` then `plant.run_energy_calculation()` |
+| 2. PVSystem builder | Quick screening from high-level specs (capacity, tilt, equipment files). The design is approximate: string sizing and inverter count are inferred, so DC/AC capacity may not match the target exactly. | `sf.PVSystem(...)` then `plant.run_energy_calculation()` |
 | 3. Custom integration | Developers mapping internal databases or proprietary formats to the SolarFarmer API | `sf.EnergyCalculationInputs(location=..., pv_plant=..., ...)` |
 
 See the [Getting Started guide](https://dnv-opensource.github.io/solarfarmer-python-sdk/getting-started/) for full per-workflow walkthroughs, and the [example notebooks](https://dnv-opensource.github.io/solarfarmer-python-sdk/notebooks/Example_EnergyCalculations/) for runnable end-to-end examples.
 
 ## Documentation
 
-Full documentation including API reference, workflow guides, and notebook tutorials:
+Full documentation (API reference, workflow guides, notebook tutorials):
 
 **https://dnv-opensource.github.io/solarfarmer-python-sdk/**
 
