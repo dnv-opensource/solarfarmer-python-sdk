@@ -17,10 +17,13 @@ Timestamp format: ``YYYY-MM-DDThh:mm+OO:OO`` — mandatory UTC offset,
 TMY Data Warning
 ~~~~~~~~~~~~~~~~
 Typical Meteorological Year (TMY) datasets (e.g., from NSRDB PSM or PVGIS)
-contain timestamps drawn from different source years. When writing a TSV file,
-**all timestamps must belong to a single contiguous calendar year**. Remap
-mixed-year timestamps to one year (e.g., 1990) before export; otherwise the
-SolarFarmer API will return an HTTP 400 error with no field-level detail.
+contain timestamps drawn from different source years.  When writing a TSV file
+from TMY data, **remap all timestamps to a single calendar year** (e.g., 1990)
+before export; otherwise the shuffled years will be detected as non-sequential
+and the SDK will raise a ``ValueError``.
+
+Multi-year and sub-year TSV files with **chronologically ordered** timestamps
+are fully supported — only non-sequential (shuffled) years are rejected.
 
 pvlib Column Mapping
 ~~~~~~~~~~~~~~~~~~~~
@@ -63,11 +66,20 @@ if TYPE_CHECKING:
 
 from .config import PANDAS_INSTALL_MSG
 
-__all__ = ["TSV_COLUMNS", "check_single_year_timestamps", "from_dataframe", "from_pvlib"]
+__all__ = [
+    "TSV_COLUMNS",
+    "check_sequential_year_timestamps",
+    "from_dataframe",
+    "from_pvlib",
+]
 
 
-def check_single_year_timestamps(file_path: str | pathlib.Path) -> None:
-    """Check that all timestamps in a TSV weather file belong to a single year.
+def check_sequential_year_timestamps(file_path: str | pathlib.Path) -> None:
+    """Check that timestamp years in a TSV weather file are chronologically ordered.
+
+    Allows single-year, sub-year, and multi-year continuous data.  Rejects
+    files whose years go *backwards* — the hallmark of unprocessed TMY data
+    that mixes months from different source years.
 
     Parameters
     ----------
@@ -77,11 +89,12 @@ def check_single_year_timestamps(file_path: str | pathlib.Path) -> None:
     Raises
     ------
     ValueError
-        If timestamps span more than one calendar year.
+        If any timestamp year is earlier than the preceding timestamp year
+        (i.e., years are not non-decreasing).
     """
     path = pathlib.Path(file_path)
     year_pattern = re.compile(r"^(\d{4})-")
-    years: set[str] = set()
+    prev_year: int | None = None
 
     with path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -90,16 +103,16 @@ def check_single_year_timestamps(file_path: str | pathlib.Path) -> None:
                 continue
             m = year_pattern.match(line)
             if m:
-                years.add(m.group(1))
-
-    if len(years) > 1:
-        sorted_years = sorted(years)
-        raise ValueError(
-            f"TSV weather file contains timestamps from multiple years: "
-            f"{sorted_years}. SolarFarmer requires all timestamps to belong "
-            f"to a single contiguous calendar year. Remap timestamps to one "
-            f"year (e.g., 1990) before submission."
-        )
+                year = int(m.group(1))
+                if prev_year is not None and year < prev_year:
+                    raise ValueError(
+                        f"TSV weather file contains non-sequential years: "
+                        f"year {year} follows year {prev_year}. This usually "
+                        f"indicates unprocessed TMY data with months from "
+                        f"different source years. Remap all timestamps to a "
+                        f"single year (e.g., 1990) before submission."
+                    )
+                prev_year = year
 
 
 PVLIB_COLUMN_MAP: dict[str, str] = {

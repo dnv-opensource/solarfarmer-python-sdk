@@ -7,14 +7,14 @@ import pytest
 
 from solarfarmer.weather import (
     PVLIB_COLUMN_MAP,
-    check_single_year_timestamps,
+    check_sequential_year_timestamps,
     from_dataframe,
     from_pvlib,
 )
 
 
-class TestCheckSingleYearTimestamps:
-    """Tests for check_single_year_timestamps()."""
+class TestCheckSequentialYearTimestamps:
+    """Tests for check_sequential_year_timestamps()."""
 
     def test_single_year_passes(self, tmp_path):
         tsv = tmp_path / "good.tsv"
@@ -26,25 +26,37 @@ class TestCheckSingleYearTimestamps:
             1990-12-31T23:00+00:00\t0\t3.0
         """)
         )
-        check_single_year_timestamps(tsv)  # should not raise
+        check_sequential_year_timestamps(tsv)  # should not raise
 
-    def test_mixed_years_raises(self, tmp_path):
+    def test_sequential_multi_year_passes(self, tmp_path):
+        tsv = tmp_path / "multi_year.tsv"
+        tsv.write_text(
+            textwrap.dedent("""\
+            DateTime\tGHI\tTAmb
+            2020-06-15T12:00+00:00\t800\t25.0
+            2021-06-15T12:00+00:00\t810\t26.0
+            2022-06-15T12:00+00:00\t820\t27.0
+        """)
+        )
+        check_sequential_year_timestamps(tsv)  # should not raise
+
+    def test_shuffled_tmy_years_raises(self, tmp_path):
         tsv = tmp_path / "bad.tsv"
         tsv.write_text(
             textwrap.dedent("""\
             DateTime\tGHI\tTAmb
-            2003-01-01T00:00+00:00\t0\t5.0
-            2010-06-15T12:00+00:00\t800\t25.0
+            2010-01-01T00:00+00:00\t0\t5.0
+            2003-06-15T12:00+00:00\t800\t25.0
             2016-12-31T23:00+00:00\t0\t3.0
         """)
         )
-        with pytest.raises(ValueError, match="multiple years"):
-            check_single_year_timestamps(tsv)
+        with pytest.raises(ValueError, match="non-sequential years"):
+            check_sequential_year_timestamps(tsv)
 
     def test_header_only_passes(self, tmp_path):
         tsv = tmp_path / "header_only.tsv"
         tsv.write_text("DateTime\tGHI\tTAmb\n")
-        check_single_year_timestamps(tsv)  # no data lines, no error
+        check_sequential_year_timestamps(tsv)  # no data lines, no error
 
     def test_string_path_accepted(self, tmp_path):
         tsv = tmp_path / "str_path.tsv"
@@ -54,7 +66,7 @@ class TestCheckSingleYearTimestamps:
             1990-01-01T00:00+00:00\t0\t5.0
         """)
         )
-        check_single_year_timestamps(str(tsv))  # str path should work
+        check_sequential_year_timestamps(str(tsv))  # str path should work
 
 
 class TestFromDataframe:
@@ -171,6 +183,6 @@ class TestFromPvlib:
         assert first_data.startswith("2000-")
 
     def test_output_passes_validation(self, tmp_path, pvlib_df):
-        """TSV written by from_pvlib should pass check_single_year_timestamps."""
+        """TSV written by from_pvlib should pass check_sequential_year_timestamps."""
         out = from_pvlib(pvlib_df, tmp_path / "out.tsv")
-        check_single_year_timestamps(out)  # should not raise
+        check_sequential_year_timestamps(out)  # should not raise

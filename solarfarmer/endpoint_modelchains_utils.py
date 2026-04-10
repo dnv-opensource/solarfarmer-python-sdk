@@ -7,7 +7,7 @@ from typing import IO, Any
 
 from .config import MODELCHAIN_ASYNC_POLL_TIME
 from .logging import get_logger
-from .weather import check_single_year_timestamps
+from .weather import check_sequential_year_timestamps
 
 _logger = get_logger("endpoint.modelchains.utils")
 
@@ -97,7 +97,7 @@ def get_files(sample_data_folder: str | pathlib.Path) -> list[tuple[str, IO[byte
             )
         if tsv_file_paths:
             _logger.debug("tmyFile = %s", tsv_file_paths[0])
-            check_single_year_timestamps(tsv_file_paths[0])
+            check_sequential_year_timestamps(tsv_file_paths[0])
             fh = pathlib.Path(tsv_file_paths[0]).open("rb")
             stack.callback(fh.close)
             files.append(("tmyFile", fh))
@@ -313,7 +313,7 @@ def parse_files_from_paths(
 
         if extension_met_data in (".tsv", ".dat"):
             if extension_met_data == ".tsv":
-                check_single_year_timestamps(meteorological_data_file_path)
+                check_sequential_year_timestamps(meteorological_data_file_path)
             fh = pathlib.Path(meteorological_data_file_path).open("rb")
             stack.callback(fh.close)
             files.append(("tmyFile", fh))
