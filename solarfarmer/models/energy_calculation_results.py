@@ -19,6 +19,7 @@ from ..config import (
     DETAILED_TIMESERIES_FILENAME,
     LOSS_TREE_TIMESERIES_DATAFRAME_FILENAME,
     LOSS_TREE_TIMESERIES_FILENAME,
+    PANDAS_INSTALL_MSG,
     PVSYST_TIMESERIES_DATAFRAME_FILENAME,
     PVSYST_TIMESERIES_FILENAME,
 )
@@ -1726,8 +1727,7 @@ def _handle_losstree_results(
             return data
         else:
             warnings.warn(
-                "pandas is required to parse loss tree timeseries. "
-                "Install with: pip install 'dnv-solarfarmer[weather]'",
+                PANDAS_INSTALL_MSG,
                 stacklevel=2,
             )
             return None
@@ -1782,8 +1782,7 @@ def _handle_pvsyst_results(
             return data
         else:
             warnings.warn(
-                "pandas is required to parse PVsyst-format timeseries. "
-                "Install with: pip install 'dnv-solarfarmer[weather]'",
+                PANDAS_INSTALL_MSG,
                 stacklevel=2,
             )
             return None
@@ -1834,8 +1833,7 @@ def _handle_timeseries_results(
             return data
         else:
             warnings.warn(
-                "pandas is required to parse detailed timeseries. "
-                "Install with: pip install 'dnv-solarfarmer[weather]'",
+                PANDAS_INSTALL_MSG,
                 stacklevel=2,
             )
             return None
@@ -1969,8 +1967,7 @@ def _read_dataframe_pandas_safe(
             return dataframe
         else:
             warnings.warn(
-                "pandas is required to read result files. "
-                "Install with: pip install 'dnv-solarfarmer[weather]'",
+                PANDAS_INSTALL_MSG,
                 stacklevel=2,
             )
             return None

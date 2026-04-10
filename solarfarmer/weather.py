@@ -61,9 +61,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import pandas as pd
 
-_PANDAS_INSTALL_MSG = (
-    "pandas is required for this function. Install it with: pip install 'dnv-solarfarmer[weather]'"
-)
+from .config import PANDAS_INSTALL_MSG
 
 __all__ = ["TSV_COLUMNS", "check_single_year_timestamps", "from_dataframe", "from_pvlib"]
 
@@ -153,7 +151,7 @@ def from_dataframe(
     try:
         import pandas as pd
     except ImportError:
-        raise ImportError(_PANDAS_INSTALL_MSG) from None
+        raise ImportError(PANDAS_INSTALL_MSG) from None
 
     if not isinstance(df.index, pd.DatetimeIndex):
         raise ValueError(

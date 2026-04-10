@@ -21,6 +21,7 @@ __all__ = [
     "MODELCHAIN_ASYNC_TIMEOUT_CONNECTION",
     "MODELCHAIN_ASYNC_TIMEOUT_UPLOAD",
     "MODELCHAIN_ASYNC_POLL_TIME",
+    "PANDAS_INSTALL_MSG",
 ]
 
 BASE_API_URL = os.getenv(
@@ -48,3 +49,7 @@ MODELCHAIN_TIMEOUT = 600  # 10 mins
 MODELCHAIN_ASYNC_TIMEOUT_CONNECTION = 7200  # 2 hours
 MODELCHAIN_ASYNC_TIMEOUT_UPLOAD = 60
 MODELCHAIN_ASYNC_POLL_TIME = 4  # Polling frequency for the status of ModelChainAsync calculations
+
+PANDAS_INSTALL_MSG = (
+    "pandas is required for this function. Install it with: pip install 'dnv-solarfarmer[weather]'"
+)
