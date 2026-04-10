@@ -448,18 +448,33 @@ class PVSystem:
             Keys are user-facing labels only. The spec ID sent to the API
             is derived from the filename via ``Path.stem`` (everything
             before the last dot), not from the dict key.
+
+        Raises
+        ------
+        ValueError
+            If *mapping* is empty, a module name is blank, or the sequence
+            contains paths whose stems collide (duplicate filenames).
         """
         self._pan_files.clear()
-        if isinstance(mapping, (list, tuple)):
+        if isinstance(mapping, Mapping):
+            for name, p in mapping.items():
+                key = str(name).strip()
+                if not key:
+                    raise ValueError("Module name cannot be empty")
+                self._pan_files[key] = Path(p)
+        else:
             for p in mapping:
                 path = Path(p)
                 self._pan_files[path.stem] = path
-            return
-        for name, p in mapping.items():
-            key = str(name).strip()
-            if not key:
-                raise ValueError("Module name cannot be empty")
-            self._pan_files[key] = Path(p)
+
+        if not self._pan_files:
+            raise ValueError("pan_files cannot be empty")
+
+        if len(self._pan_files) != len(mapping):
+            raise ValueError(
+                f"Duplicate file stems detected: received {len(mapping)} paths but "
+                f"only {len(self._pan_files)} have unique stems (filename without extension)"
+            )
 
     def add_pan_files(self, mapping: Mapping[str, PathLike]) -> PVSystem:
         """Add PAN files without clearing existing mappings (supports method chaining).
@@ -498,18 +513,33 @@ class PVSystem:
             Keys are user-facing labels only. The spec ID sent to the API
             is derived from the filename via ``Path.stem`` (everything
             before the last dot), not from the dict key.
+
+        Raises
+        ------
+        ValueError
+            If *mapping* is empty, an inverter name is blank, or the sequence
+            contains paths whose stems collide (duplicate filenames).
         """
         self._ond_files.clear()
-        if isinstance(mapping, (list, tuple)):
+        if isinstance(mapping, Mapping):
+            for name, p in mapping.items():
+                key = str(name).strip()
+                if not key:
+                    raise ValueError("Inverter name cannot be empty")
+                self._ond_files[key] = Path(p)
+        else:
             for p in mapping:
                 path = Path(p)
                 self._ond_files[path.stem] = path
-            return
-        for name, p in mapping.items():
-            key = str(name).strip()
-            if not key:
-                raise ValueError("Inverter name cannot be empty")
-            self._ond_files[key] = Path(p)
+
+        if not self._ond_files:
+            raise ValueError("ond_files cannot be empty")
+
+        if len(self._ond_files) != len(mapping):
+            raise ValueError(
+                f"Duplicate file stems detected: received {len(mapping)} paths but "
+                f"only {len(self._ond_files)} have unique stems (filename without extension)"
+            )
 
     def add_ond_files(self, mapping: Mapping[str, PathLike]) -> PVSystem:
         """Add OND files without clearing existing mappings (supports method chaining).
