@@ -172,9 +172,7 @@ def from_dataframe(
     if year is not None:
         out.index = out.index.map(lambda t: t.replace(year=year))
 
-    out.index = out.index.map(
-        lambda t: t.strftime("%Y-%m-%dT%H:%M") + t.strftime("%z")[:3] + ":" + t.strftime("%z")[3:]
-    )
+    out.index = out.index.map(lambda t: t.isoformat(timespec="minutes"))
     out.index.name = "DateTime"
 
     path = pathlib.Path(output_path)

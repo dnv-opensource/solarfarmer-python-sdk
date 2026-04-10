@@ -112,6 +112,19 @@ class TestFromDataframe:
         # Should contain +00:00 UTC offset
         assert "+00:00" in first_data
 
+    def test_timestamp_format_non_utc_offset(self, tmp_path):
+        """Non-UTC timezone (e.g. +05:30) must produce correct ±HH:MM offset."""
+        pd = pytest.importorskip("pandas")
+        import datetime as dt
+
+        tz = dt.timezone(dt.timedelta(hours=5, minutes=30))
+        idx = pd.date_range("2020-01-01", periods=2, freq="h", tz=tz)
+        df = pd.DataFrame({"GHI": [0, 100]}, index=idx)
+        out = from_dataframe(df, tmp_path / "out.tsv")
+        lines = out.read_text().splitlines()
+        assert "+05:30" in lines[1]
+        assert "+05:30" in lines[2]
+
     def test_returns_path(self, tmp_path, sample_df):
         result = from_dataframe(sample_df, tmp_path / "weather.tsv")
         assert isinstance(result, Path)
