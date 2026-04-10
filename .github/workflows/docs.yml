@@ -50,7 +50,7 @@ jobs:
             uv-solarfarmer-
 
       - name: Install documentation dependencies
-        run: uv sync --extra docs
+        run: uv sync --group docs
 
       - name: Determine version from git
         id: version
