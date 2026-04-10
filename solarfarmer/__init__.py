@@ -58,7 +58,7 @@ from .models import (
     TransformerSpecification,
     ValidationMessage,
 )
-from .weather import TSV_COLUMNS, from_dataframe, from_pvlib, validate_tsv_timestamps
+from .weather import TSV_COLUMNS, check_single_year_timestamps, from_dataframe, from_pvlib
 
 __all__ = [
     "__version__",
@@ -122,5 +122,5 @@ __all__ = [
     "ValidationMessage",
     "from_dataframe",
     "from_pvlib",
-    "validate_tsv_timestamps",
+    "check_single_year_timestamps",
 ]
