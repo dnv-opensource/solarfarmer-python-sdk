@@ -716,16 +716,15 @@ class CalculationResults:
 
         project_year_index = project_year - 1
 
-        try:
-            annual_results = self.AnnualData[project_year_index]
-        except (IndexError, KeyError):
+        if project_year_index < 0 or project_year_index >= len(self.AnnualData):
             _logger.warning(
-                "The annual results do not have an entry for year %d. "
-                "Returning the results for the first year of the project.",
+                "get_performance: project_year %d is out of range (1–%d).",
                 project_year,
+                len(self.AnnualData),
             )
-            annual_results = self.AnnualData[0]
+            return {}
 
+        annual_results = self.AnnualData[project_year_index]
         yield_results = annual_results[ANNUAL_ENERGY_YIELD_RESULTS_KEY]
         return {
             "project_year": project_year_index + 1,

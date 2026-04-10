@@ -421,10 +421,11 @@ class TestGetPerformance:
         assert perf["calendar_year"] == exp_calendar_year
         assert perf["net_energy"] == exp_net_energy
 
-    def test_get_performance_out_of_range_falls_back_to_year1(self, results):
-        """An out-of-range project_year should fall back to year 1 data."""
-        perf = results.get_performance(project_year=99)
-        assert perf["calendar_year"] == 2022
+    def test_get_performance_out_of_range_returns_empty(self, results):
+        """An out-of-range project_year should return an empty dict."""
+        assert results.get_performance(project_year=99) == {}
+        assert results.get_performance(project_year=0) == {}
+        assert results.get_performance(project_year=-1) == {}
 
     def test_get_performance_no_data_returns_empty(self):
         """get_performance should return an empty dict when AnnualData is empty."""
