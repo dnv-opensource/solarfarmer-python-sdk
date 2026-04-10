@@ -27,27 +27,34 @@ are fully supported — only non-sequential (shuffled) years are rejected.
 
 pvlib Column Mapping
 ~~~~~~~~~~~~~~~~~~~~
-When converting a ``pvlib`` DataFrame to SolarFarmer TSV format, use the
-following column name mapping and note the unit for Pressure:
+When converting a ``pvlib`` DataFrame to SolarFarmer TSV format, map the
+pvlib variable names to SolarFarmer column names as shown below.  pvlib does
+not standardise units across data sources — verify that your source's units
+match SolarFarmer requirements (see :data:`TSV_COLUMNS` for the full spec):
 
-==============  ===========  ==========================
-pvlib column    SF column    Notes
-==============  ===========  ==========================
-``ghi``         ``GHI``      W/m²
-``dhi``         ``DHI``      W/m²
-``temp_air``    ``TAmb``     °C
-``wind_speed``  ``WS``       m/s
-``pressure``    ``Pressure`` **Convert Pa → mbar** (÷ 100)
-==============  ===========  ==========================
+==============  ===========
+pvlib column    SF column
+==============  ===========
+``ghi``         ``GHI``
+``dhi``         ``DHI``
+``temp_air``    ``TAmb``
+``wind_speed``  ``WS``
+``pressure``    ``Pressure``
+==============  ===========
 
-Minimal conversion example::
+For example, NSRDB PSM provides pressure in Pa and must be converted to
+mbar (÷ 100); other sources may already be in mbar.  Use
+``pressure_pa_to_mbar=True`` in :func:`from_dataframe` when your source
+delivers pressure in Pa.
+
+Minimal conversion example (NSRDB PSM, pressure in Pa)::
 
     import pandas as pd
 
     rename = {"ghi": "GHI", "dhi": "DHI", "temp_air": "TAmb",
               "wind_speed": "WS", "pressure": "Pressure"}
     df = pvlib_df.rename(columns=rename)
-    df["Pressure"] = df["Pressure"] / 100          # Pa → mbar
+    df["Pressure"] = df["Pressure"] / 100          # Pa → mbar (NSRDB PSM)
     df.index = df.index.map(
         lambda t: t.replace(year=1990).strftime("%Y-%m-%dT%H:%M+00:00")
     )
@@ -207,8 +214,15 @@ def from_pvlib(
     Parameters
     ----------
     df : pandas.DataFrame
-        pvlib-style DataFrame (``ghi``, ``dhi``, ``temp_air``,
-        ``wind_speed``, ``pressure``) with a DatetimeIndex.
+        pvlib-style DataFrame (columns ``ghi``, ``dhi``, ``temp_air``,
+        ``wind_speed``, ``pressure``) with a DatetimeIndex.  pvlib does not
+        standardise units across data sources, so check that the units from
+        your source match what SolarFarmer expects (see :data:`TSV_COLUMNS`).
+        This function applies ``pressure_pa_to_mbar=True``, dividing the
+        ``Pressure`` column by 100 (Pa → mbar).  NSRDB PSM delivers pressure
+        in Pa so this conversion is correct for that source; if your source
+        already provides pressure in mbar, call :func:`from_dataframe`
+        directly with ``pressure_pa_to_mbar=False``.
     output_path : str or Path
         Destination file path.
     year : int, default 1990
