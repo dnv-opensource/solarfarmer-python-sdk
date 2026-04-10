@@ -10,4 +10,5 @@ class SolarFarmerBaseModel(BaseModel):
         populate_by_name=True,
         frozen=True,
         use_enum_values=True,
+        protected_namespaces=(),
     )
