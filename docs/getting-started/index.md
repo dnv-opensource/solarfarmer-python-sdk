@@ -18,10 +18,10 @@ The SolarFarmer SDK supports three distinct user workflows. Choose the one that 
 !!! tip "Optional: pandas for weather conversion and timeseries results"
 
     The core SDK works without pandas. To use `sf.from_dataframe()`, `sf.from_pvlib()`,
-    or to parse timeseries results as DataFrames, install the `weather` extra:
+    or to parse timeseries results as DataFrames, install the `all` extra:
 
     ```bash
-    pip install "dnv-solarfarmer[weather]"
+    pip install "dnv-solarfarmer[all]"
     ```
 
 ## Choose Your Path
@@ -105,7 +105,7 @@ Once you know your workflow, see how the classes work together in real-world sce
 | Run calculations on existing API files | [Workflow 1](workflow-1-existing-api-files.md) |
 | Design a new plant from scratch | [Workflow 2](workflow-2-pvplant-builder.md) |
 | Integrate SolarFarmer into my software | [Workflow 3](workflow-3-plantbuilder-advanced.md) |
-| See real code examples | [Example Notebooks](quick-start-examples.md) |
+| See real code examples | [Quick Start Examples](quick-start-examples.md) |
 
 ---
 

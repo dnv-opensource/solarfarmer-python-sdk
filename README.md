@@ -37,10 +37,15 @@ import solarfarmer as sf
 Install with optional extras:
 
 ```bash
-pip install "dnv-solarfarmer[weather]"    # pandas for weather file conversion and DataFrame results
 pip install "dnv-solarfarmer[notebooks]"  # JupyterLab and notebook support
 pip install "dnv-solarfarmer[all]"        # full installation including pandas and matplotlib
-pip install "dnv-solarfarmer[dev]"        # linting and testing tools (for contributors)
+```
+
+For development and documentation extras (managed as dependency groups, requires `uv`):
+
+```bash
+uv sync --group dev    # linting and testing tools (for contributors)
+uv sync --group docs   # documentation build tools
 ```
 
 Install from source:
@@ -73,10 +78,10 @@ Alternatively, pass it directly as the `api_key` parameter to any function that 
 ## Optional Dependencies
 
 The core SDK (`pydantic`, `requests`, `tabulate`) does not depend on `pandas`.
-Install the `weather` extra for DataFrame-based features:
+Install the `all` extra for DataFrame-based features:
 
 ```bash
-pip install "dnv-solarfarmer[weather]"
+pip install "dnv-solarfarmer[all]"
 ```
 
 This unlocks `sf.from_dataframe()` and `sf.from_pvlib()` for writing weather files from DataFrames, and enables `CalculationResults` to parse timeseries outputs into DataFrames. Without pandas, those functions raise `ImportError` or return `None`. All other SDK features work without it.
@@ -102,7 +107,7 @@ Full documentation (API reference, workflow guides, notebook tutorials):
 To build and serve the documentation locally:
 
 ```bash
-pip install "dnv-solarfarmer[docs]"
+uv sync --group docs
 zensical serve -o                          # build, serve, and open in browser (port 8000)
 zensical serve -o -a localhost:8080        # use a different port
 ```
@@ -116,7 +121,8 @@ Fork the repository, create a branch, and submit a pull request to `main`. To se
 ```bash
 git clone https://github.com/dnv-opensource/solarfarmer-python-sdk
 cd solarfarmer-python-sdk
-pip install -e ".[dev]"
+pip install -e .
+uv sync --group dev
 ```
 
 - **Linting and formatting:** `ruff check solarfarmer/ tests/` and `ruff format solarfarmer/ tests/`

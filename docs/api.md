@@ -73,7 +73,7 @@ These are the primary functions for interacting with the SolarFarmer API.
 ## Weather Utilities
 
 !!! note
-    These functions require `pandas`. Install with `pip install 'dnv-solarfarmer[weather]'`.
+    These functions require `pandas`. Install with `pip install 'dnv-solarfarmer[all]'`.
 
 ### `from_dataframe()`
 
@@ -91,9 +91,9 @@ These are the primary functions for interacting with the SolarFarmer API.
         show_root_toc_entry: false
         show_root_members: true
 
-### `validate_tsv_timestamps()`
+### `check_sequential_year_timestamps()`
 
-::: solarfarmer.weather.validate_tsv_timestamps
+::: solarfarmer.weather.check_sequential_year_timestamps
     options:
       extra:
         show_root_toc_entry: false

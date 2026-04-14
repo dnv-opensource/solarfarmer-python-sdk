@@ -43,7 +43,7 @@ For information about upcoming features or requests, contact [solarfarmer@dnv.co
 These weather conversion functions require `pandas`, which is an optional dependency. Install it with:
 
 ```bash
-pip install "dnv-solarfarmer[weather]"
+pip install "dnv-solarfarmer[all]"
 ```
 
 The core SDK (payload construction, API calls, annual/monthly summary data) works without pandas. Only the weather file conversion utilities and timeseries result parsing need it. See the [Weather Utilities reference](api.md#weather-utilities) for details.
@@ -54,4 +54,4 @@ The core SDK (payload construction, API calls, annual/monthly summary data) work
 
 TMY (Typical Meteorological Year) datasets from NSRDB, PVGIS, or similar sources contain timestamps from multiple source years. SolarFarmer requires all timestamps in a TSV file to belong to a single calendar year.
 
-Use [`sf.from_pvlib()`](api.md#from_pvlib) or [`sf.from_dataframe(year=1990)`](api.md#from_dataframe) to remap timestamps automatically. The SDK also calls [`validate_tsv_timestamps()`](api.md#validate_tsv_timestamps) before upload to catch this early.
+Use [`sf.from_pvlib()`](api.md#from_pvlib) or [`sf.from_dataframe(year=1990)`](api.md#from_dataframe) to remap timestamps automatically. The SDK also calls [`check_sequential_year_timestamps()`](api.md#check_sequential_year_timestamps) before upload to catch this early.
