@@ -19,6 +19,7 @@ from ..config import (
     DETAILED_TIMESERIES_FILENAME,
     LOSS_TREE_TIMESERIES_DATAFRAME_FILENAME,
     LOSS_TREE_TIMESERIES_FILENAME,
+    PANDAS_INSTALL_MSG,
     PVSYST_TIMESERIES_DATAFRAME_FILENAME,
     PVSYST_TIMESERIES_FILENAME,
 )
@@ -30,10 +31,10 @@ _logger = get_logger("models.results")
 
 try:
     import pandas as pd
+
+    _PANDAS = True
 except ImportError:
     _PANDAS = False
-else:
-    _PANDAS = True
 
 # Constants for accessing the results data
 ANNUAL_ENERGY_YIELD_RESULTS_KEY = "energyYieldResults"
@@ -127,6 +128,24 @@ class CalculationResults:
         SolarFarmer performance model. Useful for debugging.
     Name: str or None
         Name of project. It is populated with the ``project_id`` property if availabe.
+
+    Examples
+    --------
+    Retrieve key performance metrics for the first project year:
+
+    >>> perf = results.get_performance(project_year=1)
+    >>> print(f"Net energy:         {perf['net_energy']:.2f} MWh/year")
+    >>> print(f"Performance ratio:  {perf['performance_ratio']:.3f}")
+    >>> print(f"Specific yield:     {perf['energy_yield']:.1f} kWh/kWp")
+
+    Print a summary table:
+
+    >>> results.describe()
+
+    Access monthly or annual DataFrames:
+
+    >>> annual_df  = results.get_annual_results_table()
+    >>> monthly_df = results.get_monthly_results_table()
     """
 
     ModelChainResponse: ModelChainResponse
@@ -137,6 +156,23 @@ class CalculationResults:
     PVsystTimeseries: pd.DataFrame | None = None
     DetailedTimeseries: pd.DataFrame | None = None
     Name: str | None = None
+
+    # ----- Convenience properties for common metrics (year 1) -----
+
+    @property
+    def net_energy_MWh(self) -> float:
+        """Net energy production for year 1 in MWh/year."""
+        return self.get_performance(project_year=1).get("net_energy", float("nan"))
+
+    @property
+    def performance_ratio(self) -> float:
+        """Performance ratio for year 1 (0–1)."""
+        return self.get_performance(project_year=1).get("performance_ratio", float("nan"))
+
+    @property
+    def energy_yield_kWh_per_kWp(self) -> float:
+        """Specific energy yield for year 1 in kWh/kWp."""
+        return self.get_performance(project_year=1).get("energy_yield", float("nan"))
 
     def __repr__(self) -> str:
         """Return a concise string representation of the CalculationResults."""
@@ -681,16 +717,15 @@ class CalculationResults:
 
         project_year_index = project_year - 1
 
-        try:
-            annual_results = self.AnnualData[project_year_index]
-        except (IndexError, KeyError):
+        if project_year_index < 0 or project_year_index >= len(self.AnnualData):
             _logger.warning(
-                "The annual results do not have an entry for year %d. "
-                "Returning the results for the first year of the project.",
+                "get_performance: project_year %d is out of range (1–%d).",
                 project_year,
+                len(self.AnnualData),
             )
-            annual_results = self.AnnualData[0]
+            return {}
 
+        annual_results = self.AnnualData[project_year_index]
         yield_results = annual_results[ANNUAL_ENERGY_YIELD_RESULTS_KEY]
         return {
             "project_year": project_year_index + 1,
@@ -1692,9 +1727,7 @@ def _handle_losstree_results(
             return data
         else:
             warnings.warn(
-                "Warning: Pandas library is needed to "
-                "read the loss tree results timeseries. "
-                "Please run 'pip install pandas'.",
+                PANDAS_INSTALL_MSG,
                 stacklevel=2,
             )
             return None
@@ -1749,9 +1782,7 @@ def _handle_pvsyst_results(
             return data
         else:
             warnings.warn(
-                "Warning: Pandas library is needed to "
-                "read the pvsyst-style results timeseries. "
-                "Please run 'pip install pandas'.",
+                PANDAS_INSTALL_MSG,
                 stacklevel=2,
             )
             return None
@@ -1802,9 +1833,7 @@ def _handle_timeseries_results(
             return data
         else:
             warnings.warn(
-                "Warning: Pandas library is needed to "
-                "read the detailed results timeseries. "
-                "Please run 'pip install pandas'.",
+                PANDAS_INSTALL_MSG,
                 stacklevel=2,
             )
             return None
@@ -1938,8 +1967,7 @@ def _read_dataframe_pandas_safe(
             return dataframe
         else:
             warnings.warn(
-                "Warning: Pandas library is needed to "
-                "read the file. Please run 'pip install pandas'.",
+                PANDAS_INSTALL_MSG,
                 stacklevel=2,
             )
             return None

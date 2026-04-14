@@ -17,11 +17,13 @@ The SolarFarmer SDK is organized into the following main categories:
 
 - [**Endpoint Functions**](#endpoint-functions): Core functions for making API calls
 - [**Main Classes**](#main-classes): Key data models for calculations and plant design
+- [**Weather Utilities**](#weather-utilities): Convert DataFrames to SolarFarmer weather files (requires `pandas`)
 
 ### Configuration & Design
 
 - [**Plant Configuration Classes**](#plant-configuration-classes): Location, layout, and inverter specifications
 - [**Module and Equipment Specifications**](#module-and-equipment-specifications): Mounting types, trackers, and component files
+- [**Enums**](#enums): PVSystem configuration enums (`MountingType`, `InverterType`, `OrientationType`)
 
 ### Advanced Options
 
@@ -65,6 +67,41 @@ These are the primary functions for interacting with the SolarFarmer API.
       extra:
         show_root_toc_entry: false
         show_root_members: true
+
+---
+
+## Weather Utilities
+
+!!! note
+    These functions require `pandas`. Install with `pip install 'dnv-solarfarmer[all]'`.
+
+### `from_dataframe()`
+
+::: solarfarmer.weather.from_dataframe
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `from_pvlib()`
+
+::: solarfarmer.weather.from_pvlib
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `check_sequential_year_timestamps()`
+
+::: solarfarmer.weather.check_sequential_year_timestamps
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `TSV_COLUMNS`
+
+Data dictionary describing the SolarFarmer TSV weather file format — required and optional columns, units, valid ranges, aliases, and the missing-value sentinel. See the [`weather` module docstring](../api.md) for full details.
 
 ---
 
@@ -185,6 +222,19 @@ The core classes handle the complete workflow from plant design to results analy
 ### MonthlyAlbedo
 
 [View in SolarFarmer API Reference](https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/webApiRef/SolarFarmerApi.Client.MonthlyAlbedo.html){ target="_blank" .external }
+
+---
+
+## Enums
+
+These enums are used with `PVSystem` to configure mounting, inverter, and module orientation.
+They are available at the top level: `sf.MountingType`, `sf.InverterType`, `sf.OrientationType`.
+
+| Enum | Values | Used by |
+|---|---|---|
+| `MountingType` | `FIXED`, `TRACKER` | `PVSystem.mounting` |
+| `InverterType` | `CENTRAL`, `STRING` | `PVSystem.inverter_type` |
+| `OrientationType` | `PORTRAIT`, `LANDSCAPE` | `PVSystem.module_orientation` |
 
 ---
 

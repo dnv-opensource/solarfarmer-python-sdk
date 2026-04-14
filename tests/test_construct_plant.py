@@ -106,3 +106,96 @@ class TestDesignPlant:
         small_plant, _ = design_plant(small)
         large_plant, _ = design_plant(large)
         assert total_inverters(small_plant) < total_inverters(large_plant)
+
+
+class TestSpecIdDerivation:
+    """Verify spec IDs are derived via Path.stem (last-dot split), not split('.')[0]."""
+
+    def test_multi_dot_pan_filename_produces_correct_spec_id(self, bern_2d_racks_inputs):
+        """PAN filenames with multiple dots must use Path.stem for spec ID."""
+        from pathlib import Path
+
+        from solarfarmer.models.pvsystem.pvsystem import get_module_info_from_pan
+
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        original = Path(bern_2d_racks_inputs) / "CanadianSolar_CS6U-330M_APP.PAN"
+        multi_dot = Path(bern_2d_racks_inputs) / "Trina_TSM-DEG19C.20-550_APP.PAN"
+
+        created_link = False
+        try:
+            if not multi_dot.exists():
+                multi_dot.symlink_to(original)
+                created_link = True
+            p.pan_files = {"TestModule": str(multi_dot)}
+            info = get_module_info_from_pan(p)
+            # Path.stem gives "Trina_TSM-DEG19C.20-550_APP"
+            # split(".")[0] would give "Trina_TSM-DEG19C" — wrong
+            assert info["pan_filename"] == "Trina_TSM-DEG19C.20-550_APP"
+        finally:
+            if created_link and multi_dot.exists():
+                multi_dot.unlink()
+
+    def test_multi_dot_ond_filename_produces_correct_spec_id(self, bern_2d_racks_inputs):
+        """OND filenames with multiple dots must use Path.stem for spec ID."""
+        from pathlib import Path
+
+        from solarfarmer.models.pvsystem.pvsystem import get_inverter_info_from_ond
+
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        original = Path(bern_2d_racks_inputs) / "Sungrow_SG125HV_APP.OND"
+        multi_dot = Path(bern_2d_racks_inputs) / "SMA_Sunny-Central.2200-UP.OND"
+
+        created_link = False
+        try:
+            if not multi_dot.exists():
+                multi_dot.symlink_to(original)
+                created_link = True
+            p.ond_files = {"TestInverter": str(multi_dot)}
+            info = get_inverter_info_from_ond(p)
+            # Path.stem gives "SMA_Sunny-Central.2200-UP"
+            # split(".")[0] would give "SMA_Sunny-Central" — wrong
+            assert info["ond_filename"] == "SMA_Sunny-Central.2200-UP"
+        finally:
+            if created_link and multi_dot.exists():
+                multi_dot.unlink()
+
+
+class TestListPathInput:
+    """Verify pan_files and ond_files accept list[Path] in addition to dict."""
+
+    def test_pan_files_accepts_list(self, bern_2d_racks_inputs):
+        from pathlib import Path
+
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        pan_path = Path(bern_2d_racks_inputs) / "CanadianSolar_CS6U-330M_APP.PAN"
+        p.pan_files = [pan_path]
+        assert "CanadianSolar_CS6U-330M_APP" in p.pan_files
+        assert p.pan_files["CanadianSolar_CS6U-330M_APP"] == pan_path
+
+    def test_ond_files_accepts_list(self, bern_2d_racks_inputs):
+        from pathlib import Path
+
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        ond_path = Path(bern_2d_racks_inputs) / "Sungrow_SG125HV_APP.OND"
+        p.ond_files = [ond_path]
+        assert "Sungrow_SG125HV_APP" in p.ond_files
+        assert p.ond_files["Sungrow_SG125HV_APP"] == ond_path
+
+    def test_pan_files_list_of_strings(self, bern_2d_racks_inputs):
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        p.pan_files = [f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"]
+        assert "CanadianSolar_CS6U-330M_APP" in p.pan_files
+
+    def test_dict_still_works(self, bern_2d_racks_inputs):
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        p.pan_files = {"MyLabel": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"}
+        assert "MyLabel" in p.pan_files
+
+    def test_list_input_constructs_valid_plant(self, bern_2d_racks_inputs):
+        """Full round-trip: list input → construct_plant → valid JSON."""
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        p.pan_files = [f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"]
+        p.ond_files = [f"{bern_2d_racks_inputs}/Sungrow_SG125HV_APP.OND"]
+        result = construct_plant(p)
+        payload = json.loads(result)
+        assert "pvPlant" in payload

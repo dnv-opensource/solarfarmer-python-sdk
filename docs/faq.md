@@ -35,3 +35,23 @@ Yes! Use the **"Import from API JSON"** feature in SolarFarmer Desktop. See the 
 - Uses simplified row positioning (all strings in middle-row assumption)
 
 For information about upcoming features or requests, contact [solarfarmer@dnv.com](mailto:solarfarmer@dnv.com).
+
+---
+
+## Why do I get an `ImportError` when calling `from_dataframe()` or `from_pvlib()`?
+
+These weather conversion functions require `pandas`, which is an optional dependency. Install it with:
+
+```bash
+pip install "dnv-solarfarmer[all]"
+```
+
+The core SDK (payload construction, API calls, annual/monthly summary data) works without pandas. Only the weather file conversion utilities and timeseries result parsing need it. See the [Weather Utilities reference](api.md#weather-utilities) for details.
+
+---
+
+## My TMY weather file gives a 400 error with no useful message. What's wrong?
+
+TMY (Typical Meteorological Year) datasets from NSRDB, PVGIS, or similar sources contain timestamps from multiple source years. SolarFarmer requires all timestamps in a TSV file to belong to a single calendar year.
+
+Use [`sf.from_pvlib()`](api.md#from_pvlib) or [`sf.from_dataframe(year=1990)`](api.md#from_dataframe) to remap timestamps automatically. The SDK also calls [`check_sequential_year_timestamps()`](api.md#check_sequential_year_timestamps) before upload to catch this early.

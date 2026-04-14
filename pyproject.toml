@@ -36,6 +36,19 @@ dependencies = [
   ]
 
 [project.optional-dependencies]
+notebooks = [
+  "ipykernel>=6.29,<8",
+  "jupyterlab>=4.0,<6",
+  "notebook>=7.0,<9"
+]
+
+all = [
+  "dnv-solarfarmer[notebooks]",
+  "pandas>=2.0",
+  "matplotlib>=3.5",
+]
+
+[dependency-groups]
 docs = [
   "zensical>=0.0.20",
   "mkdocstrings[python]>=0.26.1",
@@ -46,21 +59,9 @@ test = [
 ]
 
 dev = [
-  "dnv-solarfarmer[test]",
+  {include-group = "test"},
   "pre-commit>=3.0",
   "ruff>=0.5",
-]
-
-notebooks = [
-  "ipykernel>=6.29,<8",
-  "jupyterlab>=4.0,<6",
-  "notebook>=7.0,<9"
-]
-
-all = [
-  "dnv-solarfarmer[docs,dev,notebooks]",
-  "pandas>=2.0",
-  "matplotlib>=3.5",
 ]
 
 [project.urls]

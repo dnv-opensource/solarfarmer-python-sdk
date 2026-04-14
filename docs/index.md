@@ -47,6 +47,7 @@ import solarfarmer as sf
 
 # API key (optional, it could be an environment variable 'SF_API_KEY')
 api_key = "Your SolarFarmer API key here"
+project_id = "my_project"
 
 # One folder with all the calculation inputs (JSON, PAN, OND, met data)
 folder_with_inputs = r"C:\user_name\data\inputs_solarFarmer_api_call"

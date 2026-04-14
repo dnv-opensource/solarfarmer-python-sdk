@@ -79,13 +79,14 @@ plant.grid_limit_MW = 4.8       # Grid connection limit
 ```python
 # Mounting and orientation
 plant.mounting = "Fixed"        # or "Tracker" for single-axis trackers
+                                # also available as sf.MountingType.FIXED / sf.MountingType.TRACKER
 plant.tilt = 25.0               # Array tilt in degrees
 plant.azimuth = 180.0           # South-facing (0=North, 90=East, 180=South, 270=West)
 plant.gcr = 0.4                 # Ground coverage ratio (spacing between rows)
 plant.flush_mount = False       # Flush-mounted or rack-mounted
 
 # Module orientation
-plant.module_orientation = "Portrait"  # or "Landscape"
+plant.module_orientation = "Portrait"  # or "Landscape" (sf.OrientationType)
 plant.modules_across = 1        # Number of modules in height direction
 ```
 
@@ -93,7 +94,7 @@ plant.modules_across = 1        # Number of modules in height direction
 
 ```python
 # Inverter type affects default losses
-plant.inverter_type = "Central"  # or "String" inverters
+plant.inverter_type = "Central"  # or "String" inverters (sf.InverterType)
 
 # Transformer configuration
 plant.transformer_stages = 1     # 0 (ideal) or 1 (with losses)
@@ -124,7 +125,8 @@ plant.bifacial_mismatch_loss = 0.01
 
 ## Step 3: Add Module and Inverter Files
 
-The SDK uses PAN (module) and OND (inverter) files for detailed specifications:
+The SDK uses PAN (module) and OND (inverter) files for detailed specifications.
+Dict keys are user-facing labels only — the spec ID sent to the API is derived from the filename (everything before the last `.`).
 
 ```python
 from pathlib import Path
@@ -138,11 +140,21 @@ plant.add_pan_files({
 plant.add_ond_files({
     "My_Inverter": Path(r"path/to/inverter.OND")
 })
+
+# Or pass a list of paths (keys are derived from filenames)
+plant.pan_files = [Path(r"path/to/module.PAN")]
+plant.ond_files = [Path(r"path/to/inverter.OND")]
 ```
 
 ---
 
 ## Step 4: Add Weather and Horizon Data
+
+!!! warning "TMY data: remap timestamps to a single year"
+    TMY datasets from NSRDB, PVGIS, or similar sources contain timestamps from
+    multiple source years. When using TSV format, all timestamps must belong to a
+    single calendar year. Use `sf.from_pvlib()` or `sf.from_dataframe(year=1990)`
+    to handle this automatically, or remap manually before export.
 
 ```python
 # Meteorological data (required for calculation)
@@ -234,7 +246,12 @@ Use the [`CalculationResults`](../api.md#calculationresults) class to access and
 # Evaluate the results from the energy simulation
 plant.results.performance()
 
-# Access annual data
+# Quick access to year-1 metrics via convenience properties
+print(f"Net Energy: {plant.results.net_energy_MWh:.1f} MWh/year")
+print(f"Performance Ratio: {plant.results.performance_ratio:.3f}")
+print(f"Specific Yield: {plant.results.energy_yield_kWh_per_kWp:.1f} kWh/kWp")
+
+# Or access annual data dicts directly
 annual_data = plant.results.AnnualData[0]
 net_energy = annual_data['energyYieldResults']['netEnergy']
 performance_ratio = annual_data['energyYieldResults']['performanceRatio']
