@@ -4,7 +4,7 @@ description: SolarFarmer Python SDK
 ---
 
 # Welcome to SolarFarmer API
-A Python SDK that wraps the [DNV SolarFarmer API](https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Introduction/introduction.html) to help you run cloud-based energy calculations and manage API payloads in a user-friendly way.
+A Python SDK that wraps the [DNV SolarFarmer API](https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Introduction/introduction.html) to run cloud-based energy calculations and manage API payloads.
 
 [New to SolarFarmer? Discover it here!](https://www.dnv.com/software/services/solarfarmer/){ .md-button .md-button-primary target="_blank" .external }
 

@@ -52,6 +52,6 @@ The core SDK (payload construction, API calls, annual/monthly summary data) work
 
 ## My TMY weather file gives a 400 error with no useful message. What's wrong?
 
-TMY (Typical Meteorological Year) datasets from NSRDB, PVGIS, or similar sources contain timestamps from multiple source years. SolarFarmer requires all timestamps in a TSV file to belong to a single calendar year.
+TMY (Typical Meteorological Year) datasets from NSRDB, PVGIS, or similar sources contain timestamps drawn from different source years, causing them to go backwards in time when sorted as a full year. SolarFarmer requires timestamps in a TSV file to be chronologically ordered (non-decreasing years). Multi-year and sub-year files with continuous, ordered timestamps are fully supported; only shuffled years are rejected.
 
-Use [`sf.from_pvlib()`](api.md#from_pvlib) or [`sf.from_dataframe(year=1990)`](api.md#from_dataframe) to remap timestamps automatically. The SDK also calls [`check_sequential_year_timestamps()`](api.md#check_sequential_year_timestamps) before upload to catch this early.
+Use [`sf.from_pvlib()`](api.md#from_pvlib) or [`sf.from_dataframe(year=1990)`](api.md#from_dataframe) to remap all timestamps to a single year before export. The SDK also calls [`check_sequential_year_timestamps()`](api.md#check_sequential_year_timestamps) before upload to catch this early.

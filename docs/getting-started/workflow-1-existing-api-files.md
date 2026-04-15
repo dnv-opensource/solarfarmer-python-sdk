@@ -23,7 +23,7 @@ This workflow involves three steps:
 
 ```mermaid
 graph TB
-    A["📁 Existing API Files<br/>(JSON, PAN, OND, weather)"]
+    A["Existing API Files<br/>(JSON, PAN, OND, weather)"]
     B["run_energy_calculation()"]
     C["ModelChainResponse"]
     D["CalculationResults<br/>(Time-series, losses, metrics)"]
@@ -180,7 +180,7 @@ For detailed documentation on loss tree time-series results, refer to the [Loss 
 
 ```python
 # Get loss tree timeseries results
-loss_tree_timeseries = results.loss_tree_timeseries
+loss_tree_timeseries = results.loss_tree_timeseries()
 
 ```
 
@@ -188,7 +188,7 @@ For detailed documentation on PVsyst-format time-series results, refer to the [P
 
 ```python
 # Get pvsyst-format time-series results
-timeseries_data = results.pvsyst_timeseries
+timeseries_data = results.pvsyst_timeseries()
 
 ```
 

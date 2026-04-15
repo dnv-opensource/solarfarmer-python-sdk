@@ -101,7 +101,7 @@ These are the primary functions for interacting with the SolarFarmer API.
 
 ### `TSV_COLUMNS`
 
-Data dictionary describing the SolarFarmer TSV weather file format — required and optional columns, units, valid ranges, aliases, and the missing-value sentinel. See the [`weather` module docstring](../api.md) for full details.
+Data dictionary describing the SolarFarmer TSV weather file format: required and optional columns, units, valid ranges, aliases, and the missing-value sentinel. See the [`weather` module docstring](../api.md) for full details.
 
 ---
 
