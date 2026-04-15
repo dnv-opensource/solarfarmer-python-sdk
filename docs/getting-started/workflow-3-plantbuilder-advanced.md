@@ -24,7 +24,7 @@ This workflow gives you complete control over API object construction:
 
 ```mermaid
 graph TB
-    A["🗄️ Your Data Model<br/>(database, file, API, etc.)"]
+    A["Your Data Model<br/>(database, file, API, etc.)"]
     B["Mapper/Builder"]
     C["EnergyCalculationInputs + PVPlant<br/>+ Component Classes<br/>(Inverter, Layout, Location, etc.)"]
     D["SolarFarmer API"]
@@ -390,7 +390,7 @@ design = workflow.design_and_optimize(base_config={...})
 
 ## Debugging and Validation
 
-All SDK component classes are Pydantic models, so invalid field types, out-of-range values, and missing required fields raise a `ValidationError` at construction time — before any serialization or API call occurs.
+All SDK component classes are Pydantic models, so invalid field types, out-of-range values, and missing required fields raise a `ValidationError` at construction time, before any serialization or API call occurs.
 
 ```python
 from pydantic import ValidationError
@@ -408,7 +408,7 @@ except ValidationError as e:
 This means that if construction of your `EnergyCalculationInputs` object completes without raising, the required structure and field constraints are already satisfied.
 
 !!! warning
-    Unknown keyword arguments are silently ignored — Pydantic does not enforce `extra='forbid'` on these models. A misspelled field name will not raise locally; the value will simply be absent from the serialized payload. The server-side validation service is the safeguard for those cases.
+    Unknown keyword arguments are silently ignored; Pydantic does not enforce `extra='forbid'` on these models. A misspelled field name will not raise locally; the value will simply be absent from the serialized payload. The server-side validation service is the safeguard for those cases.
 
 !!! note
     All energy calculation API calls are validated upon receipt by the [SolarFarmer API Validation Service](https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Troubleshooting/ValidationService.html){ target="_blank" .external }. This provides an additional layer of error detection and reporting.

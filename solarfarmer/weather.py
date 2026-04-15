@@ -141,7 +141,7 @@ def from_dataframe(
 ) -> pathlib.Path:
     """Write a DataFrame to a SolarFarmer TSV weather file.
 
-    .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[weather]'``.
+    .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[all]'``.
 
     Parameters
     ----------
@@ -209,7 +209,7 @@ def from_pvlib(
     Wrapper around :func:`from_dataframe` with the standard pvlib column
     mapping and Pa → mbar pressure conversion.
 
-    .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[weather]'``.
+    .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[all]'``.
 
     Parameters
     ----------

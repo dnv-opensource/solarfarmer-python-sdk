@@ -14,7 +14,7 @@ description: Create plant configurations and automatically build API payloads
 ## Overview
 
 !!! info "Approximated Design"
-    `PVSystem` constructs a plant layout from high-level inputs (location, capacity, equipment files) using simplified assumptions — including uniform mid-row shading for all strings and inferred string sizing. This is well-suited for early-stage yield screening and scenario comparison. For full design fidelity, use [Workflow 1](workflow-1-existing-api-files.md) with a SolarFarmer Desktop–exported payload or [Workflow 3](workflow-3-plantbuilder-advanced.md) for direct data model mapping.
+    `PVSystem` constructs a plant layout from high-level inputs (location, capacity, equipment files) using simplified assumptions, including uniform mid-row shading for all strings and inferred string sizing. This is well-suited for early-stage yield screening and scenario comparison. For full design fidelity, use [Workflow 1](workflow-1-existing-api-files.md) with a SolarFarmer Desktop-exported payload or [Workflow 3](workflow-3-plantbuilder-advanced.md) for direct data model mapping.
 
 This workflow involves four steps:
 
@@ -27,7 +27,7 @@ This workflow involves four steps:
 
 ```mermaid
 graph TB
-    A["📋 Define PVSystem<br/>(location, capacity, equipment)"]
+    A["Define PVSystem<br/>(location, capacity, equipment)"]
     B["PVSystem Payload<br/>(automatic payload construction)"]
     C["run_energy_calculation()<br/>(submit to API)"]
     D["CalculationResults<br/>(analyze performance)"]
@@ -126,7 +126,7 @@ plant.bifacial_mismatch_loss = 0.01
 ## Step 3: Add Module and Inverter Files
 
 The SDK uses PAN (module) and OND (inverter) files for detailed specifications.
-Dict keys are user-facing labels only — the spec ID sent to the API is derived from the filename (everything before the last `.`).
+Dict keys are user-facing labels only; the spec ID sent to the API is derived from the filename (everything before the last `.`).
 
 ```python
 from pathlib import Path
@@ -165,7 +165,7 @@ plant.horizon_file = Path(r"path/to/horizon_data.hor")
 
 # Or specify horizon angles directly
 plant.horizon(
-    elevation_angles=[0, 5, 10, 15, 20, 25, 30],
+    elevation_angles=[0, 5, 10, 15, 10, 5, 0, 0],
     azimuth_angles=[0, 45, 90, 135, 180, 225, 270, 315]
 )
 ```
@@ -256,8 +256,8 @@ annual_data = plant.results.AnnualData[0]
 net_energy = annual_data['energyYieldResults']['netEnergy']
 performance_ratio = annual_data['energyYieldResults']['performanceRatio']
 
-print(f"Net Annual Energy: {net_energy} MWh")
-print(f"Performance Ratio: {performance_ratio}%")
+print(f"Net Annual Energy: {net_energy:.1f} MWh")
+print(f"Performance Ratio: {performance_ratio:.1%}")
 ```
 
 ---

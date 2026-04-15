@@ -49,7 +49,7 @@ print(f"Net Energy: {net_energy:.1f} MWh")
 print(f"Performance Ratio: {performance_ratio:.1%}")
 
 # Get loss tree time-series results
-loss_tree_timeseries = results.loss_tree_timeseries
+loss_tree_timeseries = results.loss_tree_timeseries()
 
 # Print summary
 results.print_annual_results()
@@ -466,7 +466,7 @@ for project in projects:
     with open(output_file, 'w') as f:
         f.write(payload_json)
 
-    print(f"✓ Generated payload for {project['name']}")
+    print(f"Generated payload for {project['name']}")
 
 print(f"\nGenerated {len(projects)} payloads for batch submission")
 ```

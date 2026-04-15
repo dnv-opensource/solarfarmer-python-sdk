@@ -63,7 +63,7 @@ The SolarFarmer SDK supports three distinct user workflows. Choose the one that 
     Specify your plant: location (lat/lon), DC and AC capacities, inverter type, mounting configuration.
     `PVSystem` handles the payload construction and you run the calculation.
 
-Results from `PVSystem` are approximations based on simplified layout assumptions — see [FAQ](../faq.md) for details.
+Results from `PVSystem` are approximations based on simplified layout assumptions. See [FAQ](../faq.md) for details.
 
 ---
 
