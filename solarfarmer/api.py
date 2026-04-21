@@ -231,7 +231,7 @@ class Client:
         timeout = self._get_timeout(params)
         headers = {
             "Authorization": f"Bearer {key}",
-            "ContentType": "application/json",
+            "Content-Type": "application/json",
             "User-Agent": "solarfarmer-api-sdk/" + __version__,
         }
 
