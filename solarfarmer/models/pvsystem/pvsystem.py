@@ -201,7 +201,7 @@ class PVSystem:
     calculate_dhi_weather: bool
         If True, the calculation will calculate DHI from the provided GHI in the weather file.
         This needs to be set to True when the weather file does not contain DHI data.
-        
+
     Methods
     -------
     - horizon(elevation_angles, azimuth_angles)
