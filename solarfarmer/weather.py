@@ -60,6 +60,36 @@ Minimal conversion example (NSRDB PSM, pressure in Pa)::
     )
     df.index.name = "DateTime"
     df.to_csv("weather.tsv", sep="\\t")
+
+Solcast Column Mapping
+~~~~~~~~~~~~~~~~~~~~~~
+When converting a Solcast DataFrame to SolarFarmer TSV format, the following
+column mapping and unit conversions are applied automatically by
+:func:`from_solcast`.
+
+Solcast ``period_end`` timestamps are shifted to period-beginning by
+subtracting the inferred time resolution (e.g. −30 min for 30-min data).
+``precipitable_water`` is in kg/m² (equivalent to mm) and is divided by 10
+to obtain cm as required by SolarFarmer.  ``surface_pressure`` is already in
+hPa which equals mbar, so no pressure conversion is needed.
+
+Only columns that are present in the DataFrame are mapped; ``period_end``,
+``air_temp``, and ``ghi`` are the most commonly available columns but the
+others are all optional.  The ``gti`` (plane-of-array irradiance) column is
+not mapped; SolarFarmer derives POA irradiance internally from GHI/DHI.
+
+=======================  ===========  =====================================
+Solcast column           SF column    Unit conversion
+=======================  ===========  =====================================
+``ghi``                  ``GHI``      W/m² → W/m² (none)
+``dhi``                  ``DHI``      W/m² → W/m² (none)
+``air_temp``             ``TAmb``     °C → °C (none)
+``wind_speed_10m``       ``WS``       m/s → m/s (none)
+``surface_pressure``     ``Pressure`` hPa → mbar (hPa = mbar, none)
+``precipitable_water``   ``Water``    kg/m² → cm (÷ 10)
+``relative_humidity``    ``RH``       % → % (none)
+``albedo``               ``Albedo``   fraction → fraction (none)
+=======================  ===========  =====================================
 """
 
 from __future__ import annotations
@@ -78,6 +108,7 @@ __all__ = [
     "check_sequential_year_timestamps",
     "from_dataframe",
     "from_pvlib",
+    "from_solcast",
 ]
 
 
@@ -128,6 +159,17 @@ PVLIB_COLUMN_MAP: dict[str, str] = {
     "temp_air": "TAmb",
     "wind_speed": "WS",
     "pressure": "Pressure",
+}
+
+SOLCAST_COLUMN_MAP: dict[str, str] = {
+    "ghi": "GHI",
+    "dhi": "DHI",
+    "air_temp": "TAmb",
+    "wind_speed_10m": "WS",
+    "surface_pressure": "Pressure",
+    "precipitable_water": "Water",
+    "relative_humidity": "RH",
+    "albedo": "Albedo",
 }
 
 
@@ -238,6 +280,90 @@ def from_pvlib(
         column_map=PVLIB_COLUMN_MAP,
         year=year,
         pressure_pa_to_mbar=True,
+    )
+
+
+def from_solcast(
+    df: pd.DataFrame,
+    output_path: str | pathlib.Path,
+) -> pathlib.Path:
+    """Convert a Solcast DataFrame to a SolarFarmer TSV weather file.
+
+    Wrapper around :func:`from_dataframe` with the standard Solcast column
+    mapping.  Two automatic conversions are applied before writing:
+
+    * **Timestamp shift**: Solcast timestamps represent ``period_end``;
+      SolarFarmer expects ``period_beginning``.  The time resolution is
+      inferred from the minimum consecutive time difference and subtracted
+      from every timestamp.
+    * **Precipitable water**: Solcast ``precipitable_water`` is in kg/m²
+      (equivalent to mm); SolarFarmer expects cm, so the column is divided
+      by 10.
+
+    ``surface_pressure`` is already in hPa which equals mbar, so no pressure
+    conversion is needed.
+
+    Only columns that are present in the DataFrame are mapped; the minimum
+    required columns are ``period_end`` (as the index), ``air_temp``, and
+    ``ghi``.  All other columns (``dhi``, ``wind_speed_10m``,
+    ``surface_pressure``, ``precipitable_water``, ``relative_humidity``,
+    ``albedo``) are optional and mapped when present.
+
+    .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[all]'``.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Solcast-style DataFrame with a DatetimeIndex (``period_end``) and
+        any subset of columns: ``ghi``, ``dhi``, ``air_temp``,
+        ``wind_speed_10m``, ``surface_pressure``, ``precipitable_water``,
+        ``relative_humidity``, ``albedo``.  Unmapped columns are passed
+        through unchanged.
+    output_path : str or Path
+        Destination file path.
+
+    Returns
+    -------
+    pathlib.Path
+
+    Raises
+    ------
+    ValueError
+        If the DataFrame has no DatetimeIndex.
+    ImportError
+        If pandas is not installed.
+    """
+    try:
+        import pandas as pd
+    except ImportError:
+        raise ImportError(PANDAS_INSTALL_MSG) from None
+
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError(
+            "DataFrame must have a DatetimeIndex. "
+            "Use df.set_index(pd.to_datetime(df['period_end'])) or similar."
+        )
+
+    out = df.copy()
+
+    # Solcast timestamps are period_end; SolarFarmer expects period_beginning.
+    # Infer resolution from the minimum consecutive time difference.
+    time_deltas = out.index.to_series().diff().dropna()
+    inferred_timedelta = time_deltas.min()
+    out.index = out.index - inferred_timedelta
+
+    # Drop columns that have no SolarFarmer equivalent (e.g. gti, any other custom fields).
+    out = out[[c for c in out.columns if c in SOLCAST_COLUMN_MAP]]
+
+    # precipitable_water: Solcast provides kg/m² (= mm); SolarFarmer expects cm.
+    if "precipitable_water" in out.columns:
+        out["precipitable_water"] = out["precipitable_water"] / 10
+
+    return from_dataframe(
+        out,
+        output_path,
+        column_map=SOLCAST_COLUMN_MAP,
+        pressure_pa_to_mbar=False,  # Solcast surface_pressure is hPa = mbar
     )
 
 
