@@ -198,9 +198,12 @@ class PVSystem:
         If True, generates loss tree timeseries output (default is True).
     enable_spectral_modeling : bool
         If True, enables spectral modeling in the calculation (default is False).
-    calculate_dhi_weather: bool
-        If True, the calculation will calculate DHI from the provided GHI in the weather file.
-        This needs to be set to True when the weather file does not contain DHI data.
+    calculate_dhi_from_ghi : bool
+        Whether to calculate diffuse horizontal irradiance (DHI) from global
+        horizontal irradiance (GHI) when the ``DHI`` column is missing from the
+        meteorological file. If ``False`` and ``DHI`` is missing, the calculation
+        will fail. Set to ``True`` when using weather files that only provide GHI.
+        Provided DHI is preferred over engine decomposition (default is False).
 
     Methods
     -------
@@ -274,7 +277,7 @@ class PVSystem:
     generate_pvsyst_format_timeseries: bool = True
     generate_loss_tree_timeseries: bool = True
     enable_spectral_modeling: bool = False
-    calculate_dhi_weather: bool = False
+    calculate_dhi_from_ghi: bool = False
 
     # Auxiliary files
     _pan_files: dict[str, Path] = field(default_factory=dict, repr=False)
@@ -836,7 +839,7 @@ class PVSystem:
             print("\n--- MODELING OPTIONS ---")
             print(f"Enable Spectral Modeling: {self.enable_spectral_modeling}")
             print(f"Module IAM Model Override: {self.module_iam_model_override}")
-            print(f"Calculate DHI (from GHI in weather file): {self.calculate_dhi_weather}")
+            print(f"Calculate DHI (from GHI in weather file): {self.calculate_dhi_from_ghi}")
 
             # Output Options
             print("\n--- OUTPUT OPTIONS ---")
@@ -1110,7 +1113,7 @@ def construct_plant(pvplant: PVSystem) -> str:
         pvplant.generate_pvsyst_format_timeseries
     )
     calculation_options.apply_spectral_mismatch_modifier = pvplant.enable_spectral_modeling
-    calculation_options.calculate_dhi = pvplant.calculate_dhi_weather
+    calculation_options.calculate_dhi = pvplant.calculate_dhi_from_ghi
 
     # Build the full inputs model
     inputs = EnergyCalculationInputs(
