@@ -58,7 +58,7 @@ from .models import (
     TransformerSpecification,
     ValidationMessage,
 )
-from .weather import TSV_COLUMNS, check_sequential_year_timestamps, from_dataframe, from_pvlib
+from .weather import TSV_COLUMNS, check_sequential_year_timestamps, from_dataframe, from_pvlib, from_solcast
 
 __all__ = [
     "__version__",
@@ -122,5 +122,6 @@ __all__ = [
     "ValidationMessage",
     "from_dataframe",
     "from_pvlib",
+    "from_solcast",
     "check_sequential_year_timestamps",
 ]
