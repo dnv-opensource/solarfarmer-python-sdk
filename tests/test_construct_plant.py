@@ -57,6 +57,16 @@ class TestConstructPlant:
         payload = json.loads(construct_plant(plant))
         assert payload["energyCalculationOptions"]["applySpectralMismatchModifier"] is True
 
+    def test_calculate_dhi_off_by_default(self, plant):
+        payload = json.loads(construct_plant(plant))
+        opts = payload["energyCalculationOptions"]
+        assert opts.get("calculateDHI", False) is False
+
+    def test_calculate_dhi_on_when_enabled(self, plant):
+        plant.calculate_dhi_from_ghi = True
+        payload = json.loads(construct_plant(plant))
+        assert payload["energyCalculationOptions"]["calculateDHI"] is True
+
     def test_horizon_keys_absent_when_not_set(self, plant):
         payload = json.loads(construct_plant(plant))
         assert "horizonAzimuths" not in payload
