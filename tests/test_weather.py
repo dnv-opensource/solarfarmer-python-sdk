@@ -266,7 +266,9 @@ class TestFromSolcast:
         out = from_solcast(solcast_df, tmp_path / "out.tsv")
         check_sequential_year_timestamps(out)  # should not raise
 
-    @pytest.mark.parametrize("soiling_col", ["hsu_loss_fraction", "kimber_loss_fraction", "soiling"])
+    @pytest.mark.parametrize(
+        "soiling_col", ["hsu_loss_fraction", "kimber_loss_fraction", "soiling"]
+    )
     def test_soiling_columns_mapped(self, tmp_path, soiling_col):
         """hsu_loss_fraction, kimber_loss_fraction, and soiling all map to Soiling."""
         pd = pytest.importorskip("pandas")
@@ -292,9 +294,9 @@ class TestShiftPeriodEndToBeginning:
         # Create 30-minute resolution data starting at 00:30
         idx = pd.date_range("1990-01-01 00:30", periods=3, freq="30min", tz="UTC")
         df = pd.DataFrame({"ghi": [0, 100, 200]}, index=idx)
-        
+
         result = shift_period_end_to_beginning(df)
-        
+
         # Result should be shifted back by 30 minutes
         expected_idx = pd.date_range("1990-01-01 00:00", periods=3, freq="30min", tz="UTC")
         pd.testing.assert_index_equal(result.index, expected_idx)
@@ -305,6 +307,6 @@ class TestShiftPeriodEndToBeginning:
         """Should raise ValueError when DataFrame has no DatetimeIndex."""
         pd = pytest.importorskip("pandas")
         df = pd.DataFrame({"ghi": [0, 100, 200]})
-        
+
         with pytest.raises(ValueError, match="DatetimeIndex"):
             shift_period_end_to_beginning(df)
