@@ -231,7 +231,9 @@ class Client:
         timeout = self._get_timeout(params)
         headers = {
             "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
+            # Content-Type intentionally omitted — requests sets this automatically
+            # based on whether files are present (multipart) or not (form-encoded).
+            # Forcing it here overrides the boundary parameter and breaks multipart uploads.
             "User-Agent": "solarfarmer-api-sdk/" + __version__,
         }
 
