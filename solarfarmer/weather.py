@@ -89,7 +89,14 @@ Solcast column           SF column    Unit conversion
 ``precipitable_water``   ``Water``    kg/m² → cm (÷ 10)
 ``relative_humidity``    ``RH``       % → % (none)
 ``albedo``               ``Albedo``   fraction → fraction (none)
+``hsu_loss_fraction``    ``Soiling``  fraction → fraction (none)
+``kimber_loss_fraction`` ``Soiling``  fraction → fraction (none)
+``soiling``              ``Soiling``  fraction → fraction (none)
 =======================  ===========  =====================================
+
+.. note::
+   Only one soiling column should be present in the DataFrame. If multiple
+   are provided, the last one wins after column renaming.
 """
 
 from __future__ import annotations
@@ -109,6 +116,7 @@ __all__ = [
     "from_dataframe",
     "from_pvlib",
     "from_solcast",
+    "shift_period_end_to_beginning",
 ]
 
 
@@ -170,6 +178,9 @@ SOLCAST_COLUMN_MAP: dict[str, str] = {
     "precipitable_water": "Water",
     "relative_humidity": "RH",
     "albedo": "Albedo",
+    "hsu_loss_fraction": "Soiling",
+    "kimber_loss_fraction": "Soiling",
+    "soiling": "Soiling",
 }
 
 
@@ -307,7 +318,8 @@ def from_solcast(
     required columns are ``period_end`` (as the index), ``air_temp``, and
     ``ghi``.  All other columns (``dhi``, ``wind_speed_10m``,
     ``surface_pressure``, ``precipitable_water``, ``relative_humidity``,
-    ``albedo``) are optional and mapped when present.
+    ``albedo``, ``hsu_loss_fraction``, ``kimber_loss_fraction``, ``soiling``)
+    are optional and mapped when present.
 
     .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[all]'``.
 
@@ -317,8 +329,10 @@ def from_solcast(
         Solcast-style DataFrame with a DatetimeIndex (``period_end``) and
         any subset of columns: ``ghi``, ``dhi``, ``air_temp``,
         ``wind_speed_10m``, ``surface_pressure``, ``precipitable_water``,
-        ``relative_humidity``, ``albedo``.  Unmapped columns are passed
-        through unchanged.
+        ``relative_humidity``, ``albedo``, ``hsu_loss_fraction``,
+        ``kimber_loss_fraction``, ``soiling``.  Unmapped columns are removed.
+        Only one soiling column should be present; if multiple are provided,
+        the last one wins after column renaming.
     output_path : str or Path
         Destination file path.
 
@@ -347,10 +361,7 @@ def from_solcast(
     out = df.copy()
 
     # Solcast timestamps are period_end; SolarFarmer expects period_beginning.
-    # Infer resolution from the minimum consecutive time difference.
-    time_deltas = out.index.to_series().diff().dropna()
-    inferred_timedelta = time_deltas.min()
-    out.index = out.index - inferred_timedelta
+    out = shift_period_end_to_beginning(out)
 
     # Drop columns that have no SolarFarmer equivalent (e.g. gti, any other custom fields).
     out = out[[c for c in out.columns if c in SOLCAST_COLUMN_MAP]]
@@ -365,6 +376,47 @@ def from_solcast(
         column_map=SOLCAST_COLUMN_MAP,
         pressure_pa_to_mbar=False,  # Solcast surface_pressure is hPa = mbar
     )
+
+
+def shift_period_end_to_beginning(df: pd.DataFrame) -> pd.DataFrame:
+    """Shift DatetimeIndex from period_end to period_beginning.
+
+    Infers the time resolution from the minimum consecutive time difference
+    and subtracts it from all timestamps. Useful for converters where the
+    source data provides period_end timestamps but the target format expects
+    period_beginning.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame with a DatetimeIndex representing period_end timestamps.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with DatetimeIndex shifted to period_beginning.
+
+    Raises
+    ------
+    ValueError
+        If the DataFrame has no DatetimeIndex.
+    """
+    try:
+        import pandas as pd
+    except ImportError:
+        raise ImportError(PANDAS_INSTALL_MSG) from None
+
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError(
+            "DataFrame must have a DatetimeIndex. "
+            "Use df.set_index(pd.to_datetime(df['period_end'])) or similar."
+        )
+
+    out = df.copy()
+    time_deltas = out.index.to_series().diff().dropna()
+    inferred_timedelta = time_deltas.median()
+    out.index = out.index - inferred_timedelta
+    return out
 
 
 TSV_COLUMNS: dict = {
