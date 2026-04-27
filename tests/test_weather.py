@@ -7,9 +7,12 @@ import pytest
 
 from solarfarmer.weather import (
     PVLIB_COLUMN_MAP,
+    SOLCAST_COLUMN_MAP,
     check_sequential_year_timestamps,
     from_dataframe,
     from_pvlib,
+    from_solcast,
+    shift_period_end_to_beginning,
 )
 
 
@@ -186,3 +189,124 @@ class TestFromPvlib:
         """TSV written by from_pvlib should pass check_sequential_year_timestamps."""
         out = from_pvlib(pvlib_df, tmp_path / "out.tsv")
         check_sequential_year_timestamps(out)  # should not raise
+
+
+class TestFromSolcast:
+    """Tests for from_solcast() convenience wrapper."""
+
+    @pytest.fixture
+    def solcast_df(self):
+        pd = pytest.importorskip("pandas")
+        idx = pd.date_range("1990-01-01 00:30", periods=3, freq="30min", tz="UTC")
+        return pd.DataFrame(
+            {
+                "ghi": [0, 500, 800],
+                "dhi": [0, 200, 300],
+                "air_temp": [5.0, 15.0, 25.0],
+                "wind_speed_10m": [2.0, 3.0, 4.0],
+                "surface_pressure": [1013.25, 1013.25, 1013.25],
+                "precipitable_water": [1.0, 2.0, 3.0],
+            },
+            index=idx,
+        )
+
+    def test_columns_renamed(self, tmp_path, solcast_df):
+        out = from_solcast(solcast_df, tmp_path / "out.tsv")
+        header = out.read_text().splitlines()[0]
+        # Only columns present in the fixture are mapped
+        for solcast_col, sf_col in SOLCAST_COLUMN_MAP.items():
+            if solcast_col in solcast_df.columns:
+                assert sf_col in header
+
+    def test_pressure_not_converted(self, tmp_path, solcast_df):
+        """surface_pressure is hPa = mbar; no conversion should be applied."""
+        out = from_solcast(solcast_df, tmp_path / "out.tsv")
+        lines = out.read_text().splitlines()
+        header = lines[0].split("\t")
+        pressure_idx = header.index("Pressure")
+        first_data = lines[1].split("\t")
+        assert float(first_data[pressure_idx]) == pytest.approx(1013.25)
+
+    def test_precipitable_water_converted(self, tmp_path, solcast_df):
+        """precipitable_water is kg/m² (= mm), must be divided by 10 to get cm."""
+        out = from_solcast(solcast_df, tmp_path / "out.tsv")
+        lines = out.read_text().splitlines()
+        header = lines[0].split("\t")
+        water_idx = header.index("Water")
+        first_data = lines[1].split("\t")
+        assert float(first_data[water_idx]) == pytest.approx(0.1)  # 1.0 / 10
+
+    def test_timestamp_shifted_to_period_beginning(self, tmp_path, solcast_df):
+        """Solcast period_end timestamps must be shifted back by the time resolution."""
+        out = from_solcast(solcast_df, tmp_path / "out.tsv")
+        first_data = out.read_text().splitlines()[1]
+        # Original index starts at 00:30; shifted by -30 min → 00:00
+        assert "T00:00" in first_data
+
+    def test_unknown_columns_dropped(self, tmp_path):
+        """Columns not in SOLCAST_COLUMN_MAP (e.g. gti) are dropped."""
+        pd = pytest.importorskip("pandas")
+        idx = pd.date_range("1990-01-01 01:00", periods=2, freq="h", tz="UTC")
+        df = pd.DataFrame(
+            {"ghi": [0, 500], "air_temp": [5.0, 15.0], "gti": [100.0, 200.0]},
+            index=idx,
+        )
+        out = from_solcast(df, tmp_path / "out.tsv")
+        header = out.read_text().splitlines()[0]
+        assert "gti" not in header
+
+    def test_no_datetimeindex_raises(self, tmp_path):
+        pd = pytest.importorskip("pandas")
+        df = pd.DataFrame({"ghi": [0, 100], "air_temp": [5.0, 15.0]})
+        with pytest.raises(ValueError, match="DatetimeIndex"):
+            from_solcast(df, tmp_path / "out.tsv")
+
+    def test_output_passes_validation(self, tmp_path, solcast_df):
+        """TSV written by from_solcast should pass check_sequential_year_timestamps."""
+        out = from_solcast(solcast_df, tmp_path / "out.tsv")
+        check_sequential_year_timestamps(out)  # should not raise
+
+    @pytest.mark.parametrize(
+        "soiling_col", ["hsu_loss_fraction", "kimber_loss_fraction", "soiling"]
+    )
+    def test_soiling_columns_mapped(self, tmp_path, soiling_col):
+        """hsu_loss_fraction, kimber_loss_fraction, and soiling all map to Soiling."""
+        pd = pytest.importorskip("pandas")
+        idx = pd.date_range("1990-01-01 00:30", periods=3, freq="30min", tz="UTC")
+        df = pd.DataFrame(
+            {"ghi": [0, 500, 800], "air_temp": [5.0, 15.0, 25.0], soiling_col: [0.01, 0.02, 0.03]},
+            index=idx,
+        )
+        out = from_solcast(df, tmp_path / "out.tsv")
+        header = out.read_text().splitlines()[0].split("\t")
+        assert "Soiling" in header
+        soiling_idx = header.index("Soiling")
+        first_data = out.read_text().splitlines()[1].split("\t")
+        assert float(first_data[soiling_idx]) == pytest.approx(0.01)
+
+
+class TestShiftPeriodEndToBeginning:
+    """Tests for shift_period_end_to_beginning()."""
+
+    def test_shifts_timestamps_by_time_resolution(self):
+        """Timestamps should be shifted back by the inferred time resolution."""
+        pd = pytest.importorskip("pandas")
+        # Create 30-minute resolution data starting at 00:30
+        idx = pd.date_range("1990-01-01 00:30", periods=3, freq="30min", tz="UTC")
+        df = pd.DataFrame({"ghi": [0, 100, 200]}, index=idx)
+
+        result = shift_period_end_to_beginning(df)
+
+        # Result should be shifted back by 30 minutes
+        expected_idx = pd.date_range("1990-01-01 00:00", periods=3, freq="30min", tz="UTC")
+        pd.testing.assert_index_equal(result.index, expected_idx)
+        # Data values should be unchanged (indices differ, so compare values only)
+        assert list(result["ghi"].values) == list(df["ghi"].values)
+
+    def test_no_datetimeindex_raises(self):
+        """Should raise ValueError when DataFrame has no DatetimeIndex."""
+        pd = pytest.importorskip("pandas")
+        df = pd.DataFrame({"ghi": [0, 100, 200]})
+
+        with pytest.raises(ValueError, match="DatetimeIndex"):
+            shift_period_end_to_beginning(df)
