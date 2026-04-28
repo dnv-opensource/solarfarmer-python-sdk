@@ -116,6 +116,7 @@ __all__ = [
     "from_dataframe",
     "from_pvlib",
     "from_solcast",
+    "from_src",
     "shift_period_end_to_beginning",
 ]
 
@@ -167,6 +168,13 @@ PVLIB_COLUMN_MAP: dict[str, str] = {
     "temp_air": "TAmb",
     "wind_speed": "WS",
     "pressure": "Pressure",
+}
+
+SRC_COLUMN_MAP: dict[str, str] = {
+    "GHI": "GHI",
+    "DHI": "DHI",
+    "Tamb": "TAmb",
+    "Wspd": "WS",
 }
 
 SOLCAST_COLUMN_MAP: dict[str, str] = {
@@ -291,6 +299,91 @@ def from_pvlib(
         column_map=PVLIB_COLUMN_MAP,
         year=year,
         pressure_pa_to_mbar=True,
+    )
+
+
+def from_src(
+    weather_hourly: list[dict],
+    output_path: str | pathlib.Path,
+    *,
+    year: int | None = None,
+) -> pathlib.Path:
+    """Convert a DNV Solar Resource Compass (SRC) hourly dataset to a SolarFarmer TSV file.
+
+    Accepts the ``weather_hourly`` list returned by
+    `WCompare` endpoint of DNV Solar Resource Compass API and writes a
+    SolarFarmer-compatible TSV weather file.
+
+    SRC ``Timestamp`` values represent ``period_end``; SolarFarmer expects
+    ``period_beginning``.  The time resolution is inferred automatically and
+    subtracted from every timestamp via :func:`shift_period_end_to_beginning`.
+
+    The ``Timestamp`` field (e.g. ``"2059-01-01 01:00:00-07:00"``) is parsed
+    into a timezone-aware DatetimeIndex.  Column names are mapped as follows:
+
+    =========  ===========
+    SRC column SF column
+    =========  ===========
+    ``GHI``    ``GHI``
+    ``DHI``    ``DHI``
+    ``Tamb``   ``TAmb``
+    ``Wspd``   ``WS``
+    =========  ===========
+
+    .. note:: Requires ``pandas``. Install with ``pip install 'dnv-solarfarmer[all]'``.
+
+    Parameters
+    ----------
+    weather_hourly : list[dict]
+        The ``weather_hourly`` attribute of the
+        `WCompare` endpoint response of DNV Solar Resource Compass API.
+        Each dict must contain a ``Timestamp`` key and
+        any subset of ``GHI``, ``DHI``, ``Tamb``, ``Wspd``.
+    output_path : str or Path
+        Destination file path.
+    year : int, optional
+        Remap all timestamps to this calendar year.  Use ``year=1990`` when
+        the TMY source years are not chronologically sequential.
+
+    Returns
+    -------
+    pathlib.Path
+
+    Raises
+    ------
+    ValueError
+        If ``weather_hourly`` is empty or contains no ``Timestamp`` key.
+    ImportError
+        If pandas is not installed.
+    """
+    try:
+        import pandas as pd
+    except ImportError:
+        raise ImportError(PANDAS_INSTALL_MSG) from None
+
+    if not weather_hourly:
+        raise ValueError("weather_hourly is empty; nothing to write.")
+
+    df = pd.DataFrame(weather_hourly)
+
+    if "Timestamp" not in df.columns:
+        raise ValueError(
+            "weather_hourly records must contain a 'Timestamp' key. "
+            "Check that the WcompareResult (Solar Resource Compass API) was populated correctly."
+        )
+
+    df.index = pd.to_datetime(df["Timestamp"], utc=False)
+    df.index.name = "DateTime"
+    df = df.drop(columns=["Timestamp"])
+
+    # SRC Timestamps are period_end; SolarFarmer expects period_beginning.
+    df = shift_period_end_to_beginning(df)
+
+    return from_dataframe(
+        df,
+        output_path,
+        column_map=SRC_COLUMN_MAP,
+        year=year,
     )
 
 
