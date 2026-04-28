@@ -8,10 +8,12 @@ import pytest
 from solarfarmer.weather import (
     PVLIB_COLUMN_MAP,
     SOLCAST_COLUMN_MAP,
+    SRC_COLUMN_MAP,
     check_sequential_year_timestamps,
     from_dataframe,
     from_pvlib,
     from_solcast,
+    from_src,
     shift_period_end_to_beginning,
 )
 
@@ -283,6 +285,73 @@ class TestFromSolcast:
         soiling_idx = header.index("Soiling")
         first_data = out.read_text().splitlines()[1].split("\t")
         assert float(first_data[soiling_idx]) == pytest.approx(0.01)
+
+
+class TestFromSrc:
+    """Tests for from_src() convenience wrapper (DNV Solar Resource Compass)."""
+
+    @pytest.fixture
+    def src_records(self):
+        """Hourly period_end records matching the SRC weather_hourly format."""
+        return [
+            {
+                "Timestamp": "1990-01-01 01:00:00+00:00",
+                "GHI": 0,
+                "DHI": 0,
+                "Tamb": -9.5,
+                "Wspd": 3.3,
+            },
+            {
+                "Timestamp": "1990-01-01 02:00:00+00:00",
+                "GHI": 0,
+                "DHI": 0,
+                "Tamb": -9.9,
+                "Wspd": 3.0,
+            },
+            {
+                "Timestamp": "1990-01-01 03:00:00+00:00",
+                "GHI": 50,
+                "DHI": 20,
+                "Tamb": -9.4,
+                "Wspd": 2.5,
+            },
+        ]
+
+    def test_columns_renamed(self, tmp_path, src_records):
+        """SRC columns must be mapped to SolarFarmer TSV column names."""
+        out = from_src(src_records, tmp_path / "out.tsv")
+        header = out.read_text().splitlines()[0]
+        for sf_col in SRC_COLUMN_MAP.values():
+            assert sf_col in header
+
+    def test_timestamp_shifted_to_period_beginning(self, tmp_path, src_records):
+        """SRC period_end timestamps must be shifted back by the time resolution (1 h)."""
+        out = from_src(src_records, tmp_path / "out.tsv")
+        first_data = out.read_text().splitlines()[1]
+        # Original first record is 01:00; shifted by -1 h → 00:00
+        assert "T00:00" in first_data
+
+    def test_year_remap(self, tmp_path, src_records):
+        """year parameter remaps all timestamps to the given calendar year."""
+        out = from_src(src_records, tmp_path / "out.tsv", year=1990)
+        first_data = out.read_text().splitlines()[1]
+        assert first_data.startswith("1990-")
+
+    def test_empty_list_raises(self, tmp_path):
+        """Empty weather_hourly list must raise ValueError."""
+        with pytest.raises(ValueError, match="empty"):
+            from_src([], tmp_path / "out.tsv")
+
+    def test_missing_timestamp_key_raises(self, tmp_path):
+        """Records without a Timestamp key must raise ValueError."""
+        records = [{"GHI": 0, "DHI": 0, "Tamb": 5.0, "Wspd": 2.0}]
+        with pytest.raises(ValueError, match="Timestamp"):
+            from_src(records, tmp_path / "out.tsv")
+
+    def test_output_passes_validation(self, tmp_path, src_records):
+        """TSV written by from_src should pass check_sequential_year_timestamps."""
+        out = from_src(src_records, tmp_path / "out.tsv", year=1990)
+        check_sequential_year_timestamps(out)  # should not raise
 
 
 class TestShiftPeriodEndToBeginning:

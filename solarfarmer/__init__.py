@@ -64,6 +64,7 @@ from .weather import (
     from_dataframe,
     from_pvlib,
     from_solcast,
+    from_src
 )
 
 __all__ = [
