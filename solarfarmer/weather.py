@@ -336,7 +336,7 @@ def from_src(
     ----------
     weather_hourly : list[dict]
         The ``weather_hourly`` attribute of the
-        `WCompare` endpoint response of DNV Solar Resource Compass API.  
+        `WCompare` endpoint response of DNV Solar Resource Compass API.
         Each dict must contain a ``Timestamp`` key and
         any subset of ``GHI``, ``DHI``, ``Tamb``, ``Wspd``.
     output_path : str or Path

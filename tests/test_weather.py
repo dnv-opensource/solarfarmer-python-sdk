@@ -319,6 +319,7 @@ class TestFromSrc:
 
     def test_columns_renamed(self, tmp_path, src_records):
         """SRC columns must be mapped to SolarFarmer TSV column names."""
+        pytest.importorskip("pandas")
         out = from_src(src_records, tmp_path / "out.tsv")
         header = out.read_text().splitlines()[0]
         for sf_col in SRC_COLUMN_MAP.values():
@@ -326,6 +327,7 @@ class TestFromSrc:
 
     def test_timestamp_shifted_to_period_beginning(self, tmp_path, src_records):
         """SRC period_end timestamps must be shifted back by the time resolution (1 h)."""
+        pytest.importorskip("pandas")
         out = from_src(src_records, tmp_path / "out.tsv")
         first_data = out.read_text().splitlines()[1]
         # Original first record is 01:00; shifted by -1 h → 00:00
@@ -333,23 +335,27 @@ class TestFromSrc:
 
     def test_year_remap(self, tmp_path, src_records):
         """year parameter remaps all timestamps to the given calendar year."""
+        pytest.importorskip("pandas")
         out = from_src(src_records, tmp_path / "out.tsv", year=1990)
         first_data = out.read_text().splitlines()[1]
         assert first_data.startswith("1990-")
 
     def test_empty_list_raises(self, tmp_path):
         """Empty weather_hourly list must raise ValueError."""
+        pytest.importorskip("pandas")
         with pytest.raises(ValueError, match="empty"):
             from_src([], tmp_path / "out.tsv")
 
     def test_missing_timestamp_key_raises(self, tmp_path):
         """Records without a Timestamp key must raise ValueError."""
+        pytest.importorskip("pandas")
         records = [{"GHI": 0, "DHI": 0, "Tamb": 5.0, "Wspd": 2.0}]
         with pytest.raises(ValueError, match="Timestamp"):
             from_src(records, tmp_path / "out.tsv")
 
     def test_output_passes_validation(self, tmp_path, src_records):
         """TSV written by from_src should pass check_sequential_year_timestamps."""
+        pytest.importorskip("pandas")
         out = from_src(src_records, tmp_path / "out.tsv", year=1990)
         check_sequential_year_timestamps(out)  # should not raise
 
