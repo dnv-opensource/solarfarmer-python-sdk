@@ -64,7 +64,7 @@ from .weather import (
     from_dataframe,
     from_pvlib,
     from_solcast,
-    from_src
+    from_src,
 )
 
 __all__ = [
@@ -131,4 +131,5 @@ __all__ = [
     "from_pvlib",
     "from_solcast",
     "check_sequential_year_timestamps",
+    "from_src",
 ]
