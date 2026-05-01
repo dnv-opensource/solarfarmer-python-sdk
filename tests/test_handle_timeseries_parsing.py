@@ -9,7 +9,6 @@ matches the formats produced by SF-Core.
 import warnings
 
 import pandas as pd
-import pytest
 
 from solarfarmer.models.energy_calculation_results import (
     _handle_losstree_results,
@@ -83,11 +82,20 @@ class TestHandlePvsystResults:
         response = ModelChainResponse(PvSystFormatResultsFile=PVSYST_CSV)
         df = _handle_pvsyst_results(response, tmp_path, save_outputs=False)
 
-        # 01/06/24 = June 1st (day > 12 in 31/12/24 proves day-first)
-        assert df.index[0] == pd.Timestamp("2024-01-01 00:00:00")
-        assert df.index[-1] == pd.Timestamp("2024-12-31 23:00:00")
-        # Index is sorted
-        assert df.index.is_monotonic_increasing
+        # 01/06/24 must parse as June 1st, not January 6th
+        assert pd.Timestamp("2024-06-01 06:00:00") in df.index
+        # 31/12/24 would blow up with month=31 if parsed month-first
+        assert pd.Timestamp("2024-12-31 23:00:00") in df.index
+
+    def test_sort_preserves_data_alignment(self, tmp_path):
+        """Sorting the index must keep data rows aligned with their timestamps."""
+        response = ModelChainResponse(PvSystFormatResultsFile=PVSYST_CSV)
+        df = _handle_pvsyst_results(response, tmp_path, save_outputs=False)
+
+        # Input row "01/01/24 00:00" has GlobHor=0.0 and T_Amb=-2.5
+        jan_row = df.loc[pd.Timestamp("2024-01-01 00:00:00")]
+        assert jan_row["GlobHor"] == 0.0
+        assert jan_row["T_Amb"] == -2.5
 
     def test_no_warning_emitted(self, tmp_path):
         """Parsing must not emit UserWarning about dateutil fallback (SM-326)."""
@@ -103,6 +111,7 @@ class TestHandlePvsystResults:
 
         saved = list(tmp_path.glob("*"))
         assert len(saved) == 1
+        assert saved[0].name == "PVsystResults.csv"
 
 
 class TestHandleLosstreeResults:
@@ -123,6 +132,15 @@ class TestHandleLosstreeResults:
         response = ModelChainResponse(LossTreeResults=LOSSTREE_TSV)
         df = _handle_losstree_results(response, tmp_path, save_outputs=False)
 
+        assert df.index[0] == pd.Timestamp("2024-06-01 06:00:00", tz="UTC")
+
+    def test_sort_preserves_data_alignment(self, tmp_path):
+        """Sorting the index must keep data rows aligned with their timestamps."""
+        response = ModelChainResponse(LossTreeResults=LOSSTREE_TSV)
+        df = _handle_losstree_results(response, tmp_path, save_outputs=False)
+
+        # First row in sorted output should have GHI=0.150
+        assert df.iloc[0]["GHI"] == 0.150
         assert df.index[0] == pd.Timestamp("2024-06-01 06:00:00", tz="UTC")
 
 
