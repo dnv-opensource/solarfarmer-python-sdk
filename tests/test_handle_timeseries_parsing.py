@@ -1,11 +1,3 @@
-"""
-Unit tests for _handle_pvsyst_results, _handle_losstree_results,
-and _handle_timeseries_results.
-
-Tests the parsing/transformation layer using synthetic data that
-matches the formats produced by SF-Core.
-"""
-
 import warnings
 
 import pandas as pd
@@ -16,7 +8,6 @@ from solarfarmer.models.energy_calculation_results import (
     _handle_timeseries_results,
 )
 from solarfarmer.models.model_chain_response import ModelChainResponse
-
 
 # --- Synthetic data matching SF-Core output formats ---
 
