@@ -1723,7 +1723,7 @@ def _handle_losstree_results(
                 data = pd.read_csv(g, sep="\t", skiprows=[0, 1])
                 data["Start of period"] = pd.to_datetime(data["Start of period"])
                 data.set_index("Start of period", inplace=True)
-                data.index = data.index.sort_values()
+                data.sort_index(inplace=True)
             return data
         else:
             warnings.warn(
@@ -1778,7 +1778,7 @@ def _handle_pvsyst_results(
                 data = pd.read_csv(g, sep=";", skiprows=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12])
             data["date"] = pd.to_datetime(data["date"], format="%d/%m/%y %H:%M", utc=True).dt.tz_localize(None)
             data.set_index("date", inplace=True)
-            data.index = data.index.sort_values()
+            data.sort_index(inplace=True)
             return data
         else:
             warnings.warn(
