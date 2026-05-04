@@ -606,9 +606,7 @@ class CalculationResults:
         if pr_bifacial is not None and not math.isclose(
             pr_bifacial, data["performance_ratio"], rel_tol=1e-9
         ):
-            table_annual_results.append(
-                ["Performance Ratio (bifacial)", f"{pr_bifacial:.4f}"]
-            )
+            table_annual_results.append(["Performance Ratio (bifacial)", f"{pr_bifacial:.4f}"])
         print(
             "-" * 55
             + "\n"

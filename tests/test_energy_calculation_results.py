@@ -762,7 +762,10 @@ class TestConvenienceProperties:
 
     def test_performance_ratio_bifacial(self, results):
         """performance_ratio_bifacial should return year-1 bifacial PR."""
-        assert results.performance_ratio_bifacial == results.get_performance()["performance_ratio_bifacial"]
+        assert (
+            results.performance_ratio_bifacial
+            == results.get_performance()["performance_ratio_bifacial"]
+        )
 
     def test_energy_yield_kWh_per_kWp(self, results):
         """energy_yield_kWh_per_kWp should return year-1 specific yield."""
