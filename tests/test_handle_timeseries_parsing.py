@@ -88,6 +88,13 @@ class TestHandlePvsystResults:
         assert jan_row["GlobHor"] == 0.0
         assert jan_row["T_Amb"] == -2.5
 
+    def test_index_is_timezone_naive(self, tmp_path):
+        """Index must be tz-naive: the SF API returns site-local time."""
+        response = ModelChainResponse(PvSystFormatResultsFile=PVSYST_CSV)
+        df = _handle_pvsyst_results(response, tmp_path, save_outputs=False)
+
+        assert df.index.tz is None
+
     def test_no_warning_emitted(self, tmp_path):
         """Parsing must not emit UserWarning about dateutil fallback (SM-326)."""
         response = ModelChainResponse(PvSystFormatResultsFile=PVSYST_CSV)
