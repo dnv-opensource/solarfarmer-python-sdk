@@ -1775,9 +1775,8 @@ def _handle_pvsyst_results(
         if _PANDAS:
             with io.StringIO(pvsyst_results_text) as g:
                 data = pd.read_csv(g, sep=";", skiprows=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12])
-            data["date"] = pd.to_datetime(
-                data["date"], format="%d/%m/%y %H:%M", utc=True
-            ).dt.tz_localize(None)
+            # Timestamps are site-local time as returned by the SF API.
+            data["date"] = pd.to_datetime(data["date"], format="%d/%m/%y %H:%M")
             data = data.set_index("date").sort_index()
             return data
         else:
