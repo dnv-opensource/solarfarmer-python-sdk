@@ -51,12 +51,14 @@ theme:
 markdown_extensions:
   - admonition
   - attr_list
-  - codehilite
-  - fenced_code
   - md_in_html
   - tables
   - toc:
       permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
