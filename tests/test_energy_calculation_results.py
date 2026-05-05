@@ -402,6 +402,7 @@ class TestGetPerformance:
             "energy_yield",
             "net_energy",
             "performance_ratio",
+            "performance_ratio_bifacial",
         }
         assert expected_keys == set(results.get_performance(project_year=1).keys())
 
@@ -759,6 +760,13 @@ class TestConvenienceProperties:
         """performance_ratio should return year-1 PR."""
         assert results.performance_ratio == results.get_performance()["performance_ratio"]
 
+    def test_performance_ratio_bifacial(self, results):
+        """performance_ratio_bifacial should return year-1 bifacial PR."""
+        assert (
+            results.performance_ratio_bifacial
+            == results.get_performance()["performance_ratio_bifacial"]
+        )
+
     def test_energy_yield_kWh_per_kWp(self, results):
         """energy_yield_kWh_per_kWp should return year-1 specific yield."""
         assert results.energy_yield_kWh_per_kWp == results.get_performance()["energy_yield"]
@@ -775,4 +783,56 @@ class TestConvenienceProperties:
         )
         assert math.isnan(results.net_energy_MWh)
         assert math.isnan(results.performance_ratio)
+        assert math.isnan(results.performance_ratio_bifacial)
         assert math.isnan(results.energy_yield_kWh_per_kWp)
+
+
+class TestPerformancePrinting:
+    """Test conditional bifacial PR row in performance()."""
+
+    def _make_results(self, pr: float, pr_bifacial: float) -> CalculationResults:
+        """Build a minimal CalculationResults with the given PR values."""
+        annual_data = [
+            {
+                "year": 2023,
+                "energyYieldResults": {
+                    "averageTemperature": 12.0,
+                    "ghi": 1200.0,
+                    "gi": 1400.0,
+                    "globalEffectiveIrradiance": 1350.0,
+                    "energyYield": 1100.0,
+                    "netEnergy": 200000.0,
+                    "performanceRatio": pr,
+                    "performanceRatioBifacial": pr_bifacial,
+                },
+                "annualEffects": {},
+            }
+        ]
+        return CalculationResults(
+            ModelChainResponse=ModelChainResponse(Name="test"),
+            AnnualData=annual_data,
+            MonthlyData=[],
+            CalculationAttributes=None,
+        )
+
+    def test_bifacial_row_shown_when_pr_differs(self, capsys):
+        """Bifacial PR row must appear when it differs from standard PR."""
+        results = self._make_results(pr=0.82, pr_bifacial=0.85)
+        results.performance()
+        captured = capsys.readouterr().out
+        assert "Performance Ratio (bifacial)" in captured
+        assert "0.8500" in captured
+
+    def test_bifacial_row_suppressed_for_monofacial(self, capsys):
+        """Bifacial PR row must not appear when both PR values are equal (monofacial)."""
+        results = self._make_results(pr=0.82, pr_bifacial=0.82)
+        results.performance()
+        captured = capsys.readouterr().out
+        assert "Performance Ratio (bifacial)" not in captured
+
+    def test_bifacial_row_suppressed_for_near_equal_values(self, capsys):
+        """Floating-point near-equal values must not produce a spurious bifacial row."""
+        results = self._make_results(pr=0.82, pr_bifacial=0.82 + 1e-12)
+        results.performance()
+        captured = capsys.readouterr().out
+        assert "Performance Ratio (bifacial)" not in captured

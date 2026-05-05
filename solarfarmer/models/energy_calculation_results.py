@@ -3,6 +3,7 @@ from __future__ import annotations
 import calendar
 import io
 import json
+import math
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -168,6 +169,14 @@ class CalculationResults:
     def performance_ratio(self) -> float:
         """Performance ratio for year 1 (0–1)."""
         return self.get_performance(project_year=1).get("performance_ratio", float("nan"))
+
+    @property
+    def performance_ratio_bifacial(self) -> float:
+        """IEC 61724-1:2021 bifacial performance ratio for year 1 (0–1).
+
+        Equals :attr:`performance_ratio` for monofacial systems.
+        """
+        return self.get_performance(project_year=1).get("performance_ratio_bifacial", float("nan"))
 
     @property
     def energy_yield_kWh_per_kWp(self) -> float:
@@ -593,6 +602,11 @@ class CalculationResults:
                 f"{data['performance_ratio']:.4f}",
             ],
         ]
+        pr_bifacial = data.get("performance_ratio_bifacial")
+        if pr_bifacial is not None and not math.isclose(
+            pr_bifacial, data["performance_ratio"], rel_tol=1e-9
+        ):
+            table_annual_results.append(["Performance Ratio (bifacial)", f"{pr_bifacial:.4f}"])
         print(
             "-" * 55
             + "\n"
@@ -701,6 +715,8 @@ class CalculationResults:
             - 'energy_yield': Specific energy yield (kWh/kWp)
             - 'net_energy': Net energy production (MWh/year)
             - 'performance_ratio': Performance ratio (0-1)
+            - 'performance_ratio_bifacial': IEC 61724-1:2021 bifacial performance ratio (0-1).
+              Equals ``performance_ratio`` for monofacial systems.
 
         Examples
         --------
@@ -737,6 +753,7 @@ class CalculationResults:
             "energy_yield": yield_results[ANNUAL_ENERGY_YIELD],
             "net_energy": yield_results[ANNUAL_NET_ENERGY],
             "performance_ratio": yield_results[ANNUAL_PERFORMANCE_RATIO],
+            "performance_ratio_bifacial": yield_results.get(ANNUAL_PERFORMANCE_RATIO_BIFACIAL),
         }
 
     def get_annual_results_table(
