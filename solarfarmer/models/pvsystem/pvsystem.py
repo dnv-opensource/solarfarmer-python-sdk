@@ -198,6 +198,8 @@ class PVSystem:
         If True, generates loss tree timeseries output (default is True).
     enable_spectral_modeling : bool
         If True, enables spectral modeling in the calculation (default is False).
+    print_design_summary : bool
+        If True, prints the design summary when the plant is constructed (default is True).
     calculate_dhi_from_ghi : bool
         Whether to calculate diffuse horizontal irradiance (DHI) from global
         horizontal irradiance (GHI) when the ``DHI`` column is missing from the
@@ -278,6 +280,7 @@ class PVSystem:
     generate_loss_tree_timeseries: bool = True
     enable_spectral_modeling: bool = False
     calculate_dhi_from_ghi: bool = False
+    print_design_summary: bool = True
 
     # Auxiliary files
     _pan_files: dict[str, Path] = field(default_factory=dict, repr=False)
@@ -1203,7 +1206,7 @@ def design_plant(pvplant: PVSystem) -> tuple[PVPlant, dict[str, PanFileSupplemen
         number_modules,
         string_length,
         total_strings,
-        plot=True,
+        plot=pvplant.print_design_summary,
     )
 
     # Override the final DC and AC capacity in the plant definition
