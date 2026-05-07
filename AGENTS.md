@@ -19,7 +19,7 @@ result = sf.run_energy_calculation(
 print(result.AnnualData)
 ```
 
-## Use case 2: using high-level metadata from a PV plant projec to generate a first approximated design to be run with SolarFarmer 2D API
+## Use case 2: using high-level metadata from a PV plant project to generate a first approximated design to be run with SolarFarmer 2D API
 
 Use this workflow when the user has only high-level plant metadata — location, DC/AC capacity, mounting type, and equipment files — but no pre-existing SolarFarmer API JSON payload. The PVSystem builder generates an approximated design and submits it to the 2D API; always warn the user that results are approximations, not a full detailed design. Advise the user to get sample data, which are available in the folder `docs/notebooks/sample_data` or can be downloaded from SolarFarmer portal page: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/UserGuide/Tutorials/Tutorials.html
 
@@ -59,7 +59,7 @@ Use this workflow when the user has an existing data model in their own system a
 - **Type Safety First**: Leverage Pydantic v2 models and Python 3.10+ type hints. All public functions must have complete type annotations.
 - **Immutability & Idempotency**: Use `copy.deepcopy()` for input validation (see `api.py:_check_params`); avoid mutating caller's data.
 - **Test-First Development**: Write tests before implementation. Focus on behavior, not implementation details. Use pytest fixtures from `tests/conftest.py`.
-- **Error Handling Philosophy**: Raise exceptions with clear, actionable messages; propagate to caller if no responsible handling exists locally.
+- **Error Handling Philosophy**: Raise `SolarFarmerAPIError` (from `api.py`) on non-2xx API responses — never return `None` on failure. Raise exceptions with clear, actionable messages; propagate to caller if no responsible handling exists locally.
 - **Structured Logging**: Use the logger from `solarfarmer.logging.get_logger()` with context fields (see `endpoint_modelchains.py`).
 
 ## Code Organization
@@ -67,9 +67,11 @@ Use this workflow when the user has an existing data model in their own system a
 ### Module Structure
 - **api.py**: HTTP client layer (`Client`, `Response` dataclass). Handles authentication, timeouts, error mapping.
 - **endpoint_*.py**: Feature modules (About, Service, ModelChain, TerminateAsync). Each exports one main function.
+- **weather.py**: Meteorological file format specification and conversion utilities. Exports `TSV_COLUMNS` (format spec), `from_dataframe()`, `from_pvlib()`, `from_solcast()` (converters from common data sources), and `check_sequential_year_timestamps()` (TMY validator). Use when users need to convert weather data from pandas, pvlib, or Solcast into SolarFarmer's TSV format.
 - **models/**: Two distinct kinds of model:
   - **Pydantic models** (`SolarFarmerBaseModel` subclasses, `frozen=True`): `EnergyCalculationInputs`, `PVPlant`, `Location`, `Inverter`, `Layout`, `Transformer`, etc. These are **immutable** — mutations raise `ValidationError`. Serialize with `model_dump(by_alias=True, exclude_none=True)`.
-  - **`PVSystem`** (`@dataclass`, `solarfarmer/models/pvsystem/pvsystem.py`): **Mutable** high-level builder. Not a Pydantic model. Acts as an entry point for Workflow B; internally converts to `EnergyCalculationInputs` before the API call.
+  - **Results models**: `CalculationResults` (in `energy_calculation_results.py`) wraps API outputs and provides convenience properties and accessors such as `performance_ratio_bifacial`, `get_performance()`, `print_annual_results()`, `loss_tree_timeseries()`, and `pvsyst_timeseries()`.
+  - **`PVSystem`** (`@dataclass`, `solarfarmer/models/pvsystem/pvsystem.py`): **Mutable** high-level builder. Not a Pydantic model. Acts as an entry point for Use case 2; internally converts to `EnergyCalculationInputs` before the API call. Key utility methods: `describe()`, `make_copy()`, `produce_payload()`, `payload_to_file()`, `to_file()`, `from_file()`.
 - **config.py**: Configuration constants, environment variables, timeouts. Single source of truth for URLs and defaults.
 
 ### Naming Conventions
@@ -87,7 +89,7 @@ Use this workflow when the user has an existing data model in their own system a
 - Export `model_dump(by_alias=True, exclude_none=True)` for API payloads
 
 ### Async Pattern
-The sync vs async endpoint is chosen automatically based on calculation type (3D always async, 2D always sync). 
+The sync vs async endpoint is chosen automatically based on calculation type (3D always async, 2D always sync).
 The code recognizes if the JSON file from the API payload is of 2D or 3D type, and makes the call to one or another endpoint. The SDK code handles that for you.
 
 Polling frequency and connection timeout are controlled by `MODELCHAIN_ASYNC_POLL_TIME` and `MODELCHAIN_ASYNC_TIMEOUT_CONNECTION` in `config.py`.
@@ -187,6 +189,7 @@ The following are **named workflows** for structuring developer work. They are N
 | Refactor error messages in Client | Default | Localized to one module |
 | Add polling timeout logic | EndpointDev workflow | Requires config constants, async pattern |
 | Help SDK user run a calculation | Default referencing Quickstart | Refer to copilot-instructions.md quickstart |
+| Convert weather data to SF format | Default | Use `sf.from_dataframe()`, `sf.from_pvlib()`, or `sf.from_solcast()` |
 
 ## Tool Restrictions
 
