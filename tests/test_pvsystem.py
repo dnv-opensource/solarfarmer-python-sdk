@@ -515,6 +515,43 @@ class TestPVSystemAuxiliaryLosses:
         assert payload["pvPlant"]["auxiliaryLosses"]["simpleLossFactor"] == 0.01
 
 
+class TestPVSystemUnavailability:
+    """Tests for plant_unavailability and grid_unavailability properties."""
+
+    def test_unavailability_defaults_are_zero(self):
+        """plant_unavailability and grid_unavailability must default to 0.0."""
+        plant = PVSystem()
+
+        assert plant.plant_unavailability == 0.0
+        assert plant.grid_unavailability == 0.0
+
+    def test_unavailability_custom_values_are_stored(self):
+        """Custom unavailability values must be stored on the instance."""
+        plant = PVSystem(plant_unavailability=0.03, grid_unavailability=0.01)
+
+        assert plant.plant_unavailability == 0.03
+        assert plant.grid_unavailability == 0.01
+
+    def test_unavailability_propagates_to_payload(self, bern_2d_racks_inputs):
+        """Non-zero unavailability values must appear in energyCalculationOptions in the payload."""
+        plant = PVSystem(
+            latitude=46.9,
+            longitude=7.4,
+            plant_unavailability=0.03,
+            grid_unavailability=0.01,
+        )
+        plant.pan_files = {
+            "CanadianSolar_CS6U-330M_APP": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"
+        }
+        plant.ond_files = {"Sungrow_SG125HV_APP": f"{bern_2d_racks_inputs}/Sungrow_SG125HV_APP.OND"}
+
+        payload = json.loads(construct_plant(plant))
+        opts = payload["energyCalculationOptions"]
+
+        assert opts["systemAvailabilityLoss"] == 0.03
+        assert opts["gridAvailabilityLoss"] == 0.01
+
+
 class TestPVSystemBifacial:
     """Tests for bifacial parameter initialization (Phase 1 bug fix)."""
 
