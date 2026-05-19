@@ -16,9 +16,11 @@ from .enums import (
     OrderColumnsPvSystFormatTimeSeries,
     TransformerLossModelTypes,
 )
+from .indexed_object3d import IndexedObject3D
 from .inverter import Inverter
 from .layout import Layout
 from .location import Location
+from .mini_simple_terrain_dto import MiniSimpleTerrainDto
 from .model_chain_response import ModelChainResponse
 from .monthly_albedo import MonthlyAlbedo
 from .mounting_type_specification import MountingTypeSpecification
@@ -28,9 +30,19 @@ from .pv_plant import PVPlant
 from .pvsystem.plant_defaults import InverterType, MountingType, OrientationType
 from .pvsystem.pvsystem import PVSystem
 from .pvsystem.validation import ValidationMessage
+from .quad_double import QuadDouble
+from .rack import Rack
+from .racks import Racks
+from .shading_objects import ShadingObjects
+from .simple_terrain import SimpleTerrain
+from .terrain_row_dto import TerrainRowDto
+from .terrain_row_start_end_columns_dto import TerrainRowStartEndColumnsDto
+from .tracker import Tracker
 from .tracker_system import TrackerSystem
+from .trackers import Trackers
 from .transformer import Transformer
 from .transformer_specification import TransformerSpecification
+from .vector3double import Vector3Double
 
 __all__ = [
     "AuxiliaryLosses",
@@ -41,12 +53,14 @@ __all__ = [
     "EnergyCalculationOptions",
     "HorizonType",
     "IAMModelTypeForOverride",
+    "IndexedObject3D",
     "Inverter",
     "InverterOverPowerShutdownMode",
     "InverterType",
     "Layout",
     "Location",
     "MeteoFileFormat",
+    "MiniSimpleTerrainDto",
     "MissingMetDataMethod",
     "ModelChainResponse",
     "MonthlyAlbedo",
@@ -58,10 +72,20 @@ __all__ = [
     "PanFileSupplements",
     "PVPlant",
     "PVSystem",
+    "QuadDouble",
+    "Rack",
+    "Racks",
+    "ShadingObjects",
+    "SimpleTerrain",
     "SolarFarmerBaseModel",
+    "TerrainRowDto",
+    "TerrainRowStartEndColumnsDto",
+    "Tracker",
     "TrackerSystem",
+    "Trackers",
     "Transformer",
     "TransformerLossModelTypes",
     "TransformerSpecification",
     "ValidationMessage",
+    "Vector3Double",
 ]
