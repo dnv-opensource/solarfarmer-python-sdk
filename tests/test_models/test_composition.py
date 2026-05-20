@@ -244,9 +244,18 @@ class TestWithTrackers3d:
         )
 
         plant = PVPlant(
-            transformers=[Transformer(inverters=[Inverter(inverter_spec_id="inv1", inverter_count=1)])],
+            transformers=[
+                Transformer(inverters=[Inverter(inverter_spec_id="inv1", inverter_count=1)])
+            ],
             mounting_type_specifications={"mount_t": mounting},
-            tracker_systems={"ts1": TrackerSystem(system_plane_azimuth=0.0, system_plane_tilt=0.0, rotation_min_deg=-60.0, rotation_max_deg=60.0)},
+            tracker_systems={
+                "ts1": TrackerSystem(
+                    system_plane_azimuth=0.0,
+                    system_plane_tilt=0.0,
+                    rotation_min_deg=-60.0,
+                    rotation_max_deg=60.0,
+                )
+            },
             trackers=[tracker],
         )
 
@@ -345,15 +354,29 @@ class TestWithRacks3d:
                         Vector3Double(x=10.0, y=10.0, z=0.5),
                     ],
                     terrain_rows=[
-                        TerrainRowDto(start_end_columns=[TerrainRowStartEndColumnsDto(start_column_index=0, end_column_index=1)]),
-                        TerrainRowDto(start_end_columns=[TerrainRowStartEndColumnsDto(start_column_index=0, end_column_index=1)]),
+                        TerrainRowDto(
+                            start_end_columns=[
+                                TerrainRowStartEndColumnsDto(
+                                    start_column_index=0, end_column_index=1
+                                )
+                            ]
+                        ),
+                        TerrainRowDto(
+                            start_end_columns=[
+                                TerrainRowStartEndColumnsDto(
+                                    start_column_index=0, end_column_index=1
+                                )
+                            ]
+                        ),
                     ],
                 )
             ]
         )
 
         plant = PVPlant(
-            transformers=[Transformer(inverters=[Inverter(inverter_spec_id="inv1", inverter_count=1)])],
+            transformers=[
+                Transformer(inverters=[Inverter(inverter_spec_id="inv1", inverter_count=1)])
+            ],
             mounting_type_specifications={"mount_r": mounting},
             racks=[rack],
             shading_objects=[shading_obj],
