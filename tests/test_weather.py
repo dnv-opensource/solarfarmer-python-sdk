@@ -166,8 +166,27 @@ class TestFromPvlib:
     def test_columns_renamed(self, tmp_path, pvlib_df):
         out = from_pvlib(pvlib_df, tmp_path / "out.tsv")
         header = out.read_text().splitlines()[0]
-        for sf_col in PVLIB_COLUMN_MAP.values():
-            assert sf_col in header
+        # Only assert SF columns whose source column is actually present in the fixture.
+        for pvlib_col, sf_col in PVLIB_COLUMN_MAP.items():
+            if pvlib_col in pvlib_df.columns:
+                assert sf_col in header
+
+    @pytest.mark.parametrize("poa_col", ["poa", "gti"])
+    def test_poa_column_mapped(self, tmp_path, poa_col):
+        """pvlib 'poa' and 'gti' columns should both map to SolarFarmer 'POA'."""
+        pd = pytest.importorskip("pandas")
+        idx = pd.date_range("2020-01-01", periods=3, freq="h", tz="UTC")
+        df = pd.DataFrame(
+            {
+                poa_col: [0.0, 450.0, 750.0],
+                "temp_air": [5.0, 15.0, 25.0],
+            },
+            index=idx,
+        )
+        out = from_pvlib(df, tmp_path / "out.tsv")
+        header = out.read_text().splitlines()[0].split("\t")
+        assert "POA" in header
+        assert poa_col not in header  # raw pvlib name must be gone
 
     def test_pressure_converted(self, tmp_path, pvlib_df):
         out = from_pvlib(pvlib_df, tmp_path / "out.tsv")

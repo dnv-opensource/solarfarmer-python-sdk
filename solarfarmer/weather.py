@@ -37,6 +37,8 @@ pvlib column    SF column
 ==============  ===========
 ``ghi``         ``GHI``
 ``dhi``         ``DHI``
+``poa``         ``POA``
+``gti``         ``POA``
 ``temp_air``    ``TAmb``
 ``wind_speed``  ``WS``
 ``pressure``    ``Pressure``
@@ -164,6 +166,8 @@ def check_sequential_year_timestamps(file_path: str | pathlib.Path) -> None:
 PVLIB_COLUMN_MAP: dict[str, str] = {
     "ghi": "GHI",
     "dhi": "DHI",
+    "poa": "POA",
+    "gti": "POA",
     "temp_air": "TAmb",
     "wind_speed": "WS",
     "pressure": "Pressure",
@@ -267,8 +271,8 @@ def from_pvlib(
     Parameters
     ----------
     df : pandas.DataFrame
-        pvlib-style DataFrame (columns ``ghi``, ``dhi``, ``temp_air``,
-        ``wind_speed``, ``pressure``) with a DatetimeIndex.  pvlib does not
+        pvlib-style DataFrame (columns ``ghi``, ``dhi``, ``poa``/``gti``,
+        ``temp_air``, ``wind_speed``, ``pressure``) with a DatetimeIndex.  pvlib does not
         standardise units across data sources, so check that the units from
         your source match what SolarFarmer expects (see :data:`TSV_COLUMNS`).
         This function applies ``pressure_pa_to_mbar=True``, dividing the
@@ -429,13 +433,6 @@ TSV_COLUMNS: dict = {
             "aliases": ["Date", "DateTime", "Time"],
         },
         {
-            "name": "GHI",
-            "unit": "W/m²",
-            "range": (0, 1300),
-            "note": "Required unless POA is provided instead.",
-            "aliases": ["GHI", "ghi", "Glob", "SolarTotal"],
-        },
-        {
             "name": "TAmb",
             "unit": "°C",
             "range": (-35, 60),
@@ -443,6 +440,20 @@ TSV_COLUMNS: dict = {
         },
     ],
     "optional": [
+        {
+            "name": "GHI",
+            "unit": "W/m²",
+            "range": (0, 1300),
+            "note": "Global horizontal irradiance. Either GHI or POA must be provided.",
+            "aliases": ["GHI", "ghi", "Glob", "SolarTotal"],
+        },
+        {
+            "name": "POA",
+            "unit": "W/m²",
+            "range": (0, 1300),
+            "note": "Plane of array irradiance. Either POA or GHI must be provided.",
+            "aliases": ["POA", "Gpoa", "Plane"],
+        },
         {
             "name": "DHI",
             "unit": "W/m²",
