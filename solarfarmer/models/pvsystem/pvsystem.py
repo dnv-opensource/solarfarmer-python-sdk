@@ -126,6 +126,10 @@ class PVSystem:
         `dc_ohmic_loss` and `ac_ohmic_loss`.
     transformer_stages: int
         Number of transformer stages. 0 for ideal behaviour or 1 for one stage (default is 1).
+    plant_unavailability : float
+        Plant availability loss (per unit) (default 0.0, i.e., no unavailability loss).
+    grid_unavailability : float
+        Grid availability loss (per unit) (default 0.0, i.e., no unavailability loss).
 
     Auxiliary Files
     ---------------
@@ -252,6 +256,8 @@ class PVSystem:
     bifacial: bool = False
     inverter_type: InverterType | None = InverterType.CENTRAL
     transformer_stages: int = 1
+    plant_unavailability: float = 0.0
+    grid_unavailability: float = 0.0
 
     # Effects and settings
     mounting_height: float | None = None  # Changed from: mounting_height: float
@@ -804,6 +810,8 @@ class PVSystem:
         print(
             f"Transformer Stages: {self.transformer_stages} (0=Ideal/NoLoss, 1=MV/HV transformer)"
         )
+        print(f"Plant Unavailability: {self.plant_unavailability} (per unit)")
+        print(f"Grid Unavailability: {self.grid_unavailability} (per unit)")
 
         if verbose:
             # Losses
@@ -1117,6 +1125,8 @@ def construct_plant(pvplant: PVSystem) -> str:
     )
     calculation_options.apply_spectral_mismatch_modifier = pvplant.enable_spectral_modeling
     calculation_options.calculate_dhi = pvplant.calculate_dhi_from_ghi
+    calculation_options.system_availability_loss = pvplant.plant_unavailability
+    calculation_options.grid_availability_loss = pvplant.grid_unavailability
 
     # Build the full inputs model
     inputs = EnergyCalculationInputs(
