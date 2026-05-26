@@ -29,17 +29,20 @@ This workflow involves four steps:
 graph TB
     A["Define PVSystem<br/>(location, capacity, equipment)"]
     B["PVSystem Payload<br/>(automatic payload construction)"]
-    C["run_energy_calculation()<br/>(submit to API)"]
-    D["CalculationResults<br/>(analyze performance)"]
+    C["run_energy_calculation()"]
+    D["SolarFarmer API"]
+    E["CalculationResults<br/>(analyze performance)"]
 
     A --> B
     B --> C
     C --> D
+    D --> E
 
     style A fill:#e1f5ff
     style B fill:#fff3e0
     style C fill:#f3e5f5
-    style D fill:#e8f5e9
+    style D fill:#ffe0b2
+    style E fill:#e8f5e9
 ```
 
 </div>
