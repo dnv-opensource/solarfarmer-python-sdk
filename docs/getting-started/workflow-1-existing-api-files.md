@@ -25,17 +25,20 @@ This workflow involves three steps:
 graph TB
     A["Existing API Files<br/>(JSON, PAN, OND, weather)"]
     B["run_energy_calculation()"]
-    C["ModelChainResponse"]
-    D["CalculationResults<br/>(Time-series, losses, metrics)"]
+    C["SolarFarmer API"]
+    D["ModelChainResponse"]
+    E["CalculationResults<br/>(Time-series, losses, metrics)"]
 
     A --> B
     B --> C
     C --> D
+    D --> E
 
     style A fill:#e1f5ff
     style B fill:#fff3e0
-    style C fill:#f3e5f5
-    style D fill:#e8f5e9
+    style C fill:#ffe0b2
+    style D fill:#f3e5f5
+    style E fill:#e8f5e9
 ```
 
 </div>
