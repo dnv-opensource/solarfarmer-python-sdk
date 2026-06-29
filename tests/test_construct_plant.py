@@ -188,7 +188,7 @@ class TestGeneratePanFileSupplements:
         return get_module_info_from_pan(p)
 
     @pytest.fixture
-    def module_info_without_lid(self, module_info_with_lid, tmp_path):
+    def module_info_without_lid(self, module_info_with_lid):
         """module_info dict built from a PAN file with the LIDLoss key stripped out."""
         import copy
 
