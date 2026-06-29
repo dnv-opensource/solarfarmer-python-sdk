@@ -162,7 +162,9 @@ class PVSystem:
     module_quality_factor: Optional[float] = None
         Module quality factor (per unit) (default is 0.0, i.e., no quality loss).
     lid_loss: Optional[float] = None
-        Loss due to light-induced degradation (LID) (per unit) (default is 0.0, i.e., no LID loss).
+        Loss due to light-induced degradation (LID) (per unit). When set, overrides the
+        LIDLoss value in the PAN file. When ``None`` (default), the value from the PAN
+        file is used. If the PAN file also has no LIDLoss key, the SF API defaults to 0.0.
     module_iam_model_override: Optional[IAMModelTypeForOverride] = None
         Override for the module IAM model used in the calculation (default is None,
         which will use the values from the module's PAN file).
