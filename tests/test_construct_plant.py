@@ -4,7 +4,11 @@ import pytest
 
 from solarfarmer import PVSystem
 from solarfarmer.models import PVPlant
-from solarfarmer.models.pvsystem.pvsystem import construct_plant, design_plant
+from solarfarmer.models.pvsystem.pvsystem import (
+    construct_plant,
+    design_plant,
+    generate_pan_file_supplements,
+)
 
 
 @pytest.fixture
@@ -198,8 +202,6 @@ class TestGeneratePanFileSupplements:
 
     def test_plant_lid_loss_overrides_pan_file(self, module_info_with_lid):
         """When plant.lid_loss is set, it wins over the PAN file value."""
-        from solarfarmer.models.pvsystem.pvsystem import generate_pan_file_supplements
-
         plant = PVSystem(latitude=0, longitude=0)
         plant.lid_loss = 0.01  # PAN has LIDLoss=3.00 (0.03 per unit)
         supplements = generate_pan_file_supplements(
@@ -210,8 +212,6 @@ class TestGeneratePanFileSupplements:
 
     def test_pan_lid_loss_used_when_plant_lid_loss_not_set(self, module_info_with_lid):
         """When plant.lid_loss is None, the PAN file LIDLoss is used."""
-        from solarfarmer.models.pvsystem.pvsystem import generate_pan_file_supplements
-
         plant = PVSystem(latitude=0, longitude=0)
         assert plant.lid_loss is None  # verify default
         supplements = generate_pan_file_supplements(
@@ -227,8 +227,6 @@ class TestGeneratePanFileSupplements:
 
         The SF API then defaults to 0.0 via panData.LIDLoss (C# double default).
         """
-        from solarfarmer.models.pvsystem.pvsystem import generate_pan_file_supplements
-
         plant = PVSystem(latitude=0, longitude=0)
         supplements = generate_pan_file_supplements(
             plant, module_info_without_lid, bifaciality_factor=0.0
