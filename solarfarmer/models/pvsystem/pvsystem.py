@@ -268,7 +268,7 @@ class PVSystem:
     ac_ohmic_loss: float | None = None  # Default depends on inverter type
     module_mismatch: float | None = MODULE_MISMATCH_FACTOR
     module_quality_factor: float | None = 0.0
-    lid_loss: float | None = 0.0
+    lid_loss: float | None = None
     module_iam_model_override: str | None = None
     constant_heat_coefficient: float | None = CONSTANT_HEAT_COEFFICIENT
     convective_heat_coefficient: float | None = CONVECTIVE_HEAT_COEFFICIENT
@@ -1528,11 +1528,16 @@ def generate_pan_file_supplements(
     plant: PVSystem, module_info: dict, bifaciality_factor: float
 ) -> dict[str, Any]:
     """Generate PAN file supplements based on the PVSystem data and module information."""
-    # LID loss value is taken from the PAN file if available, otherwise from the PVSystem default
-    try:
-        lid_loss = float(module_info["data"]["LIDLoss"]) / 100  # Convert percentage to per unit
-    except KeyError:
+    # plant.lid_loss takes priority when explicitly set (not None).
+    # Otherwise fall back to the LIDLoss key in the PAN file.
+    # If neither is present, lid_loss is None and the SF API defaults to 0.0.
+    if plant.lid_loss is not None:
         lid_loss = plant.lid_loss
+    else:
+        try:
+            lid_loss = float(module_info["data"]["LIDLoss"]) / 100  # Convert percentage to per unit
+        except KeyError:
+            lid_loss = None
 
     pan_file_supplements = {}
     pan_file_supplements[module_info["pan_filename"]] = PanFileSupplements(
