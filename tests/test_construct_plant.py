@@ -4,7 +4,11 @@ import pytest
 
 from solarfarmer import PVSystem
 from solarfarmer.models import PVPlant
-from solarfarmer.models.pvsystem.pvsystem import construct_plant, design_plant
+from solarfarmer.models.pvsystem.pvsystem import (
+    construct_plant,
+    design_plant,
+    generate_pan_file_supplements,
+)
 
 
 @pytest.fixture
@@ -168,6 +172,67 @@ class TestSpecIdDerivation:
         finally:
             if created_link and multi_dot.exists():
                 multi_dot.unlink()
+
+
+class TestGeneratePanFileSupplements:
+    """Contract tests for generate_pan_file_supplements().
+
+    Priority rule: plant.lid_loss (when not None) > PAN file LIDLoss > None.
+    """
+
+    @pytest.fixture
+    def module_info_with_lid(self, bern_2d_racks_inputs):
+        """module_info dict built from CanadianSolar PAN (LIDLoss=3.00)."""
+        from solarfarmer.models.pvsystem.pvsystem import get_module_info_from_pan
+
+        p = PVSystem(latitude=46.95, longitude=7.44)
+        p.pan_files = {
+            "CanadianSolar_CS6U-330M_APP": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"
+        }
+        return get_module_info_from_pan(p)
+
+    @pytest.fixture
+    def module_info_without_lid(self, module_info_with_lid):
+        """module_info dict built from a PAN file with the LIDLoss key stripped out."""
+        import copy
+
+        info = copy.deepcopy(module_info_with_lid)
+        info["data"].pop("LIDLoss", None)
+        return info
+
+    def test_plant_lid_loss_overrides_pan_file(self, module_info_with_lid):
+        """When plant.lid_loss is set, it wins over the PAN file value."""
+        plant = PVSystem(latitude=0, longitude=0)
+        plant.lid_loss = 0.01  # PAN has LIDLoss=3.00 (0.03 per unit)
+        supplements = generate_pan_file_supplements(
+            plant, module_info_with_lid, bifaciality_factor=0.0
+        )
+        pan_key = module_info_with_lid["pan_filename"]
+        assert supplements[pan_key].lid_loss == pytest.approx(0.01)
+
+    def test_pan_lid_loss_used_when_plant_lid_loss_not_set(self, module_info_with_lid):
+        """When plant.lid_loss is None, the PAN file LIDLoss is used."""
+        plant = PVSystem(latitude=0, longitude=0)
+        assert plant.lid_loss is None  # verify default
+        supplements = generate_pan_file_supplements(
+            plant, module_info_with_lid, bifaciality_factor=0.0
+        )
+        pan_key = module_info_with_lid["pan_filename"]
+        assert supplements[pan_key].lid_loss == pytest.approx(0.03)  # 3.00 / 100
+
+    def test_lid_loss_is_none_when_neither_plant_nor_pan_provides_value(
+        self, module_info_without_lid
+    ):
+        """When neither plant nor PAN file has LIDLoss, supplements.lid_loss is None.
+
+        The SF API then defaults to 0.0 via panData.LIDLoss (C# double default).
+        """
+        plant = PVSystem(latitude=0, longitude=0)
+        supplements = generate_pan_file_supplements(
+            plant, module_info_without_lid, bifaciality_factor=0.0
+        )
+        pan_key = module_info_without_lid["pan_filename"]
+        assert supplements[pan_key].lid_loss is None
 
 
 class TestListPathInput:

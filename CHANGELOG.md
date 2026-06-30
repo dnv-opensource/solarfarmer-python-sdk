@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-06-29
+
+### Changed
+
+- `PVSystem.lid_loss` default changed from `0.0` to `None`. When `None`, the LIDLoss value is read from the PAN file. If you relied on the old default to override the PAN file, set `plant.lid_loss = 0.0` explicitly.
+
+### Fixed
+
+- `PVSystem.lid_loss` now correctly overrides the PAN file's `LIDLoss` value when explicitly set (previously the PAN file always took precedence).
+
 ## [0.4.0] - 2026-06-08
 
 ### Added
