@@ -159,6 +159,8 @@ class PVSystem:
         AC ohmic loss (per unit) (default depends on inverter type).
     module_mismatch: Optional[float] = None
         Module mismatch loss (per unit) (default is 0.005).
+    recalculate_modeling_correction_factor: bool
+        Whether to recalculate the modeling correction factor (default is True).
     module_quality_factor: Optional[float] = None
         Module quality factor (per unit) (default is 0.0, i.e., no quality loss).
     lid_loss: Optional[float] = None
@@ -269,6 +271,7 @@ class PVSystem:
     dc_ohmic_loss: float | None = None  # Default depends on inverter type
     ac_ohmic_loss: float | None = None  # Default depends on inverter type
     module_mismatch: float | None = MODULE_MISMATCH_FACTOR
+    recalculate_modeling_correction_factor: bool = True
     module_quality_factor: float | None = 0.0
     lid_loss: float | None = None
     module_iam_model_override: str | None = None
@@ -850,6 +853,7 @@ class PVSystem:
 
             # Modeling Options
             print("\n--- MODELING OPTIONS ---")
+            print(f"Recalculate Modeling Correction Factor: {self.recalculate_modeling_correction_factor}")
             print(f"Enable Spectral Modeling: {self.enable_spectral_modeling}")
             print(f"Module IAM Model Override: {self.module_iam_model_override}")
             print(f"Calculate DHI (from GHI in weather file): {self.calculate_dhi_from_ghi}")
@@ -1543,6 +1547,7 @@ def generate_pan_file_supplements(
 
     pan_file_supplements = {}
     pan_file_supplements[module_info["pan_filename"]] = PanFileSupplements(
+        recalculate_modeling_correction_factor=plant.recalculate_modeling_correction_factor,
         module_quality_factor=plant.module_quality_factor,
         lid_loss=lid_loss,
         bifaciality_factor=bifaciality_factor,
