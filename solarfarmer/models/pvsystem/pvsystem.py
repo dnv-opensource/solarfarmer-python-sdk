@@ -853,7 +853,9 @@ class PVSystem:
 
             # Modeling Options
             print("\n--- MODELING OPTIONS ---")
-            print(f"Recalculate Modeling Correction Factor: {self.recalculate_modeling_correction_factor}")
+            print(
+                f"Recalculate Modeling Correction Factor: {self.recalculate_modeling_correction_factor}"
+            )
             print(f"Enable Spectral Modeling: {self.enable_spectral_modeling}")
             print(f"Module IAM Model Override: {self.module_iam_model_override}")
             print(f"Calculate DHI (from GHI in weather file): {self.calculate_dhi_from_ghi}")
