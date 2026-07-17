@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from ._base import SolarFarmerBaseModel
 from .enums import PowerOptimizerOperationType
@@ -56,3 +56,18 @@ class InverterInput(SolarFarmerBaseModel):
     optimizer_specification_id: str | None = Field(None, alias="optimizerSpecificationID")
     optimizers_per_module: PowerOptimizerOperationType | None = None
     fixed_voltage_from_inverter: float | None = Field(None, ge=0)
+
+    @model_validator(mode="after")
+    def _check_invariants(self) -> InverterInput:
+        has_optimizer_id = self.optimizer_specification_id is not None
+        has_optimizer_type = self.optimizers_per_module is not None
+        if has_optimizer_id != has_optimizer_type:
+            raise ValueError(
+                "optimizer_specification_id and optimizers_per_module must be provided together"
+            )
+        if self.dc_ohmic_connector_resistance is not None and self.dc_ohmic_connector_loss != 0.0:
+            raise ValueError(
+                "Provide either dc_ohmic_connector_resistance or dc_ohmic_connector_loss, not both. "
+                "When dc_ohmic_connector_resistance is set, dc_ohmic_connector_loss is ignored."
+            )
+        return self
