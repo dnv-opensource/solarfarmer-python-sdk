@@ -99,6 +99,7 @@ def _resolve_request_payload(
     pan_file_paths: list[str] | None,
     ond_file_paths: list[str] | None,
     plant_builder: str | SolarFarmerBaseModel | None,
+    tracker_rotation_paths: list[str] | None = None,
 ) -> tuple[str, list[tuple[str, IO[bytes]]]]:
     """
     Resolve the API request payload and associated input files.
@@ -123,6 +124,10 @@ def _resolve_request_payload(
         Paths to OND inverter files
     plant_builder : str or SolarFarmerBaseModel or None
         Pre-built payload as a model instance or JSON string
+    tracker_rotation_paths : list of str or None, optional
+        Paths to ``TrackersConditionsDatasetDto_Protobuf*.gz`` files.
+        Ignored when ``inputs_folder_path`` is used (files are discovered
+        automatically from the folder)
 
     Returns
     -------
@@ -155,6 +160,7 @@ def _resolve_request_payload(
             pan_file_paths,
             ond_file_paths,
             energy_calculation_inputs_file_path,
+            tracker_rotation_paths=tracker_rotation_paths,
         )
     elif plant_builder is not None:
         # Option 3: use the data from plant builder
@@ -165,6 +171,7 @@ def _resolve_request_payload(
             ond_file_paths,
             energy_calculation_inputs_file_path=None,
             parse_energy_calc_inputs=False,
+            tracker_rotation_paths=tracker_rotation_paths,
         )
         # Ensure the request is a JSON string
         if isinstance(plant_builder, SolarFarmerBaseModel):
@@ -319,6 +326,7 @@ def run_energy_calculation(
     horizon_file_path: str | None = None,
     ond_file_paths: list[str] | None = None,
     pan_file_paths: list[str] | None = None,
+    tracker_rotation_paths: list[str] | None = None,
     print_summary: bool = True,
     outputs_folder_path: str | pathlib.Path | None = None,
     save_outputs: bool = True,
@@ -366,6 +374,13 @@ def run_energy_calculation(
         One or more paths to PAN module specification files. At least
         one PAN file is required if not provided via ``modelchain_payload``
         or ``folder_path``
+    tracker_rotation_paths : list of str, optional
+        One or more paths to ``TrackersConditionsDatasetDto_Protobuf*.gz``
+        files carrying custom tracker rotation data. Pass them in the
+        correct part order when using multi-part files (e.g.
+        ``001of002`` before ``002of002``). When ``inputs_folder_path`` is
+        used, matching files are discovered automatically from the folder
+        and this parameter is ignored
     print_summary : bool, optional
         If True, it will print out the summary of the energy calculation results.
         Default is True
@@ -441,6 +456,7 @@ def run_energy_calculation(
             pan_file_paths,
             ond_file_paths,
             plant_builder,
+            tracker_rotation_paths,
         )
 
         # 2. Dispatch to the appropriate endpoint
