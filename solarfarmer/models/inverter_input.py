@@ -23,9 +23,7 @@ class InverterInput(SolarFarmerBaseModel):
     module_strings : list[ModuleString]
         All module strings attached to this inverter input
     dc_ohmic_connector_loss : float
-        DC cabling loss as a fraction of DC output power at STC, range [0, 1].
-        Converted internally to a connector resistance so the simulated loss
-        will vary with irradiance rather than being a fixed percentage
+        DC cabling ohmic loss as a fraction of DC output power at STC, range [0, 1].
     module_mismatch_loss : float
         Simple fractional loss to account for module mismatch, range [0, 0.1].
         A value of ``0.01`` represents a 1 % loss
