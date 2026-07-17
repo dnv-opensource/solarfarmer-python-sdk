@@ -252,6 +252,18 @@ class TestExcludeNone:
         assert "name" not in d
         assert "trackerSystemId" not in d
         assert "moduleQualityFactor" not in d
+        assert "trackerRotationID" not in d
+        assert "dcOhmicConnectorResistance" not in d
+
+    def test_layout_tracker_rotation_id_present_when_set(self, layout: Layout) -> None:
+        updated = layout.model_copy(update={"tracker_rotation_id": "Index_101"})
+        d = updated.model_dump(by_alias=True, exclude_none=True)
+        assert d["trackerRotationID"] == "Index_101"
+
+    def test_layout_dc_ohmic_connector_resistance_present_when_set(self, layout: Layout) -> None:
+        updated = layout.model_copy(update={"dc_ohmic_connector_resistance": 0.05})
+        d = updated.model_dump(by_alias=True, exclude_none=True)
+        assert d["dcOhmicConnectorResistance"] == pytest.approx(0.05)
 
     def test_inverter_exclude_none(self, inverter: Inverter) -> None:
         d = inverter.model_dump(by_alias=True, exclude_none=True)

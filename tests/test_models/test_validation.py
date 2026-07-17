@@ -126,6 +126,51 @@ class TestLayoutValidation:
                 string_length=1,
             )
 
+    def test_dc_ohmic_resistance_and_loss_both_set_raises(self) -> None:
+        with pytest.raises(ValidationError, match="dc_ohmic_connector_resistance"):
+            Layout(
+                layout_count=1,
+                module_specification_id="m",
+                mounting_type_id="mt",
+                is_trackers=False,
+                azimuth=180,
+                pitch=5,
+                total_number_of_strings=1,
+                string_length=1,
+                dc_ohmic_connector_loss=0.01,
+                dc_ohmic_connector_resistance=0.5,
+            )
+
+    def test_dc_ohmic_resistance_alone_is_valid(self) -> None:
+        layout = Layout(
+            layout_count=1,
+            module_specification_id="m",
+            mounting_type_id="mt",
+            is_trackers=False,
+            azimuth=180,
+            pitch=5,
+            total_number_of_strings=1,
+            string_length=1,
+            dc_ohmic_connector_resistance=0.5,
+        )
+        assert layout.dc_ohmic_connector_resistance == 0.5
+        assert layout.dc_ohmic_connector_loss == 0.0
+
+    def test_dc_ohmic_resistance_with_loss_zero_is_valid(self) -> None:
+        layout = Layout(
+            layout_count=1,
+            module_specification_id="m",
+            mounting_type_id="mt",
+            is_trackers=False,
+            azimuth=180,
+            pitch=5,
+            total_number_of_strings=1,
+            string_length=1,
+            dc_ohmic_connector_loss=0.0,
+            dc_ohmic_connector_resistance=0.3,
+        )
+        assert layout.dc_ohmic_connector_resistance == 0.3
+
 
 # ---------------------------------------------------------------------------
 # Inverter
