@@ -15,6 +15,7 @@ from .enums import (
     MissingMetDataMethod,
     OrderColumnsPvSystFormatTimeSeries,
     PowerOptimizerOperationType,
+    TrackerAlgorithm,
     TransformerLossModelTypes,
 )
 from .indexed_object3d import IndexedObject3D
@@ -89,6 +90,7 @@ __all__ = [
     "TerrainRowDto",
     "TerrainRowStartEndColumnsDto",
     "Tracker",
+    "TrackerAlgorithm",
     "TrackerSystem",
     "Trackers",
     "Transformer",
