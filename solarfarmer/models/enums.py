@@ -51,6 +51,21 @@ class InverterOverPowerShutdownMode(str, Enum):
     USE_VOLTAGE_DERATE_PROFILE = "UseVoltageDerateProfile"
 
 
+class PowerOptimizerOperationType(str, Enum):
+    """Connection configuration for DC power optimizers (3D calculations only).
+
+    Defines how many modules share a single power optimizer and how they
+    are connected at the optimizer input.
+    """
+
+    ONE_PER_MODULE = "OnePerModule"
+    """One optimizer per module."""
+    ONE_PER_TWO_MODULES_IN_PARALLEL = "OnePerTwoModulesInParallel"
+    """One optimizer shared by two modules connected in parallel."""
+    ONE_PER_TWO_MODULES_IN_SERIES = "OnePerTwoModulesInSeries"
+    """One optimizer shared by two modules connected in series."""
+
+
 class IAMModelTypeForOverride(str, Enum):
     """IAM model types available for overriding the PAN file default."""
 

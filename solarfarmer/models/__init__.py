@@ -14,14 +14,18 @@ from .enums import (
     MeteoFileFormat,
     MissingMetDataMethod,
     OrderColumnsPvSystFormatTimeSeries,
+    PowerOptimizerOperationType,
     TransformerLossModelTypes,
 )
 from .indexed_object3d import IndexedObject3D
 from .inverter import Inverter
+from .inverter_input import InverterInput
 from .layout import Layout
 from .location import Location
 from .mini_simple_terrain_dto import MiniSimpleTerrainDto
 from .model_chain_response import ModelChainResponse
+from .module_index_range import ModuleIndexRange
+from .module_string import ModuleString
 from .monthly_albedo import MonthlyAlbedo
 from .mounting_type_specification import MountingTypeSpecification
 from .ond_supplements import OndFileSupplements
@@ -55,8 +59,11 @@ __all__ = [
     "IAMModelTypeForOverride",
     "IndexedObject3D",
     "Inverter",
+    "InverterInput",
     "InverterOverPowerShutdownMode",
     "InverterType",
+    "ModuleIndexRange",
+    "ModuleString",
     "Layout",
     "Location",
     "MeteoFileFormat",
@@ -70,6 +77,7 @@ __all__ = [
     "OrderColumnsPvSystFormatTimeSeries",
     "OrientationType",
     "PanFileSupplements",
+    "PowerOptimizerOperationType",
     "PVPlant",
     "PVSystem",
     "QuadDouble",
