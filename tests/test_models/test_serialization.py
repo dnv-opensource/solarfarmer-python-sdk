@@ -17,6 +17,7 @@ from solarfarmer.models import (
     OndFileSupplements,
     PanFileSupplements,
     PVPlant,
+    TrackerAlgorithm,
     TrackerSystem,
     Transformer,
     TransformerLossModelTypes,
@@ -166,6 +167,42 @@ class TestRoundTrip:
         rebuilt = TrackerSystem.model_validate(ts.model_dump(by_alias=True))
         assert rebuilt == ts
 
+    def test_tracker_algorithm_serializes(self) -> None:
+        ts = TrackerSystem(
+            system_plane_azimuth=0.0,
+            system_plane_tilt=0.0,
+            tracker_algorithm=TrackerAlgorithm.CUSTOM_ROTATIONS,
+        )
+        d = ts.model_dump(by_alias=True, exclude_none=True)
+        assert d["trackerAlgorithm"] == "CustomRotations"
+
+    def test_tracker_algorithm_absent_when_none(self) -> None:
+        ts = TrackerSystem(system_plane_azimuth=0.0, system_plane_tilt=0.0)
+        d = ts.model_dump(by_alias=True, exclude_none=True)
+        assert "trackerAlgorithm" not in d
+
+    def test_return_tracker_time_series_fields_serialize(self) -> None:
+        opts = EnergyCalculationOptions(
+            diffuse_model=DiffuseModel.PEREZ,
+            include_horizon=False,
+            return_tracker_rotations_time_series=True,
+            return_tracker_incidence_angles_time_series=True,
+        )
+        d = opts.model_dump(by_alias=True)
+        assert d["returnTrackerRotationsTimeSeries"] is True
+        assert d["returnTrackerIncidenceAnglesTimeSeries"] is True
+
+    def test_custom_tracker_rotations_at_middle_round_trip(self) -> None:
+        opts = EnergyCalculationOptions(
+            diffuse_model=DiffuseModel.PEREZ,
+            include_horizon=False,
+            custom_tracker_rotations_are_at_middle_of_period=True,
+        )
+        d = opts.model_dump(by_alias=True)
+        assert d["customTrackerRotationsAreAtMiddleOfPeriod"] is True
+        rebuilt = EnergyCalculationOptions.model_validate(d)
+        assert rebuilt.custom_tracker_rotations_are_at_middle_of_period is True
+
     def test_auxiliary_losses_round_trip(self) -> None:
         aux = AuxiliaryLosses(simple_loss_factor=0.02, night_consumption=500.0)
         rebuilt = AuxiliaryLosses.model_validate(aux.model_dump(by_alias=True))
@@ -224,6 +261,20 @@ class TestExcludeNone:
     def test_calc_options_exclude_none(self, calc_options: EnergyCalculationOptions) -> None:
         d = calc_options.model_dump(by_alias=True, exclude_none=True)
         assert "horizonType" not in d
+
+    def test_custom_tracker_rotations_absent_when_none(self, calc_options: EnergyCalculationOptions) -> None:
+        d = calc_options.model_dump(by_alias=True, exclude_none=True)
+        assert "customTrackerRotationsAreAtMiddleOfPeriod" not in d
+
+    def test_custom_tracker_rotations_present_when_false(self) -> None:
+        opts = EnergyCalculationOptions(
+            diffuse_model=DiffuseModel.PEREZ,
+            include_horizon=False,
+            custom_tracker_rotations_are_at_middle_of_period=False,
+        )
+        d = opts.model_dump(by_alias=True, exclude_none=True)
+        assert "customTrackerRotationsAreAtMiddleOfPeriod" in d
+        assert d["customTrackerRotationsAreAtMiddleOfPeriod"] is False
 
 
 class TestEnumSerialization:
