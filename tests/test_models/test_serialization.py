@@ -321,9 +321,7 @@ class TestJsonSerialization:
         raw = json.loads("{" + text + "}")
         camel = _pascal_to_camel(raw)
 
-        dataset = TrackersConditionsDataset.model_validate(
-            camel["trackersConditionsDataset"]
-        )
+        dataset = TrackersConditionsDataset.model_validate(camel["trackersConditionsDataset"])
         assert len(dataset.tracker_rotation_ids) == 497
         assert len(dataset.data) == 2
         # First timestep: all trackers horizontal (unique value 0)
@@ -364,7 +362,9 @@ class TestExcludeNone:
         d = calc_options.model_dump(by_alias=True, exclude_none=True)
         assert "horizonType" not in d
 
-    def test_custom_tracker_rotations_absent_when_none(self, calc_options: EnergyCalculationOptions) -> None:
+    def test_custom_tracker_rotations_absent_when_none(
+        self, calc_options: EnergyCalculationOptions
+    ) -> None:
         d = calc_options.model_dump(by_alias=True, exclude_none=True)
         assert "customTrackerRotationsAreAtMiddleOfPeriod" not in d
 
