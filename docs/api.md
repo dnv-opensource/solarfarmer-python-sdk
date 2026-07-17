@@ -91,6 +91,14 @@ These are the primary functions for interacting with the SolarFarmer API.
         show_root_toc_entry: false
         show_root_members: true
 
+### `from_solcast()`
+
+::: solarfarmer.weather.from_solcast
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
 ### `check_sequential_year_timestamps()`
 
 ::: solarfarmer.weather.check_sequential_year_timestamps
