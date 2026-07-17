@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `PVSystem.max_rotation_angle` — dedicated field for the maximum tracker rotation angle in degrees (default 60°). Only applies when `mounting='Tracker'`. Replaces the previous (confusing) use of `PVSystem.tilt` for this purpose.
+- Pydantic models for the 3D API data model: `Rack`, `Racks`, `Tracker` (3D), `Trackers`, `InverterInput`, `ModuleString`, `SimpleTerrain`, `ShadingObjects`, and supporting geometry types (`QuadDouble`, `Vector3Double`, `IndexedObject3D`, `ModuleIndexRange`, `MiniSimpleTerrainDto`, `TerrainRowDto`, `TerrainRowStartEndColumnsDto`). These enable full composition of 3D plant layouts, including power optimizer support via `InverterInput`.
+- `PVSystem.recalculate_modeling_correction_factor` field to control whether the modeling correction factor is recalculated during energy yield assessment (default `True`).
+- `from_solcast` added to the Weather Utilities section of the API reference documentation.
+
+### Changed
+
+- `PVSystem.tilt` is now fixed-tilt only. For tracker systems, set `max_rotation_angle` instead. Previously, `tilt` was silently used as the tracker rotation bound, which caused confusion.
+
 ## [0.5.0] - 2026-06-29
 
 ### Changed
