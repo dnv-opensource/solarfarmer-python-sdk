@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
-
 from pydantic import Field
 
 from ._base import SolarFarmerBaseModel
+from .inverter_input import InverterInput
 from .layout import Layout
 
 
@@ -22,8 +21,9 @@ class Inverter(SolarFarmerBaseModel):
         Number of identical inverters, >= 1
     layouts : list[Layout] or None
         Layouts connected to this inverter (2D calculations)
-    inverter_inputs : list[Any] or None
-        Inverter inputs for 3D calculations
+    inverter_inputs : list[InverterInput] or None
+        Inverter MPPT inputs for 3D calculations. Each entry defines the
+        module strings and DC losses for one input
     ac_wiring_ohmic_loss : float
         AC wiring ohmic loss as a fraction, range [0, 1]
     name : str or None
@@ -33,6 +33,6 @@ class Inverter(SolarFarmerBaseModel):
     inverter_spec_id: str = Field(..., alias="inverterSpecID", min_length=1)
     inverter_count: int = Field(..., ge=1)
     layouts: list[Layout] | None = None
-    inverter_inputs: list[Any] | None = None
+    inverter_inputs: list[InverterInput] | None = None
     ac_wiring_ohmic_loss: float = Field(0.0, ge=0, le=1)
     name: str | None = None
