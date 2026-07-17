@@ -89,3 +89,4 @@ TERRAIN_AZIMUTH = 0.0
 TERRAIN_SLOPE = 0.0
 FRAME_BOTTOM_WIDTH = 0.0
 IS_BACKTRACKING = True
+MAX_ROTATION_ANGLE = 60.0  # Default maximum tracker rotation angle in degrees

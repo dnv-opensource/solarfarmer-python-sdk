@@ -238,11 +238,12 @@ class TestPVSystemComplexScenarios:
             latitude=45.0,
             longitude=10.0,
             mounting="Tracker",
-            tilt=60.0,  # Max rotation angle for trackers
+            max_rotation_angle=55.0,
         )
 
         assert fixed_plant.mounting == "Fixed"
         assert tracker_plant.mounting == "Tracker"
+        assert tracker_plant.max_rotation_angle == 55.0
 
     def test_pvsystem_small_vs_large_plant_payload_capacity(self, bern_2d_racks_inputs):
         """A larger dc_capacity_MW results in a larger acCapacityW in the serialized payload."""
@@ -289,6 +290,37 @@ class TestPVSystemComplexScenarios:
             }
             payload = json.loads(construct_plant(plant))
             assert payload["location"]["latitude"] == lat
+
+    def test_max_rotation_angle_maps_to_tracker_payload(self, bern_2d_racks_inputs):
+        """max_rotation_angle is correctly mapped to rotation bounds in the tracker payload."""
+        angle = 45.0
+        plant = PVSystem(
+            latitude=45.0, longitude=10.0, mounting="Tracker", max_rotation_angle=angle
+        )
+        plant.pan_files = {
+            "CanadianSolar_CS6U-330M_APP": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"
+        }
+        plant.ond_files = {"Sungrow_SG125HV_APP": f"{bern_2d_racks_inputs}/Sungrow_SG125HV_APP.OND"}
+
+        payload = json.loads(construct_plant(plant))
+        tracker_system = next(iter(payload["pvPlant"]["trackerSystems"].values()))
+
+        assert tracker_system["rotationMaxDeg"] == angle
+        assert tracker_system["rotationMinDeg"] == -angle
+
+    def test_max_rotation_angle_default_maps_to_60_degrees(self, bern_2d_racks_inputs):
+        """When max_rotation_angle is not set, the tracker payload defaults to ±60°."""
+        plant = PVSystem(latitude=45.0, longitude=10.0, mounting="Tracker")
+        plant.pan_files = {
+            "CanadianSolar_CS6U-330M_APP": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"
+        }
+        plant.ond_files = {"Sungrow_SG125HV_APP": f"{bern_2d_racks_inputs}/Sungrow_SG125HV_APP.OND"}
+
+        payload = json.loads(construct_plant(plant))
+        tracker_system = next(iter(payload["pvPlant"]["trackerSystems"].values()))
+
+        assert tracker_system["rotationMaxDeg"] == 60.0
+        assert tracker_system["rotationMinDeg"] == -60.0
 
 
 class TestPVSystemPropertyDefaults:
