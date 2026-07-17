@@ -619,6 +619,7 @@ class TestWith3DInverterInputs:
                 module_specification_id="mod",
                 dc_ohmic_connector_loss=0.0,
                 module_mismatch_loss=0.0,
+                optimizer_specification_id="opt_spec",
                 optimizers_per_module=variant,
             )
             d = inp.model_dump(by_alias=True, exclude_none=True)
