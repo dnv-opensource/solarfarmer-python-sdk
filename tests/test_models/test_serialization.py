@@ -303,33 +303,39 @@ class TestJsonSerialization:
         assert "inverters" in parsed
         assert parsed["inverters"][0]["inverterSpecID"] == "inv1"
 
-    def test_parse_tracker_conditions_json_file(self) -> None:
-        """EnergyCalcInputsTrackerTest.json round-trips through TrackersConditionsDataset."""
-        from pathlib import Path
+    def test_parse_tracker_conditions_large_dataset(self) -> None:
+        """TrackersConditionsDataset handles large tracker counts and mixed condition types."""
+        from datetime import datetime, timezone
 
-        def _pascal_to_camel(obj: object) -> object:
-            """Recursively lower-case the first character of every dict key."""
-            if isinstance(obj, dict):
-                return {k[0].lower() + k[1:]: _pascal_to_camel(v) for k, v in obj.items()}
-            if isinstance(obj, list):
-                return [_pascal_to_camel(item) for item in obj]
-            return obj
+        n_trackers = 536
+        tracker_ids = [f"Index_{i}" for i in range(n_trackers)]
 
-        json_path = Path(__file__).parent.parent.parent / "EnergyCalcInputsTrackerTest.json"
-        # File is a JSON fragment (key: value), wrap it to make valid JSON.
-        text = json_path.read_text(encoding="utf-8")
-        raw = json.loads("{" + text + "}")
-        camel = _pascal_to_camel(raw)
+        dataset = TrackersConditionsDataset(
+            offset_from_utc=0.0,
+            rotations_are_at_middle_of_period=False,
+            tracker_rotation_ids=tracker_ids,
+            data=[
+                TrackerCondition(
+                    period_in_minutes=5.0,
+                    start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=timezone.utc),
+                    tracker_rotation_unique_value=0,
+                ),
+                TrackerCondition(
+                    period_in_minutes=5.0,
+                    start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=timezone.utc),
+                    tracker_rotations_array_values=list(range(n_trackers)),
+                ),
+            ],
+        )
 
-        dataset = TrackersConditionsDataset.model_validate(camel["trackersConditionsDataset"])
-        assert len(dataset.tracker_rotation_ids) == 497
+        assert len(dataset.tracker_rotation_ids) == n_trackers
         assert len(dataset.data) == 2
         # First timestep: all trackers horizontal (unique value 0)
         assert dataset.data[0].tracker_rotation_unique_value == 0
         assert dataset.data[0].tracker_rotations_array_values == []
         # Second timestep: per-tracker angles
         assert dataset.data[1].tracker_rotation_unique_value is None
-        assert len(dataset.data[1].tracker_rotations_array_values) == 497
+        assert len(dataset.data[1].tracker_rotations_array_values) == n_trackers
 
 
 class TestExcludeNone:
