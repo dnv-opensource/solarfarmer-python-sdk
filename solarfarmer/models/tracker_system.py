@@ -1,6 +1,7 @@
 from pydantic import Field
 
 from ._base import SolarFarmerBaseModel
+from .enums import TrackerAlgorithm
 
 
 class TrackerSystem(SolarFarmerBaseModel):
@@ -24,6 +25,10 @@ class TrackerSystem(SolarFarmerBaseModel):
         Whether backtracking is enabled. Default in the engine is True
     use_slope_aware_backtracking : bool or None
         Whether slope-aware backtracking is used. Default in the engine is True
+    tracker_algorithm : TrackerAlgorithm or None
+        Rotation algorithm the tracker uses to determine its angle at each
+        time step. See :class:`~solarfarmer.models.TrackerAlgorithm` for
+        allowed values. If ``None`` the engine uses its own default.
     """
 
     system_plane_azimuth: float
@@ -34,3 +39,4 @@ class TrackerSystem(SolarFarmerBaseModel):
     east_west_gcr: float | None = None
     is_backtracking: bool | None = None
     use_slope_aware_backtracking: bool | None = None
+    tracker_algorithm: TrackerAlgorithm | None = None

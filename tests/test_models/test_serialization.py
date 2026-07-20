@@ -17,6 +17,9 @@ from solarfarmer.models import (
     OndFileSupplements,
     PanFileSupplements,
     PVPlant,
+    TrackerAlgorithm,
+    TrackerCondition,
+    TrackersConditionsDataset,
     TrackerSystem,
     Transformer,
     TransformerLossModelTypes,
@@ -166,6 +169,42 @@ class TestRoundTrip:
         rebuilt = TrackerSystem.model_validate(ts.model_dump(by_alias=True))
         assert rebuilt == ts
 
+    def test_tracker_algorithm_serializes(self) -> None:
+        ts = TrackerSystem(
+            system_plane_azimuth=0.0,
+            system_plane_tilt=0.0,
+            tracker_algorithm=TrackerAlgorithm.CUSTOM_ROTATIONS,
+        )
+        d = ts.model_dump(by_alias=True, exclude_none=True)
+        assert d["trackerAlgorithm"] == "CustomRotations"
+
+    def test_tracker_algorithm_absent_when_none(self) -> None:
+        ts = TrackerSystem(system_plane_azimuth=0.0, system_plane_tilt=0.0)
+        d = ts.model_dump(by_alias=True, exclude_none=True)
+        assert "trackerAlgorithm" not in d
+
+    def test_return_tracker_time_series_fields_serialize(self) -> None:
+        opts = EnergyCalculationOptions(
+            diffuse_model=DiffuseModel.PEREZ,
+            include_horizon=False,
+            return_tracker_rotations_time_series=True,
+            return_tracker_incidence_angles_time_series=True,
+        )
+        d = opts.model_dump(by_alias=True)
+        assert d["returnTrackerRotationsTimeSeries"] is True
+        assert d["returnTrackerIncidenceAnglesTimeSeries"] is True
+
+    def test_custom_tracker_rotations_at_middle_round_trip(self) -> None:
+        opts = EnergyCalculationOptions(
+            diffuse_model=DiffuseModel.PEREZ,
+            include_horizon=False,
+            custom_tracker_rotations_are_at_middle_of_period=True,
+        )
+        d = opts.model_dump(by_alias=True)
+        assert d["customTrackerRotationsAreAtMiddleOfPeriod"] is True
+        rebuilt = EnergyCalculationOptions.model_validate(d)
+        assert rebuilt.custom_tracker_rotations_are_at_middle_of_period is True
+
     def test_auxiliary_losses_round_trip(self) -> None:
         aux = AuxiliaryLosses(simple_loss_factor=0.02, night_consumption=500.0)
         rebuilt = AuxiliaryLosses.model_validate(aux.model_dump(by_alias=True))
@@ -189,6 +228,64 @@ class TestRoundTrip:
         rebuilt = TransformerSpecification.model_validate(spec.model_dump(by_alias=True))
         assert rebuilt == spec
 
+    def test_tracker_condition_round_trip(self) -> None:
+        from datetime import datetime, timezone
+
+        # Mirrors the first data row in EnergyCalcInputsTrackerTest.json:
+        # all trackers flat (angle = 0) early morning.
+        cond = TrackerCondition(
+            period_in_minutes=5.0,
+            start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=timezone.utc),
+            tracker_rotation_unique_value=0,
+        )
+        rebuilt = TrackerCondition.model_validate(cond.model_dump(by_alias=True))
+        assert rebuilt == cond
+
+    def test_tracker_condition_array_round_trip(self) -> None:
+        from datetime import datetime, timezone
+
+        # Mirrors the second data row in EnergyCalcInputsTrackerTest.json:
+        # trackers have different angles, encoded as degrees × 100.
+        cond = TrackerCondition(
+            period_in_minutes=5.0,
+            start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=timezone.utc),
+            tracker_rotations_array_values=[-1570, -780, -1050],
+        )
+        d = cond.model_dump(by_alias=True)
+        assert d["trackerRotationsArrayValues"] == [-1570, -780, -1050]
+        assert d["trackerRotationUniqueValue"] is None
+        rebuilt = TrackerCondition.model_validate(d)
+        assert rebuilt == cond
+
+    def test_trackers_conditions_dataset_round_trip(self) -> None:
+        from datetime import datetime, timezone
+
+        # Small 3-tracker / 2-timestep dataset representative of the JSON file.
+        dataset = TrackersConditionsDataset(
+            offset_from_utc=0.0,
+            rotations_are_at_middle_of_period=False,
+            tracker_rotation_ids=["Index_0", "Index_1", "Index_2"],
+            data=[
+                TrackerCondition(
+                    period_in_minutes=5.0,
+                    start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=timezone.utc),
+                    tracker_rotation_unique_value=0,
+                ),
+                TrackerCondition(
+                    period_in_minutes=5.0,
+                    start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=timezone.utc),
+                    tracker_rotations_array_values=[-1570, -780, -1050],
+                ),
+            ],
+        )
+        d = dataset.model_dump(by_alias=True)
+        assert d["offsetFromUtc"] == 0.0
+        assert d["rotationsAreAtMiddleOfPeriod"] is False
+        assert d["trackerRotationIds"] == ["Index_0", "Index_1", "Index_2"]
+        assert len(d["data"]) == 2
+        rebuilt = TrackersConditionsDataset.model_validate(d)
+        assert rebuilt == dataset
+
 
 class TestJsonSerialization:
     """Models can be serialized to/from JSON strings."""
@@ -206,6 +303,40 @@ class TestJsonSerialization:
         assert "inverters" in parsed
         assert parsed["inverters"][0]["inverterSpecID"] == "inv1"
 
+    def test_parse_tracker_conditions_large_dataset(self) -> None:
+        """TrackersConditionsDataset handles large tracker counts and mixed condition types."""
+        from datetime import datetime, timezone
+
+        n_trackers = 536
+        tracker_ids = [f"Index_{i}" for i in range(n_trackers)]
+
+        dataset = TrackersConditionsDataset(
+            offset_from_utc=0.0,
+            rotations_are_at_middle_of_period=False,
+            tracker_rotation_ids=tracker_ids,
+            data=[
+                TrackerCondition(
+                    period_in_minutes=5.0,
+                    start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=timezone.utc),
+                    tracker_rotation_unique_value=0,
+                ),
+                TrackerCondition(
+                    period_in_minutes=5.0,
+                    start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=timezone.utc),
+                    tracker_rotations_array_values=list(range(n_trackers)),
+                ),
+            ],
+        )
+
+        assert len(dataset.tracker_rotation_ids) == n_trackers
+        assert len(dataset.data) == 2
+        # First timestep: all trackers horizontal (unique value 0)
+        assert dataset.data[0].tracker_rotation_unique_value == 0
+        assert dataset.data[0].tracker_rotations_array_values == []
+        # Second timestep: per-tracker angles
+        assert dataset.data[1].tracker_rotation_unique_value is None
+        assert len(dataset.data[1].tracker_rotations_array_values) == n_trackers
+
 
 class TestExcludeNone:
     """Optional None values can be excluded from output."""
@@ -215,6 +346,18 @@ class TestExcludeNone:
         assert "name" not in d
         assert "trackerSystemId" not in d
         assert "moduleQualityFactor" not in d
+        assert "trackerRotationID" not in d
+        assert "dcOhmicConnectorResistance" not in d
+
+    def test_layout_tracker_rotation_id_present_when_set(self, layout: Layout) -> None:
+        updated = layout.model_copy(update={"tracker_rotation_id": "Index_101"})
+        d = updated.model_dump(by_alias=True, exclude_none=True)
+        assert d["trackerRotationID"] == "Index_101"
+
+    def test_layout_dc_ohmic_connector_resistance_present_when_set(self, layout: Layout) -> None:
+        updated = layout.model_copy(update={"dc_ohmic_connector_resistance": 0.05})
+        d = updated.model_dump(by_alias=True, exclude_none=True)
+        assert d["dcOhmicConnectorResistance"] == pytest.approx(0.05)
 
     def test_inverter_exclude_none(self, inverter: Inverter) -> None:
         d = inverter.model_dump(by_alias=True, exclude_none=True)
@@ -224,6 +367,22 @@ class TestExcludeNone:
     def test_calc_options_exclude_none(self, calc_options: EnergyCalculationOptions) -> None:
         d = calc_options.model_dump(by_alias=True, exclude_none=True)
         assert "horizonType" not in d
+
+    def test_custom_tracker_rotations_absent_when_none(
+        self, calc_options: EnergyCalculationOptions
+    ) -> None:
+        d = calc_options.model_dump(by_alias=True, exclude_none=True)
+        assert "customTrackerRotationsAreAtMiddleOfPeriod" not in d
+
+    def test_custom_tracker_rotations_present_when_false(self) -> None:
+        opts = EnergyCalculationOptions(
+            diffuse_model=DiffuseModel.PEREZ,
+            include_horizon=False,
+            custom_tracker_rotations_are_at_middle_of_period=False,
+        )
+        d = opts.model_dump(by_alias=True, exclude_none=True)
+        assert "customTrackerRotationsAreAtMiddleOfPeriod" in d
+        assert d["customTrackerRotationsAreAtMiddleOfPeriod"] is False
 
 
 class TestEnumSerialization:

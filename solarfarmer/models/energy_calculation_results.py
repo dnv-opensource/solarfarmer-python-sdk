@@ -23,6 +23,8 @@ from ..config import (
     PANDAS_INSTALL_MSG,
     PVSYST_TIMESERIES_DATAFRAME_FILENAME,
     PVSYST_TIMESERIES_FILENAME,
+    TRACKER_INCIDENCE_ANGLES_FILENAME,
+    TRACKER_ROTATION_ANGLES_FILENAME,
 )
 from ..endpoint_modelchains_utils import path_exists
 from ..logging import get_logger
@@ -127,6 +129,14 @@ class CalculationResults:
     DetailedTimeseries : pd.DataFrame or None
         The detailed timeseries results. Additional data from the modeling chain of
         SolarFarmer performance model. Useful for debugging.
+    TrackerIncidenceAnglesTimeseries : pd.DataFrame or None
+        The tracker incidence angles timeseries. Each string in the API response
+        list is one line of the file; they are joined to form a single DataFrame.
+        None if not returned by the API (e.g., fixed-tilt plants).
+    TrackerRotationAnglesTimeseries : pd.DataFrame or None
+        The tracker rotation angles timeseries. Each string in the API response
+        list is one line of the file; they are joined to form a single DataFrame.
+        None if not returned by the API (e.g., fixed-tilt plants).
     Name: str or None
         Name of project. It is populated with the ``project_id`` property if availabe.
 
@@ -156,6 +166,8 @@ class CalculationResults:
     LossTreeTimeseries: pd.DataFrame | None = None
     PVsystTimeseries: pd.DataFrame | None = None
     DetailedTimeseries: pd.DataFrame | None = None
+    TrackerIncidenceAnglesTimeseries: pd.DataFrame | None = None
+    TrackerRotationAnglesTimeseries: pd.DataFrame | None = None
     Name: str | None = None
 
     # ----- Convenience properties for common metrics (year 1) -----
@@ -238,6 +250,14 @@ class CalculationResults:
             modelchain_response, outputs_folder_path, save_outputs
         )
 
+        tracker_incidence_timeseries = _handle_tracker_incidence_results(
+            modelchain_response, outputs_folder_path, save_outputs
+        )
+
+        tracker_rotation_timeseries = _handle_tracker_rotation_results(
+            modelchain_response, outputs_folder_path, save_outputs
+        )
+
         calculation_results = cls(
             ModelChainResponse=modelchain_response,
             AnnualData=annual_data,
@@ -246,6 +266,8 @@ class CalculationResults:
             LossTreeTimeseries=losstree_timeseries,
             PVsystTimeseries=pvsyst_timeseries,
             DetailedTimeseries=detailed_timeseries,
+            TrackerIncidenceAnglesTimeseries=tracker_incidence_timeseries,
+            TrackerRotationAnglesTimeseries=tracker_rotation_timeseries,
             Name=modelchain_response.Name,
         )
 
@@ -338,6 +360,22 @@ class CalculationResults:
             detailed_timeseries_file_path, "\t", DETAILED_TIMESERIES_FILENAME
         )
 
+        # Tracker incidence angles timeseries
+        tracker_incidence_timeseries = _read_dataframe_pandas_safe(
+            output_folder_path / TRACKER_INCIDENCE_ANGLES_FILENAME,
+            ";",
+            TRACKER_INCIDENCE_ANGLES_FILENAME,
+            optional=True,
+        )
+
+        # Tracker rotation angles timeseries
+        tracker_rotation_timeseries = _read_dataframe_pandas_safe(
+            output_folder_path / TRACKER_ROTATION_ANGLES_FILENAME,
+            ";",
+            TRACKER_ROTATION_ANGLES_FILENAME,
+            optional=True,
+        )
+
         return cls(
             ModelChainResponse=None,
             AnnualData=annual_data,
@@ -346,6 +384,8 @@ class CalculationResults:
             LossTreeTimeseries=losstree_timeseries,
             PVsystTimeseries=pvsyst_timeseries,
             DetailedTimeseries=detailed_timeseries,
+            TrackerIncidenceAnglesTimeseries=tracker_incidence_timeseries,
+            TrackerRotationAnglesTimeseries=tracker_rotation_timeseries,
             Name=None,
         )
 
@@ -498,6 +538,44 @@ class CalculationResults:
                     detailed_timeseries_file_path,
                 )
 
+        # Tracker incidence angles timeseries
+        if response_exists:
+            incidence_results_list = self.ModelChainResponse.TrackerResultsIncidenceAngles
+            if incidence_results_list:
+                _save_content(
+                    "\n".join(incidence_results_list),
+                    output_folder_path / TRACKER_INCIDENCE_ANGLES_FILENAME,
+                    type_file="tracker incidence angles",
+                )
+        else:
+            incidence_df = self.TrackerIncidenceAnglesTimeseries
+            if incidence_df is not None and len(incidence_df) > 0:
+                file_path = output_folder_path / TRACKER_INCIDENCE_ANGLES_FILENAME
+                incidence_df.to_csv(file_path, sep=";")
+                _logger.debug(
+                    "Saved tracker incidence angles file to %s (exported from DataFrame, metadata may be missing)",
+                    file_path,
+                )
+
+        # Tracker rotation angles timeseries
+        if response_exists:
+            rotation_results_list = self.ModelChainResponse.TrackerResultsRotationAngles
+            if rotation_results_list:
+                _save_content(
+                    "\n".join(rotation_results_list),
+                    output_folder_path / TRACKER_ROTATION_ANGLES_FILENAME,
+                    type_file="tracker rotation angles",
+                )
+        else:
+            rotation_df = self.TrackerRotationAnglesTimeseries
+            if rotation_df is not None and len(rotation_df) > 0:
+                file_path = output_folder_path / TRACKER_ROTATION_ANGLES_FILENAME
+                rotation_df.to_csv(file_path, sep=";")
+                _logger.debug(
+                    "Saved tracker rotation angles file to %s (exported from DataFrame, metadata may be missing)",
+                    file_path,
+                )
+
         _logger.info("Results written out to %s", output_folder_path)
 
         return
@@ -515,6 +593,12 @@ class CalculationResults:
         print(f"Loss tree timeseries included: {data['has_loss_tree_timeseries']}")
         print(f"PVsyst timeseries included: {data['has_pvsyst_timeseries']}")
         print(f"Detailed timeseries included: {data['has_detailed_timeseries']}")
+        print(
+            f"Tracker incidence angles timeseries included: {data['has_tracker_incidence_angles_timeseries']}"
+        )
+        print(
+            f"Tracker rotation angles timeseries included: {data['has_tracker_rotation_angles_timeseries']}"
+        )
         return
 
     def describe(self, project_year: int = 1) -> None:
@@ -676,6 +760,8 @@ class CalculationResults:
             - 'has_loss_tree_timeseries': Whether loss tree timeseries is available
             - 'has_pvsyst_timeseries': Whether PVsyst timeseries is available
             - 'has_detailed_timeseries': Whether detailed timeseries is available
+            - 'has_tracker_incidence_angles_timeseries': Whether tracker incidence angles timeseries is available
+            - 'has_tracker_rotation_angles_timeseries': Whether tracker rotation angles timeseries is available
 
         Examples
         --------
@@ -691,6 +777,10 @@ class CalculationResults:
             "has_loss_tree_timeseries": self.LossTreeTimeseries is not None,
             "has_pvsyst_timeseries": self.PVsystTimeseries is not None,
             "has_detailed_timeseries": self.DetailedTimeseries is not None,
+            "has_tracker_incidence_angles_timeseries": self.TrackerIncidenceAnglesTimeseries
+            is not None,
+            "has_tracker_rotation_angles_timeseries": self.TrackerRotationAnglesTimeseries
+            is not None,
         }
 
     def get_performance(self, project_year: int = 1) -> dict[str, int | float]:
@@ -1858,6 +1948,108 @@ def _handle_timeseries_results(
         return None
 
 
+def _handle_tracker_incidence_results(
+    modelchain_response: ModelChainResponse,
+    outputs_folder_path: str | Path,
+    save_outputs: bool,
+) -> pd.DataFrame | None:
+    """
+    Extract tracker incidence angles timeseries results from ModelChainResponse.
+
+    The API returns the file contents as ``ICollection<string>`` where each
+    element is one line of the CSV. The lines are joined and saved as a single
+    ``TrackerPositions_IncidenceAngles.csv`` file.
+
+    Parameters
+    ----------
+    modelchain_response : ModelChainResponse
+        The ModelChainResponse object from the API call.
+    outputs_folder_path : str
+        The path of the output folder, where the results will be written.
+    save_outputs : bool
+        If True, saves the joined content to
+        ``TrackerPositions_IncidenceAngles.csv`` in the output folder.
+
+    Returns
+    -------
+    pandas.DataFrame or None
+        The incidence angles timeseries as a DataFrame if pandas is installed;
+        None if the response contains no tracker incidence data or pandas
+        is unavailable.
+    """
+    incidence_results_list = modelchain_response.TrackerResultsIncidenceAngles
+    if not incidence_results_list:
+        _logger.debug("No tracker incidence angles results returned.")
+        return None
+
+    content = "\n".join(incidence_results_list)
+
+    if save_outputs:
+        _save_content(
+            content,
+            Path(outputs_folder_path) / TRACKER_INCIDENCE_ANGLES_FILENAME,
+            type_file="tracker incidence angles",
+        )
+
+    if not _PANDAS:
+        warnings.warn(PANDAS_INSTALL_MSG, stacklevel=2)
+        return None
+
+    with io.StringIO(content) as g:
+        return pd.read_csv(g, sep=";")
+
+
+def _handle_tracker_rotation_results(
+    modelchain_response: ModelChainResponse,
+    outputs_folder_path: str | Path,
+    save_outputs: bool,
+) -> pd.DataFrame | None:
+    """
+    Extract tracker rotation angles timeseries results from ModelChainResponse.
+
+    The API returns the file contents as ``ICollection<string>`` where each
+    element is one line of the CSV. The lines are joined and saved as a single
+    ``TrackerPositions_RotationAngles.csv`` file.
+
+    Parameters
+    ----------
+    modelchain_response : ModelChainResponse
+        The ModelChainResponse object from the API call.
+    outputs_folder_path : str
+        The path of the output folder, where the results will be written.
+    save_outputs : bool
+        If True, saves the joined content to
+        ``TrackerPositions_RotationAngles.csv`` in the output folder.
+
+    Returns
+    -------
+    pandas.DataFrame or None
+        The rotation angles timeseries as a DataFrame if pandas is installed;
+        None if the response contains no tracker rotation data or pandas
+        is unavailable.
+    """
+    rotation_results_list = modelchain_response.TrackerResultsRotationAngles
+    if not rotation_results_list:
+        _logger.debug("No tracker rotation angles results returned.")
+        return None
+
+    content = "\n".join(rotation_results_list)
+
+    if save_outputs:
+        _save_content(
+            content,
+            Path(outputs_folder_path) / TRACKER_ROTATION_ANGLES_FILENAME,
+            type_file="tracker rotation angles",
+        )
+
+    if not _PANDAS:
+        warnings.warn(PANDAS_INSTALL_MSG, stacklevel=2)
+        return None
+
+    with io.StringIO(content) as g:
+        return pd.read_csv(g, sep=";")
+
+
 def _save_content(
     content: str | bytes | dict | list,
     dest_path: str | Path,
@@ -1954,6 +2146,7 @@ def _read_dataframe_pandas_safe(
     separator_character: str,
     name_file: str,
     skip_rows: list[int] | None = None,
+    optional: bool = False,
 ) -> pd.DataFrame | None:
     """
     Safely read a pandas DataFrame from a CSV file.
@@ -1968,6 +2161,10 @@ def _read_dataframe_pandas_safe(
         Name of the file for logging purposes.
     skip_rows : list[int] | None, optional
         Row indices to skip. Default is None.
+    optional : bool, optional
+        If True, a missing file is logged at DEBUG level rather than WARNING.
+        Use for files that are only present for certain calculation types
+        (e.g., tracker results on fixed-tilt plants). Default is False.
 
     Returns
     -------
@@ -1975,7 +2172,10 @@ def _read_dataframe_pandas_safe(
         Parsed DataFrame, or None if file doesn't exist or pandas unavailable.
     """
     if path_exists(file_path) is False:
-        _logger.warning("The file %s could not be found.", file_path)
+        if optional:
+            _logger.debug("Optional file %s not found, skipping.", file_path)
+        else:
+            _logger.warning("The file %s could not be found.", file_path)
     else:
         if _PANDAS:
             dataframe = pd.read_csv(file_path, sep=separator_character, skiprows=skip_rows)
