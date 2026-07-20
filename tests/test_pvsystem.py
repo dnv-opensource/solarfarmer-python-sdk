@@ -238,12 +238,12 @@ class TestPVSystemComplexScenarios:
             latitude=45.0,
             longitude=10.0,
             mounting="Tracker",
-            max_rotation_angle=55.0,
+            tracker_max_rotation_angle=55.0,
         )
 
         assert fixed_plant.mounting == "Fixed"
         assert tracker_plant.mounting == "Tracker"
-        assert tracker_plant.max_rotation_angle == 55.0
+        assert tracker_plant.tracker_max_rotation_angle == 55.0
 
     def test_pvsystem_small_vs_large_plant_payload_capacity(self, bern_2d_racks_inputs):
         """A larger dc_capacity_MW results in a larger acCapacityW in the serialized payload."""
@@ -291,11 +291,11 @@ class TestPVSystemComplexScenarios:
             payload = json.loads(construct_plant(plant))
             assert payload["location"]["latitude"] == lat
 
-    def test_max_rotation_angle_maps_to_tracker_payload(self, bern_2d_racks_inputs):
-        """max_rotation_angle is correctly mapped to rotation bounds in the tracker payload."""
+    def test_tracker_max_rotation_angle_maps_to_tracker_payload(self, bern_2d_racks_inputs):
+        """tracker_max_rotation_angle is correctly mapped to rotation bounds in the tracker payload."""
         angle = 45.0
         plant = PVSystem(
-            latitude=45.0, longitude=10.0, mounting="Tracker", max_rotation_angle=angle
+            latitude=45.0, longitude=10.0, mounting="Tracker", tracker_max_rotation_angle=angle
         )
         plant.pan_files = {
             "CanadianSolar_CS6U-330M_APP": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"
@@ -308,8 +308,8 @@ class TestPVSystemComplexScenarios:
         assert tracker_system["rotationMaxDeg"] == angle
         assert tracker_system["rotationMinDeg"] == -angle
 
-    def test_max_rotation_angle_default_maps_to_60_degrees(self, bern_2d_racks_inputs):
-        """When max_rotation_angle is not set, the tracker payload defaults to ±60°."""
+    def test_tracker_max_rotation_angle_default_maps_to_60_degrees(self, bern_2d_racks_inputs):
+        """When tracker_max_rotation_angle is not set, the tracker payload defaults to ±60°."""
         plant = PVSystem(latitude=45.0, longitude=10.0, mounting="Tracker")
         plant.pan_files = {
             "CanadianSolar_CS6U-330M_APP": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"

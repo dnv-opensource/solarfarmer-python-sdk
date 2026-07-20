@@ -112,11 +112,11 @@ class PVSystem:
     tilt : float
         Array tilt in degrees. Applicable for fixed-tilt mounting only.
         The default is the latitude rounded to degrees.
-        For tracker systems, use ``max_rotation_angle`` instead.
-    max_rotation_angle : float
+        For tracker systems, use ``tracker_max_rotation_angle`` instead.
+    tracker_max_rotation_angle : float
         Maximum tracker rotation angle in degrees (default is 60°).
         Only applicable when ``mounting='Tracker'``.
-        Defines the symmetric rotation bounds: ``[-max_rotation_angle, +max_rotation_angle]``.
+        Defines the symmetric rotation bounds: ``[-tracker_max_rotation_angle, +tracker_max_rotation_angle]``.
     azimuth : float
         Array azimuth in degrees (default 180, i.e., south-facing).
     mounting: str
@@ -260,7 +260,7 @@ class PVSystem:
     gcr: float = 0.5
     pitch: float | None = None  # If None, calculated from gcr and module dimensions
     tilt: float | None = None  # For fixed-tilt only; default is latitude rounded to degrees
-    max_rotation_angle: float | None = (
+    tracker_max_rotation_angle: float | None = (
         None  # For trackers only; default is MAX_ROTATION_ANGLE (60°)
     )
     azimuth: float = 180.0
@@ -798,8 +798,8 @@ class PVSystem:
         print(f"Pitch: {self.pitch} m")
         if self.mounting == MountingType.TRACKER:
             effective_max_rotation = (
-                self.max_rotation_angle
-                if self.max_rotation_angle is not None
+                self.tracker_max_rotation_angle
+                if self.tracker_max_rotation_angle is not None
                 else MAX_ROTATION_ANGLE
             )
             print(f"Max Rotation Angle (Tracker): {effective_max_rotation}°")
@@ -1517,7 +1517,9 @@ def generate_tracker_systems(
 
     if is_tracker:
         max_rotation = (
-            plant.max_rotation_angle if plant.max_rotation_angle is not None else MAX_ROTATION_ANGLE
+            plant.tracker_max_rotation_angle
+            if plant.tracker_max_rotation_angle is not None
+            else MAX_ROTATION_ANGLE
         )
         tracker_system = TrackerSystem(
             system_plane_azimuth=0.0,
