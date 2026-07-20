@@ -1,3 +1,4 @@
+from . import custom_rotations
 from .__version__ import __version__
 from .api import SolarFarmerAPIError
 from .config import (
@@ -20,6 +21,16 @@ from .config import (
     SERVICE_ENDPOINT_URL,
     SF_PORTAL_URL,
     TERMINATE_ASYNC_ENDPOINT_URL,
+)
+from .custom_rotations import (
+    RotationSignConventionWarning,
+    validate_tracker_rotation_ids,
+)
+from .custom_rotations import (
+    csv_to_protobuf as custom_rotations_csv_to_protobuf,
+)
+from .custom_rotations import (
+    from_csv as from_custom_rotations_csv,
 )
 from .endpoint_about import about
 from .endpoint_modelchains import run_energy_calculation
@@ -87,8 +98,11 @@ from .weather import (
 
 __all__ = [
     "__version__",
+    "custom_rotations",
+    "custom_rotations_csv_to_protobuf",
     "about",
     "configure_logging",
+    "from_custom_rotations_csv",
     # Config constants
     "ABOUT_ENDPOINT_URL",
     "ANNUAL_MONTHLY_RESULTS_FILENAME",
@@ -168,4 +182,6 @@ __all__ = [
     "from_pvlib",
     "from_solcast",
     "check_sequential_year_timestamps",
+    "RotationSignConventionWarning",
+    "validate_tracker_rotation_ids",
 ]
