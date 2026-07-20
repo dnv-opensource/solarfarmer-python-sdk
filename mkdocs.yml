@@ -89,6 +89,7 @@ nav:
     - Workflow 1 - Load Existing API Files: getting-started/workflow-1-existing-api-files.md
     - Workflow 2 - Design Plants with PVSystem: getting-started/workflow-2-pvplant-builder.md
     - Workflow 3 - Advanced Integration: getting-started/workflow-3-plantbuilder-advanced.md
+    - Custom Tracker Rotations: getting-started/custom-tracker-rotations.md
     - Quick Start Examples: getting-started/quick-start-examples.md
     - End-to-End Examples: getting-started/end-to-end-examples.md
 - API Reference: api.md

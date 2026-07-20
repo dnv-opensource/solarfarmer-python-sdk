@@ -18,6 +18,7 @@ The SolarFarmer SDK is organized into the following main categories:
 - [**Endpoint Functions**](#endpoint-functions): Core functions for making API calls
 - [**Main Classes**](#main-classes): Key data models for calculations and plant design
 - [**Weather Utilities**](#weather-utilities): Convert DataFrames to SolarFarmer weather files (requires `pandas`)
+- [**Custom Tracker Rotations**](#custom-tracker-rotations): Convert CSV rotation schedules to protobuf format for 3D calculations
 
 ### Configuration & Design
 
@@ -102,6 +103,37 @@ These are the primary functions for interacting with the SolarFarmer API.
 ### `TSV_COLUMNS`
 
 Data dictionary describing the SolarFarmer TSV weather file format: required and optional columns, units, valid ranges, aliases, and the missing-value sentinel. See the [`weather` module docstring](../api.md) for full details.
+
+---
+
+## Custom Tracker Rotations
+
+Convert a CSV schedule of tracker rotation angles to the gzip-compressed
+protobuf file required by SolarFarmer 3D calculations.
+
+### `custom_rotations.from_csv()`
+
+::: solarfarmer.custom_rotations.from_csv
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `custom_rotations.csv_to_protobuf()`
+
+::: solarfarmer.custom_rotations.csv_to_protobuf
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `custom_rotations.validate_tracker_rotation_ids()`
+
+::: solarfarmer.custom_rotations.validate_tracker_rotation_ids
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
 
 ---
 
