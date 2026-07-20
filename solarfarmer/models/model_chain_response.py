@@ -56,6 +56,14 @@ class ModelChainResponse:
     TotalModuleArea : float | None
         Total PV module area in square meters (m²) for the entire plant.
         None if not returned by the API.
+    TrackerResultsIncidenceAngles : list[str] | None
+        List of CSV text contents for the trackers' incidence angles timeseries.
+        Each entry corresponds to one tracker group or file chunk.
+        None if not returned by the API (e.g., non-tracker plants).
+    TrackerResultsRotationAngles : list[str] | None
+        List of CSV text contents for the trackers' rotation angles timeseries.
+        Each entry corresponds to one tracker group or file chunk.
+        None if not returned by the API (e.g., non-tracker plants).
     """
 
     Name: str | None = None
@@ -67,6 +75,8 @@ class ModelChainResponse:
     ResultsFile: str | None = None
     SystemAttributes: dict[str, Any] | None = None
     TotalModuleArea: float | None = None
+    TrackerResultsIncidenceAngles: list[str] | None = None
+    TrackerResultsRotationAngles: list[str] | None = None
 
     def __repr__(self) -> str:
         """
@@ -87,6 +97,8 @@ class ModelChainResponse:
             f"ResultsFile={'present' if self.ResultsFile else 'None'}",
             f"SystemAttributes={'present' if self.SystemAttributes else 'None'}",
             f"TotalModuleArea={self.TotalModuleArea}",
+            f"TrackerResultsIncidenceAngles={len(self.TrackerResultsIncidenceAngles) if self.TrackerResultsIncidenceAngles else 'None'} file(s)",
+            f"TrackerResultsRotationAngles={len(self.TrackerResultsRotationAngles) if self.TrackerResultsRotationAngles else 'None'} file(s)",
         ]
         return f"ModelChainResponse({', '.join(fields)})"
 
@@ -199,4 +211,6 @@ class ModelChainResponse:
             ResultsFile=data.get("resultsFile"),
             SystemAttributes=data.get("systemAttributes"),
             TotalModuleArea=data.get("totalModuleArea"),
+            TrackerResultsIncidenceAngles=data.get("trackerResultsIncidenceAngles"),
+            TrackerResultsRotationAngles=data.get("trackerResultsRotationAngles"),
         )
