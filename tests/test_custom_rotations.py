@@ -11,6 +11,7 @@ from solarfarmer.custom_rotations import (
     check_weather_covers_rotation_period,
     csv_to_protobuf,
     from_csv,
+    from_csv_folder,
     validate_tracker_rotation_ids,
 )
 from solarfarmer.models import (
@@ -526,3 +527,110 @@ class TestWeatherChecks:
 
         with pytest.raises(ValueError, match="at least two"):
             check_compatible_time_resolutions([datetime(2025, 1, 1)], dataset)
+
+
+class TestFromCsvFolder:
+    """from_csv_folder merges multiple CSV files from a directory."""
+
+    _JAN = "\n".join(
+        [
+            "Year,Month,Day,Hour,Minute,T0,T1",
+            "2025,1,1,8,0,-1.0,-2.0",
+            "2025,1,1,8,5,-1.5,-2.5",
+            "2025,1,1,8,10,-2.0,-3.0",
+        ]
+    )
+    _FEB = "\n".join(
+        [
+            "Year,Month,Day,Hour,Minute,T0,T1",
+            "2025,2,1,8,0,-3.0,-4.0",
+            "2025,2,1,8,5,-3.5,-4.5",
+            "2025,2,1,8,10,-4.0,-5.0",
+        ]
+    )
+
+    def test_merges_two_files(self, tmp_path) -> None:
+        (tmp_path / "jan.csv").write_text(self._JAN, encoding="utf-8")
+        (tmp_path / "feb.csv").write_text(self._FEB, encoding="utf-8")
+
+        dataset = from_csv_folder(tmp_path)
+
+        assert len(dataset.data) == 6
+        assert dataset.tracker_rotation_ids == ["T0", "T1"]
+
+    def test_files_sorted_chronologically_not_by_name(self, tmp_path) -> None:
+        # Name the February file so it sorts alphabetically before January.
+        (tmp_path / "aaa_feb.csv").write_text(self._FEB, encoding="utf-8")
+        (tmp_path / "zzz_jan.csv").write_text(self._JAN, encoding="utf-8")
+
+        dataset = from_csv_folder(tmp_path)
+
+        # January data must come first regardless of filename order.
+        first_ts = dataset.data[0].start_of_period
+        assert first_ts == datetime(2025, 1, 1, 8, 0, tzinfo=timezone.utc)
+        assert len(dataset.data) == 6
+
+    def test_single_file_folder(self, tmp_path) -> None:
+        (tmp_path / "only.csv").write_text(self._JAN, encoding="utf-8")
+
+        dataset = from_csv_folder(tmp_path)
+
+        assert len(dataset.data) == 3
+
+    def test_empty_folder_raises(self, tmp_path) -> None:
+        with pytest.raises(ValueError, match="No CSV files found"):
+            from_csv_folder(tmp_path)
+
+    def test_mismatched_tracker_ids_raises(self, tmp_path) -> None:
+        different_ids = "\n".join(
+            [
+                "Year,Month,Day,Hour,Minute,T0,T9",
+                "2025,2,1,8,0,-3.0,-4.0",
+                "2025,2,1,8,5,-3.5,-4.5",
+            ]
+        )
+        (tmp_path / "jan.csv").write_text(self._JAN, encoding="utf-8")
+        (tmp_path / "feb.csv").write_text(different_ids, encoding="utf-8")
+
+        with pytest.raises(ValueError, match="different tracker-ID columns"):
+            from_csv_folder(tmp_path)
+
+    def test_mismatched_column_order_raises(self, tmp_path) -> None:
+        reversed_order = "\n".join(
+            [
+                "Year,Month,Day,Hour,Minute,T1,T0",
+                "2025,2,1,8,0,-3.0,-4.0",
+                "2025,2,1,8,5,-3.5,-4.5",
+            ]
+        )
+        (tmp_path / "jan.csv").write_text(self._JAN, encoding="utf-8")
+        (tmp_path / "feb.csv").write_text(reversed_order, encoding="utf-8")
+
+        with pytest.raises(ValueError, match="different tracker-ID columns"):
+            from_csv_folder(tmp_path)
+
+    def test_overlapping_timestamps_raises(self, tmp_path) -> None:
+        overlap = "\n".join(
+            [
+                "Year,Month,Day,Hour,Minute,T0,T1",
+                # Starts at the same timestamp as the last row of _JAN.
+                "2025,1,1,8,10,-3.0,-4.0",
+                "2025,1,1,8,15,-3.5,-4.5",
+            ]
+        )
+        (tmp_path / "jan.csv").write_text(self._JAN, encoding="utf-8")
+        (tmp_path / "overlap.csv").write_text(overlap, encoding="utf-8")
+
+        with pytest.raises(ValueError, match="overlap"):
+            from_csv_folder(tmp_path)
+
+    def test_kwargs_forwarded(self, tmp_path) -> None:
+        (tmp_path / "jan.csv").write_text(self._JAN, encoding="utf-8")
+        (tmp_path / "feb.csv").write_text(self._FEB, encoding="utf-8")
+
+        dataset = from_csv_folder(tmp_path, flip_sign=True)
+
+        # All centidegree values should be positive (signs flipped).
+        for condition in dataset.data:
+            for value in condition.tracker_rotations_array_values:
+                assert value > 0

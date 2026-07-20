@@ -119,6 +119,14 @@ protobuf file required by SolarFarmer 3D calculations.
         show_root_toc_entry: false
         show_root_members: true
 
+### `custom_rotations.from_csv_folder()`
+
+::: solarfarmer.custom_rotations.from_csv_folder
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
 ### `custom_rotations.csv_to_protobuf()`
 
 ::: solarfarmer.custom_rotations.csv_to_protobuf

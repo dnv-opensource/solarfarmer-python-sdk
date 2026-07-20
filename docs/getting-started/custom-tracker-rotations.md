@@ -52,6 +52,31 @@ Place the resulting file(s) beside the calculation JSON and other input files.
 `run_energy_calculation(inputs_folder_path=...)` discovers both the single-file
 and the multi-part naming patterns automatically.
 
+## Converting CSV Files in a Folder
+
+When the rotation schedule is split across multiple CSV files (for example one
+file per month or per week), use `from_csv_folder` instead of `from_csv`. It
+reads every `*.csv` file in the directory, validates each one independently,
+sorts them by their first timestamp regardless of filename order, and merges
+them into a single dataset:
+
+```python
+import solarfarmer as sf
+
+dataset = sf.custom_rotations.from_csv_folder(
+    "rotation_csvs/",
+    offset_from_utc=1.0,
+    rotations_are_at_middle_of_period=False,
+)
+written = dataset.to_protobuf_file("TrackersConditionsDatasetDto_Protobuf.gz")
+```
+
+All files must contain **exactly the same tracker columns in the same order**.
+The importer raises `ValueError` if any file has different or reordered IDs,
+overlapping timestamps, or an inconsistent time period compared with the other
+files. All keyword arguments accepted by `from_csv` (`offset_from_utc`,
+`flip_sign`, `energy_calculation_inputs`, etc.) are forwarded to every file.
+
 ## CSV Format
 
 The CSV has separate local timestamp fields followed by one column for each

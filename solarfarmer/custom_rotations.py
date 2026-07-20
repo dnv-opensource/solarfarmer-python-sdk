@@ -32,6 +32,7 @@ __all__ = [
     "check_weather_covers_rotation_period",
     "csv_to_protobuf",
     "from_csv",
+    "from_csv_folder",
     "validate_tracker_rotation_ids",
 ]
 
@@ -52,7 +53,11 @@ def from_csv(
     offset_from_utc: float = 0.0,
     rotations_are_at_middle_of_period: bool = False,
     flip_sign: bool = False,
-    energy_calculation_inputs: EnergyCalculationInputs | Mapping[str, Any] | Path | str | None = None,
+    energy_calculation_inputs: EnergyCalculationInputs
+    | Mapping[str, Any]
+    | Path
+    | str
+    | None = None,
 ) -> TrackersConditionsDataset:
     """Read a custom tracker rotation CSV file into a validated dataset.
 
@@ -157,6 +162,122 @@ def from_csv(
     return dataset
 
 
+def from_csv_folder(
+    folder: str | Path,
+    *,
+    offset_from_utc: float = 0.0,
+    rotations_are_at_middle_of_period: bool = False,
+    flip_sign: bool = False,
+    energy_calculation_inputs: EnergyCalculationInputs
+    | Mapping[str, Any]
+    | Path
+    | str
+    | None = None,
+) -> TrackersConditionsDataset:
+    """Read all CSV files in a folder and merge them into a single dataset.
+
+    Each CSV file is parsed with :func:`from_csv` using the same keyword
+    arguments. Files may cover different date ranges (e.g. one file per month
+    or per day) and are sorted chronologically by their first timestamp before
+    being merged. Filesystem or alphabetical order is therefore irrelevant.
+
+    All files must contain exactly the same set of tracker-ID columns **in the
+    same order**. The merged dataset uses the tracker-ID list from the first
+    file (after chronological sorting).
+
+    Parameters
+    ----------
+    folder : str or Path
+        Directory that contains the ``*.csv`` rotation files.
+    offset_from_utc : float, default 0.0
+        Fixed UTC offset in hours applied to all files.
+    rotations_are_at_middle_of_period : bool, default False
+        Whether each rotation value represents the middle rather than the start
+        of its period.
+    flip_sign : bool, default False
+        Negate all input angles before conversion.
+    energy_calculation_inputs : EnergyCalculationInputs, mapping, or path, optional
+        When provided, validates that the merged tracker-rotation IDs match the
+        tracker IDs in the calculation inputs.
+
+    Returns
+    -------
+    TrackersConditionsDataset
+        Merged dataset covering the combined date range of all files.
+
+    Raises
+    ------
+    ValueError
+        If no CSV files are found, tracker-ID columns differ between files,
+        timestamps overlap across file boundaries, or time periods are
+        inconsistent across files.
+    """
+    folder_path = Path(folder)
+    csv_files = sorted(folder_path.glob("*.csv"))
+    if not csv_files:
+        raise ValueError(f"No CSV files found in folder '{folder_path}'")
+
+    # Parse each file independently — from_csv validates headers, timestamps,
+    # and rotation values per file. Keep (path, dataset) together so that file
+    # names remain correct after chronological sorting.
+    parsed: list[tuple[Path, TrackersConditionsDataset]] = [
+        (
+            csv_file,
+            from_csv(
+                csv_file,
+                offset_from_utc=offset_from_utc,
+                rotations_are_at_middle_of_period=rotations_are_at_middle_of_period,
+                flip_sign=flip_sign,
+            ),
+        )
+        for csv_file in csv_files
+    ]
+
+    # Sort by first timestamp so file naming does not dictate order.
+    parsed.sort(key=lambda item: item[1].data[0].start_of_period)
+
+    # Validate tracker-ID columns are identical (same IDs, same order) across all files.
+    reference_path, reference_dataset = parsed[0]
+    reference_ids = reference_dataset.tracker_rotation_ids
+    for file_path, dataset in parsed[1:]:
+        if dataset.tracker_rotation_ids != reference_ids:
+            raise ValueError(
+                f"'{file_path.name}' has different tracker-ID columns than '{reference_path.name}'. "
+                "All CSV files in the folder must have the same tracker columns in the same order."
+            )
+
+    # Validate all files inferred the same period.
+    periods = {dataset.data[0].period_in_minutes for _, dataset in parsed}
+    if len(periods) > 1:
+        raise ValueError(
+            f"CSV files have inconsistent time periods (minutes): {sorted(periods)}. "
+            "All files in the folder must use the same time resolution."
+        )
+
+    # Merge and verify no overlapping timestamps at file boundaries.
+    merged_data: list[TrackerCondition] = []
+    for _, dataset in parsed:
+        if merged_data:
+            last_ts = merged_data[-1].start_of_period
+            first_ts = dataset.data[0].start_of_period
+            if first_ts <= last_ts:
+                raise ValueError(
+                    f"Timestamps overlap at file boundary: "
+                    f"{last_ts} (end of previous file) >= {first_ts} (start of next file)"
+                )
+        merged_data.extend(dataset.data)
+
+    merged = TrackersConditionsDataset(
+        data=merged_data,
+        offset_from_utc=offset_from_utc,
+        rotations_are_at_middle_of_period=rotations_are_at_middle_of_period,
+        tracker_rotation_ids=reference_ids,
+    )
+    if energy_calculation_inputs is not None:
+        validate_tracker_rotation_ids(merged, energy_calculation_inputs)
+    return merged
+
+
 def csv_to_protobuf(
     csv_path: str | Path,
     output_path: str | Path,
@@ -232,6 +353,7 @@ def validate_tracker_rotation_ids(
         if missing_from_csv:
             details.append(f"calculation-input IDs missing from CSV: {missing_from_csv}")
         raise ValueError("Tracker rotation IDs do not match: " + "; ".join(details))
+
 
 def check_weather_covers_rotation_period(
     weather_timestamps: Sequence[datetime],
@@ -324,9 +446,7 @@ def check_compatible_time_resolutions(
         return
 
     if len(weather_timestamps) < 2:
-        raise ValueError(
-            "at least two weather timestamps are required to infer the resolution"
-        )
+        raise ValueError("at least two weather timestamps are required to infer the resolution")
 
     sorted_ts = sorted(weather_timestamps)
     weather_deltas_s = [
@@ -350,6 +470,7 @@ def check_compatible_time_resolutions(
             f"rotation period is {rotation_min:g} min. "
             "One must be a whole multiple of the other."
         )
+
 
 def _parse_headers(fieldnames: list[str] | None) -> list[str]:
     if not fieldnames:
@@ -491,9 +612,7 @@ def _coerce_energy_calculation_inputs(
         except json.JSONDecodeError as exc:
             raise ValueError(f"Could not parse '{path}' as JSON: {exc}") from exc
         if not isinstance(data, Mapping):
-            raise ValueError(
-                f"Expected a JSON object in '{path}', got {type(data).__name__}"
-            )
+            raise ValueError(f"Expected a JSON object in '{path}', got {type(data).__name__}")
         return data
     return energy_calculation_inputs
 
