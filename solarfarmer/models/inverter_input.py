@@ -51,7 +51,9 @@ class InverterInput(SolarFarmerBaseModel):
     module_mismatch_loss: float = Field(0.0, ge=0, le=0.1)
     dc_ohmic_connector_resistance: float | None = Field(None, ge=0, le=10)
     module_quality_factor: float | None = Field(None, ge=-0.4, le=0.1)
-    optimizer_specification_id: str | None = Field(None, alias="optimizerSpecificationID", min_length=1)
+    optimizer_specification_id: str | None = Field(
+        None, alias="optimizerSpecificationID", min_length=1
+    )
     optimizers_per_module: PowerOptimizerOperationType | None = None
     fixed_voltage_from_inverter: float | None = Field(None, ge=0)
 
