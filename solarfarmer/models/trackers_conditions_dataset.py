@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gzip
+import math
 import re
 from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
@@ -266,29 +267,83 @@ class TrackersConditionsDataset(SolarFarmerBaseModel):
             f"No TrackersConditionsDatasetDto_Protobuf*.gz files found in {base}"
         )
 
-    def to_protobuf_file(self, path: Path | str) -> None:
-        """Serialize to a gzip-compressed protobuf file.
+    def to_protobuf_file(
+        self,
+        path: Path | str,
+        max_timesteps_per_file: int = 40_000,
+    ) -> list[Path]:
+        """Serialize to one or more gzip-compressed protobuf files.
+
+        When the dataset contains more than *max_timesteps_per_file* timesteps
+        the data is split across multiple files using the SolarFarmer multi-part
+        naming convention:
+
+        * **Single file** (data fits in one part): the file is written to
+          *path* unchanged, e.g. ``TrackersConditionsDatasetDto_Protobuf.gz``.
+        * **Multiple files**: the stem of *path* is used as the base name and
+          a ``{part:03d}of{total:03d}`` suffix is inserted before ``.gz``, e.g.
+          ``TrackersConditionsDatasetDto_Protobuf001of002.gz``.
 
         Parameters
         ----------
         path : Path or str
-            Destination path. The file is written (or overwritten) atomically
-            using gzip compression.
+            Destination path (or base path for multi-part output).
+        max_timesteps_per_file : int, default 40_000
+            Maximum number of timesteps written to a single file before
+            splitting into an additional file.
+
+        Returns
+        -------
+        list[Path]
+            Paths of every file that was written, in order.
+
+        Raises
+        ------
+        ValueError
+            If *max_timesteps_per_file* is not a positive integer.
         """
+        if max_timesteps_per_file <= 0:
+            raise ValueError("max_timesteps_per_file must be greater than 0")
+
         from solarfarmer.models._proto.trackers_conditions_dataset_pb2 import (  # noqa: PLC0415
             TrackersConditionsDatasetDto,
         )
 
-        dto = _dataset_to_dto(self, TrackersConditionsDatasetDto)
-        raw = dto.SerializeToString()
-        with gzip.open(Path(path), "wb") as fh:
-            fh.write(raw)
+        n = len(self.data)
+        base = Path(path)
+        total_files = max(1, math.ceil(n / max_timesteps_per_file))
+
+        if total_files == 1:
+            dto = _dataset_to_dto(self, TrackersConditionsDatasetDto)
+            _write_dto_to_gz(dto, base)
+            return [base]
+
+        # Split into multiple files
+        stem = base.stem  # strips the final .gz suffix
+        parent = base.parent
+        written: list[Path] = []
+        for i in range(total_files):
+            chunk_path = parent / f"{stem}{i + 1:03d}of{total_files:03d}.gz"
+            start = i * max_timesteps_per_file
+            end = min(start + max_timesteps_per_file, n)
+            chunk = self.model_copy(update={"data": self.data[start:end]})
+            dto = _dataset_to_dto(chunk, TrackersConditionsDatasetDto)
+            _write_dto_to_gz(dto, chunk_path)
+            written.append(chunk_path)
+        return written
 
 
 # ---------------------------------------------------------------------------
 # Private DTO ↔ domain-model conversion helpers
 # (defined after the classes so forward references resolve naturally)
 # ---------------------------------------------------------------------------
+
+
+def _write_dto_to_gz(dto: object, path: Path) -> None:
+    """Serialize a protobuf DTO to a gzip-compressed file."""
+    raw = dto.SerializeToString()  # type: ignore[union-attr]
+    with gzip.open(path, "wb") as fh:
+        fh.write(raw)
 
 
 def _dto_to_dataset(dto: object) -> TrackersConditionsDataset:
