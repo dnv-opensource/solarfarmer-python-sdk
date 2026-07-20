@@ -29,7 +29,7 @@ class MiniSimpleTerrainDto(SolarFarmerBaseModel):
         ``num_vertices_across`` entries)
     """
 
-    num_vertices_across: int
-    num_vertices_down: int
+    num_vertices_across: int = Field(..., ge=0)
+    num_vertices_down: int = Field(..., ge=0)
     terrain_rows: list[TerrainRowDto] = Field(default_factory=list)
     vertices: list[Vector3Double] = Field(default_factory=list)

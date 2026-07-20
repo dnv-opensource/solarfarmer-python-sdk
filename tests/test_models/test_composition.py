@@ -621,6 +621,7 @@ class TestWith3DInverterInputs:
                 module_mismatch_loss=0.0,
                 optimizer_specification_id="opt_spec",
                 optimizers_per_module=variant,
+                fixed_voltage_from_inverter=48.0,
             )
             d = inp.model_dump(by_alias=True, exclude_none=True)
             assert d["optimizersPerModule"] == expected
