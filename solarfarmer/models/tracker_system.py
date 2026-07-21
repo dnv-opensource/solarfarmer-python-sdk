@@ -31,6 +31,6 @@ class TrackerSystem(SolarFarmerBaseModel):
     rotation_min_deg: float = Field(0.0, ge=-90, le=0)
     rotation_max_deg: float = Field(0.0, ge=0, le=90)
     tracker_azimuth: float | None = None
-    east_west_gcr: float | None = None
+    east_west_gcr: float | None = Field(None, alias="eastWestGCR")
     is_backtracking: bool | None = None
     use_slope_aware_backtracking: bool | None = None
