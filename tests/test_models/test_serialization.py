@@ -261,3 +261,49 @@ class TestEnumSerialization:
         )
         d = wrapper.model_dump(by_alias=True, exclude_none=True)
         assert d["meteoFileFormat"] == "tsv"
+
+
+class TestKnownJson3DTrackers:
+    """EnergyCalculationInputs round-trips correctly against the known-good 3D tracker JSON."""
+
+    @pytest.fixture()
+    def matera_json(self, sample_data_dir) -> dict:
+        path = sample_data_dir / "Inputs_Matera_3D_trackers" / "EnergyCalcInputs.json"
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    @pytest.fixture()
+    def matera_inputs(self, matera_json) -> EnergyCalculationInputs:
+        return EnergyCalculationInputs.model_validate(matera_json)
+
+    @pytest.fixture()
+    def matera_dumped(self, matera_inputs) -> dict:
+        return matera_inputs.model_dump(by_alias=True, exclude_none=True)
+
+    def test_parses_without_error(self, matera_inputs) -> None:
+        assert isinstance(matera_inputs, EnergyCalculationInputs)
+
+    def test_tracker_system_east_west_gcr_key_is_uppercase(self, matera_dumped) -> None:
+        tracker_systems = matera_dumped["pvPlant"]["trackerSystems"]
+        for system in tracker_systems.values():
+            assert "eastWestGCR" in system, "alias must be eastWestGCR, not eastWestGcr"
+            assert "eastWestGcr" not in system
+
+    def test_tracker_system_east_west_gcr_value(self, matera_json, matera_dumped) -> None:
+        ref = matera_json["pvPlant"]["trackerSystems"]
+        out = matera_dumped["pvPlant"]["trackerSystems"]
+        for key in ref:
+            assert out[key]["eastWestGCR"] == pytest.approx(ref[key]["eastWestGCR"])
+
+    def test_location_round_trips(self, matera_json, matera_dumped) -> None:
+        ref = matera_json["location"]
+        out = matera_dumped["location"]
+        assert out["latitude"] == pytest.approx(ref["latitude"])
+        assert out["longitude"] == pytest.approx(ref["longitude"])
+        assert out["altitude"] == pytest.approx(ref["altitude"])
+
+    def test_tracker_system_rotation_limits(self, matera_json, matera_dumped) -> None:
+        ref = matera_json["pvPlant"]["trackerSystems"]
+        out = matera_dumped["pvPlant"]["trackerSystems"]
+        for key in ref:
+            assert out[key]["rotationMinDeg"] == pytest.approx(ref[key]["rotationMinDeg"])
+            assert out[key]["rotationMaxDeg"] == pytest.approx(ref[key]["rotationMaxDeg"])

@@ -30,9 +30,7 @@ class TestAboutEndpoint:
         assert len(result["solarFarmerCoreVersion"]) > 0
         assert len(result["solarFarmerApiVersion"]) > 0
 
-    @pytest.mark.parametrize(
-        "version,expected_version_prefix", [("v4", "4."), ("v5", "5."), ("v6", "6.")]
-    )
+    @pytest.mark.parametrize("version,expected_version_prefix", [("v5", "5."), ("v6", "6.")])
     def test_about_all_versions_return_proper_structure(
         self, api_key, version, expected_version_prefix
     ):

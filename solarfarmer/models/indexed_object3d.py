@@ -16,9 +16,11 @@ class IndexedObject3D(SolarFarmerBaseModel):
     ----------
     is_building : bool
         Whether the object should be treated as a building (affects shading
-        and irradiance modelling assumptions)
-    name : str
-        Descriptive name for this object in the 3D scene
+        and irradiance modelling assumptions). Defaults to ``False`` when
+        omitted from the server payload
+    name : str or None
+        Descriptive name for this object in the 3D scene. May be ``None``
+        when the server omits it
     quad_indices : list[list[int]]
         Face connectivity for quadrilateral faces. Each inner list contains
         four vertex indices referencing entries in ``vertices``
@@ -29,8 +31,8 @@ class IndexedObject3D(SolarFarmerBaseModel):
         3D vertex positions shared by both quad and triangle faces
     """
 
-    is_building: bool
-    name: str
+    is_building: bool = False
+    name: str | None = None
     quad_indices: list[list[int]] = Field(default_factory=list)
     triangle_indices: list[list[int]] = Field(default_factory=list)
     vertices: list[Vector3Double] = Field(default_factory=list)

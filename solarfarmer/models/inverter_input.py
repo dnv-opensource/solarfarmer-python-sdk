@@ -49,9 +49,11 @@ class InverterInput(SolarFarmerBaseModel):
     module_strings: list[ModuleString] = Field(default_factory=list)
     dc_ohmic_connector_loss: float = Field(0.0, ge=0, le=1)
     module_mismatch_loss: float = Field(0.0, ge=0, le=0.1)
-    dc_ohmic_connector_resistance: float | None = Field(None, ge=0)
+    dc_ohmic_connector_resistance: float | None = Field(None, ge=0, le=10)
     module_quality_factor: float | None = Field(None, ge=-0.4, le=0.1)
-    optimizer_specification_id: str | None = Field(None, alias="optimizerSpecificationID")
+    optimizer_specification_id: str | None = Field(
+        None, alias="optimizerSpecificationID", min_length=1
+    )
     optimizers_per_module: PowerOptimizerOperationType | None = None
     fixed_voltage_from_inverter: float | None = Field(None, ge=0)
 
@@ -62,6 +64,10 @@ class InverterInput(SolarFarmerBaseModel):
         if has_optimizer_id != has_optimizer_type:
             raise ValueError(
                 "optimizer_specification_id and optimizers_per_module must be provided together"
+            )
+        if has_optimizer_id and self.fixed_voltage_from_inverter is None:
+            raise ValueError(
+                "fixed_voltage_from_inverter is required when power optimizers are configured"
             )
         if self.dc_ohmic_connector_resistance is not None and self.dc_ohmic_connector_loss != 0.0:
             raise ValueError(

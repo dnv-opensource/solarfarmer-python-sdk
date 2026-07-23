@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from ._base import SolarFarmerBaseModel
 
 
@@ -16,5 +18,5 @@ class TerrainRowStartEndColumnsDto(SolarFarmerBaseModel):
         Zero-based index of the last active column in the row (inclusive)
     """
 
-    start_column_index: int
-    end_column_index: int
+    start_column_index: int = Field(..., ge=0)
+    end_column_index: int = Field(..., ge=0)

@@ -26,7 +26,7 @@ class ModuleIndexRange(SolarFarmerBaseModel):
         Row index on the mount where the range is located (0 = bottom edge)
     """
 
-    mounting_id: int = Field(..., alias="mountingID")
-    start_x: int
-    end_x: int
-    y: int
+    mounting_id: int = Field(..., alias="mountingID", ge=0)
+    start_x: int = Field(..., ge=0)
+    end_x: int = Field(..., ge=0)
+    y: int = Field(..., ge=0)

@@ -28,12 +28,13 @@ class Tracker(SolarFarmerBaseModel):
         ``None`` if this tracker has no right neighbour
     south_point : Vector3Double
         3D coordinates of the southern end of the tracker axis
-    tracker_rotation_id : str
+    tracker_rotation_id : str or None
         Reference to the tracker rotation specification that governs how
-        this tracker rotates throughout the day
-    tracker_system_id : str
+        this tracker rotates throughout the day. ``None`` when no custom
+        rotation schedule is assigned (the server default is used)
+    tracker_system_id : str or None
         Reference to a tracker system specification. Must match a key in
-        ``PVPlant.tracker_systems``
+        ``PVPlant.tracker_systems``. ``None`` for fixed-tilt systems
     """
 
     id: int
@@ -42,5 +43,5 @@ class Tracker(SolarFarmerBaseModel):
     pitch_to_left: float | None = None
     pitch_to_right: float | None = None
     south_point: Vector3Double
-    tracker_rotation_id: str = Field(..., alias="trackerRotationID", min_length=1)
-    tracker_system_id: str = Field(..., alias="trackerSystemID", min_length=1)
+    tracker_rotation_id: str | None = Field(None, alias="trackerRotationID")
+    tracker_system_id: str | None = Field(None, alias="trackerSystemID")
