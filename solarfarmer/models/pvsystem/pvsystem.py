@@ -34,6 +34,7 @@ from .plant_defaults import (
     HEIGHT_FROM_GROUND_FIXED,
     HEIGHT_FROM_GROUND_TRACKER,
     IS_BACKTRACKING,
+    MAX_ROTATION_ANGLE,
     MODULE_MISMATCH_FACTOR,
     NUMBER_OF_MODULES_HIGH,
     OHMIC_DICT,
@@ -109,8 +110,13 @@ class PVSystem:
     pitch : float
         Array pitch in meters (default 10.0). Define either gcr or pitch, not both.
     tilt : float
-        Array tilt in degrees. For fixed-tilt mounting, the default is the latitude rounded to degrees.
-        For trackers, this is the used as the maximum rotation angle (60 degrees if not specified).
+        Array tilt in degrees. Applicable for fixed-tilt mounting only.
+        The default is the latitude rounded to degrees.
+        For tracker systems, use ``tracker_max_rotation_angle`` instead.
+    tracker_max_rotation_angle : float
+        Maximum tracker rotation angle in degrees (default is 60°).
+        Only applicable when ``mounting='Tracker'``.
+        Defines the symmetric rotation bounds: ``[-tracker_max_rotation_angle, +tracker_max_rotation_angle]``.
     azimuth : float
         Array azimuth in degrees (default 180, i.e., south-facing).
     mounting: str
@@ -253,7 +259,10 @@ class PVSystem:
     grid_limit_MW: float = 10.0
     gcr: float = 0.5
     pitch: float | None = None  # If None, calculated from gcr and module dimensions
-    tilt: float | None = None  # Default is latitude rounded to degrees
+    tilt: float | None = None  # For fixed-tilt only; default is latitude rounded to degrees
+    tracker_max_rotation_angle: float | None = (
+        None  # For trackers only; default is MAX_ROTATION_ANGLE (60°)
+    )
     azimuth: float = 180.0
     mounting: MountingType = MountingType.FIXED
     flush_mount: bool = False
@@ -787,7 +796,15 @@ class PVSystem:
         print("\n--- ARRAY CONFIGURATION ---")
         print(f"GCR (Ground Coverage Ratio): {self.gcr}")
         print(f"Pitch: {self.pitch} m")
-        print(f"Tilt: {self.tilt}°")
+        if self.mounting == MountingType.TRACKER:
+            effective_max_rotation = (
+                self.tracker_max_rotation_angle
+                if self.tracker_max_rotation_angle is not None
+                else MAX_ROTATION_ANGLE
+            )
+            print(f"Max Rotation Angle (Tracker): {effective_max_rotation}°")
+        else:
+            print(f"Tilt: {self.tilt}°")
         print(f"Azimuth: {self.azimuth}°")
 
         # Mounting & Orientation
@@ -1499,13 +1516,18 @@ def generate_tracker_systems(
     is_tracker = plant.mounting == MountingType.TRACKER
 
     if is_tracker:
+        max_rotation = (
+            plant.tracker_max_rotation_angle
+            if plant.tracker_max_rotation_angle is not None
+            else MAX_ROTATION_ANGLE
+        )
         tracker_system = TrackerSystem(
             system_plane_azimuth=0.0,
             system_plane_tilt=0.0,
             tracker_azimuth=plant.azimuth,
             east_west_gcr=plant.gcr,
-            rotation_min_deg=-plant.tilt if plant.tilt is not None else -60.0,
-            rotation_max_deg=plant.tilt if plant.tilt is not None else 60.0,
+            rotation_min_deg=-max_rotation,
+            rotation_max_deg=max_rotation,
             is_backtracking=IS_BACKTRACKING,
             use_slope_aware_backtracking=False,
         )
