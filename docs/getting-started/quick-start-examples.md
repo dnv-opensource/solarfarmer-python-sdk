@@ -254,7 +254,7 @@ def create_plant(mounting_type: str) -> PVSystem:
         plant.tilt = 35.0  # Optimal for this latitude
         plant.gcr = 0.35
     else:  # Tracker
-        plant.tilt = 60.0  # Max rotation angle
+        plant.tracker_max_rotation_angle = 60.0  # Max rotation angle
         plant.gcr = 0.3   # Trackers need wider spacing
 
     plant.add_pan_files({"Module": Path("data/module.PAN")})
