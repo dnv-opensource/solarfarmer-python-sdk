@@ -96,7 +96,9 @@ The SDK supports three workflows for different use cases:
 | 2. PVSystem builder | Quick screening from high-level specs (capacity, tilt, equipment files). The design is approximate: string sizing and inverter count are inferred, so DC/AC capacity may not match the target exactly. | `plant = sf.PVSystem(...)` then `plant.run_energy_calculation()` |
 | 3. Custom integration | Developers mapping internal databases or proprietary formats to the SolarFarmer API | `params = sf.EnergyCalculationInputs(...)` then `sf.run_energy_calculation(plant_builder=params)` |
 
-See the [Getting Started guide](https://dnv-opensource.github.io/solarfarmer-python-sdk/getting-started/) for full per-workflow walkthroughs, and the [example notebooks](https://dnv-opensource.github.io/solarfarmer-python-sdk/notebooks/Example_EnergyCalculations/) for runnable end-to-end examples.
+See the [Getting Started guide](https://dnv-opensource.github.io/solarfarmer-python-sdk/getting-started/) for full per-workflow walkthroughs, and the [example notebooks](https://dnv-opensource.github.io/solarfarmer-python-sdk/getting-started/end-to-end-examples/) for runnable end-to-end examples.
+
+For broader use case demonstrations — including integrations with Solcast and Solar Resource Compass APIs — see the [dnv-opensource/solarfarmer-sdk-examples](https://github.com/dnv-opensource/solarfarmer-sdk-examples) repository.
 
 ## Documentation
 
@@ -140,3 +142,7 @@ All contributions should include tests for new functionality. For feature propos
 ## License
 
 Apache License, Version 2.0 — see [LICENSE](LICENSE).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a full list of changes per release.
