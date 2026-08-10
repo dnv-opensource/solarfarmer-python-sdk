@@ -328,7 +328,8 @@ plant_loaded.run_energy_calculation(project_id="modified_design", api_key=api_ke
 | Parameter | Meaning | Example |
 |---|---|---|
 | `gcr` | Ground coverage ratio (area occupied / total area) | 0.4 = 40% |
-| `tilt` | Array angle from horizontal. Used for maximum rotation angle for tracker systems. | 25° |
+| `tilt` | Array angle from horizontal (for fixed-tilt mounting only) | 25° |
+| `tracker_max_rotation_angle` | Maximum rotation angle for tracker systems | 60° |
 | `azimuth` | Direction array faces (0=N, 90=E, 180=S, 270=W) | 180 = South |
 | `mounting` | Fixed-tilt or single-axis tracker systems | "Fixed" or "Tracker" |
 | `inverter_type` | Central (single large) or String (multiple small) | "Central" |
