@@ -35,6 +35,9 @@ site/
 # OS junk
 .DS_Store
 
+# RCL downloaded equipment files
+rcl_downloads/
+
 public
 *.ipynb_checkpoints
 api_call_endpoints.py

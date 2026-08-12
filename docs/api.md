@@ -18,6 +18,7 @@ The SolarFarmer SDK is organized into the following main categories:
 - [**Endpoint Functions**](#endpoint-functions): Core functions for making API calls
 - [**Main Classes**](#main-classes): Key data models for calculations and plant design
 - [**Weather Utilities**](#weather-utilities): Convert DataFrames to SolarFarmer weather files (requires `pandas`)
+- [**Renewable Component Library (RCL)**](#renewable-component-library-rcl): Search and download PV modules and inverters specification files
 
 ### Configuration & Design
 
@@ -110,6 +111,71 @@ These are the primary functions for interacting with the SolarFarmer API.
 ### `TSV_COLUMNS`
 
 Data dictionary describing the SolarFarmer TSV weather file format: required and optional columns, units, valid ranges, aliases, and the missing-value sentinel. See the [`weather` module docstring](../api.md) for full details.
+
+---
+
+## Renewable Component Library (RCL)
+
+Search and download PV modules (PAN files) and inverters (OND files) from DNV's curated component database. See the [RCL documentation](getting-started/rcl-component-library.md) for usage examples.
+
+!!! warning "Rate Limiting"
+    Each file download counts against your monthly quota. Use `get_rate_limit_status()` to check your remaining downloads.
+
+### `list_modules()`
+
+::: solarfarmer.rcl.list_modules
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `list_inverters()`
+
+::: solarfarmer.rcl.list_inverters
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `download_file()`
+
+::: solarfarmer.rcl.download_file
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `get_rate_limit_status()`
+
+::: solarfarmer.rcl.get_rate_limit_status
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `RCLRateLimitInfo`
+
+::: solarfarmer.rcl.RCLRateLimitInfo
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `RCLCatalogItem`
+
+::: solarfarmer.rcl.RCLCatalogItem
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `RCLCatalogResponse`
+
+::: solarfarmer.rcl.RCLCatalogResponse
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
 
 ---
 
