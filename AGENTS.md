@@ -52,6 +52,46 @@ Use this workflow when the user has an existing data model in their own system a
 
 **API key**: Set env var `SF_API_KEY` (preferred) or pass `api_key=` to any function.
 
+## Complementary: Search and Download Equipment from RCL
+
+Use this workflow when the user needs PV module (PAN) or inverter (OND) files from DNV's curated Renewable Component Library. The RCL provides access to validated equipment files without requiring users to source them manually. This workflow complements the use cases above — after downloading equipment files, proceed to Use case 1, 2, or 3.
+
+```python
+import solarfarmer as sf
+sf.configure_logging()
+
+# Search for high-power bifacial modules (zero-cost call)
+result = sf.rcl.list_modules(
+    manufacturer_contains="LONGi",
+    p_nom_gte=550,
+    bifaciality_factor_gte=0.7,
+    top=10,
+)
+print(f"Found {result['total']} matching modules")
+
+# Check rate limit before downloading (zero-cost call)
+status = sf.rcl.get_rate_limit_status()
+print(f"{status.remaining}/{status.limit} downloads remaining")
+
+# Download a specific module file (costs 1 credit)
+item = result["items"][0]
+sf.rcl.download_file(
+    item["fileUuid"],
+    item["filename"],
+    directory_path="./equipment/",
+)
+
+# Or integrate directly with PVSystem (downloads only if single match)
+plant = sf.PVSystem(name="My Plant", latitude=45.5, longitude=10.3, ...)
+plant.set_module_from_rcl(
+    manufacturer_contains="Canadian Solar",
+    model_contains="CS7N-715TB-AG",
+    directory_path="./equipment/",
+)
+```
+
+**Rate limiting**: Downloads are capped monthly. Use `sf.rcl.get_rate_limit_status()` (zero-cost) to check remaining quota.
+
 ---
 
 ## Core Principles
@@ -73,6 +113,7 @@ Use this workflow when the user has an existing data model in their own system a
   - **Results models**: `CalculationResults` (in `energy_calculation_results.py`) wraps API outputs and provides convenience properties and accessors such as `performance_ratio_bifacial`, `get_performance()`, `print_annual_results()`, `loss_tree_timeseries()`, and `pvsyst_timeseries()`.
   - **`PVSystem`** (`@dataclass`, `solarfarmer/models/pvsystem/pvsystem.py`): **Mutable** high-level builder. Not a Pydantic model. Acts as an entry point for Use case 2; internally converts to `EnergyCalculationInputs` before the API call. Key utility methods: `describe()`, `make_copy()`, `produce_payload()`, `payload_to_file()`, `to_file()`, `from_file()`.
 - **config.py**: Configuration constants, environment variables, timeouts. Single source of truth for URLs and defaults.
+- **rcl.py**: Renewable Component Library client. Exports `list_modules()`, `list_inverters()`, `download_file()`, `get_rate_limit_status()`. Uses `RCLClient` from `api.py`. Returns lightweight TypedDict responses (`RCLCatalogResponse`) and dataclass (`RCLRateLimitInfo`).
 
 ### Naming Conventions
 - Files: `endpoint_modelchains.py`, `test_endpoint_modelchain.py` (endpoint features use singular endpoint name in tests)
@@ -190,6 +231,9 @@ The following are **named workflows** for structuring developer work. They are N
 | Add polling timeout logic | EndpointDev workflow | Requires config constants, async pattern |
 | Help SDK user run a calculation | Default referencing Quickstart | Refer to copilot-instructions.md quickstart |
 | Convert weather data to SF format | Default | Use `sf.from_dataframe()`, `sf.from_pvlib()`, or `sf.from_solcast()` |
+| Search RCL for modules/inverters | Default | Use `sf.rcl.list_modules()`, `sf.rcl.list_inverters()` |
+| Download equipment from RCL | Default | Use `sf.rcl.download_file()` |
+| Integrate RCL with PVSystem | Default | Use `plant.set_module_from_rcl()`, `plant.set_inverter_from_rcl()` |
 
 ## Tool Restrictions
 
