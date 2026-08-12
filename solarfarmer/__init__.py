@@ -1,3 +1,4 @@
+from . import rcl
 from .__version__ import __version__
 from .api import SolarFarmerAPIError
 from .config import (
@@ -73,6 +74,15 @@ from .models import (
     TransformerSpecification,
     ValidationMessage,
     Vector3Double,
+)
+from .rcl import (
+    RCLCatalogItem,
+    RCLCatalogResponse,
+    RCLRateLimitInfo,
+    download_file,
+    get_rate_limit_status,
+    list_inverters,
+    list_modules,
 )
 from .weather import (
     TSV_COLUMNS,
@@ -162,4 +172,13 @@ __all__ = [
     "from_pvlib",
     "from_solcast",
     "check_sequential_year_timestamps",
+    # RCL
+    "rcl",
+    "list_modules",
+    "list_inverters",
+    "download_file",
+    "get_rate_limit_status",
+    "RCLCatalogItem",
+    "RCLCatalogResponse",
+    "RCLRateLimitInfo",
 ]
