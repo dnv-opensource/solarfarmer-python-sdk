@@ -11,6 +11,8 @@ from .config import (
     API_TOKEN,
     BASE_API_URL,
     GENERAL_TIMEOUT,
+    RCL_BASE_URL,
+    RCL_TIMEOUT,
     SF_PORTAL_URL,
 )
 
@@ -72,6 +74,84 @@ class SolarFarmerAPIError(Exception):
             if detail:
                 base += f" — {detail}"
         return base
+
+
+def _build_auth_headers(api_key: str | None = None) -> dict[str, str]:
+    """
+    Build Authorization headers for SolarFarmer API requests.
+
+    Parameters
+    ----------
+    api_key : str, optional
+        API token. Falls back to ``SF_API_KEY`` environment variable.
+
+    Returns
+    -------
+    dict[str, str]
+        Headers dict with ``Authorization`` key.
+
+    Raises
+    ------
+    ValueError
+        If no API key is found or the key is too short.
+    """
+    token = api_key or API_TOKEN
+    if not token:
+        raise ValueError(
+            "no API key provided. Either set it as an environment "
+            "variable `SF_API_KEY`, or provide `api_key` "
+            "as an argument. Visit https://solarfarmer.dnv.com/ to get an API key."
+        )
+    if len(token) <= 1:
+        raise ValueError("API key is too short.")
+    return {"Authorization": f"Bearer {token}"}
+
+
+class RCLClient:
+    """HTTP client for RCL (Renewable Component Library) endpoints. GET-only."""
+
+    def __init__(
+        self,
+        base_url: str = RCL_BASE_URL,
+        timeout: int = RCL_TIMEOUT,
+    ) -> None:
+        """
+        Parameters
+        ----------
+        base_url : str
+            Base URL for the RCL API. Defaults to ``RCL_BASE_URL``.
+        timeout : int
+            Request timeout in seconds. Defaults to ``RCL_TIMEOUT``.
+        """
+        self.base_url = base_url
+        self.timeout = timeout
+
+    def get(
+        self,
+        endpoint: str,
+        params: dict | None = None,
+        api_key: str | None = None,
+    ) -> requests.Response:
+        """
+        Execute a GET request to an RCL endpoint.
+
+        Parameters
+        ----------
+        endpoint : str
+            Endpoint path relative to ``base_url`` (e.g. ``"catalog/modules"``).
+        params : dict, optional
+            Query parameters to include in the request.
+        api_key : str, optional
+            API token. Falls back to ``SF_API_KEY`` environment variable.
+
+        Returns
+        -------
+        requests.Response
+            The raw HTTP response (caller is responsible for status checking).
+        """
+        url = f"{self.base_url}/{endpoint}"
+        headers = _build_auth_headers(api_key)
+        return requests.get(url, headers=headers, params=params, timeout=self.timeout)
 
 
 class Client:

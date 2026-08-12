@@ -22,6 +22,13 @@ __all__ = [
     "MODELCHAIN_ASYNC_TIMEOUT_UPLOAD",
     "MODELCHAIN_ASYNC_POLL_TIME",
     "PANDAS_INSTALL_MSG",
+    # RCL
+    "RCL_BASE_URL",
+    "RCL_CATALOG_URL",
+    "RCL_MODULES_URL",
+    "RCL_INVERTERS_URL",
+    "RCL_TIMEOUT",
+    "RCL_RATE_LIMIT_WARNING_THRESHOLD",
 ]
 
 BASE_API_URL = os.getenv(
@@ -53,3 +60,11 @@ MODELCHAIN_ASYNC_POLL_TIME = 4  # Polling frequency for the status of ModelChain
 PANDAS_INSTALL_MSG = (
     "pandas is required for this function. Install it with: pip install 'dnv-solarfarmer[weather]'"
 )
+
+# RCL (Renewable Component Library) configuration
+RCL_BASE_URL = "https://solarfarmer.dnv.com/rcl"
+RCL_CATALOG_URL = f"{RCL_BASE_URL}/catalog"
+RCL_MODULES_URL = f"{RCL_CATALOG_URL}/modules"
+RCL_INVERTERS_URL = f"{RCL_CATALOG_URL}/inverters"
+RCL_TIMEOUT = 30  # seconds
+RCL_RATE_LIMIT_WARNING_THRESHOLD = 0.20  # Warn when < 20% remaining
