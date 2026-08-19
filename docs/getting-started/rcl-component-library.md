@@ -160,7 +160,7 @@ status = sf.rcl.get_rate_limit_status()
 print(f"{status.remaining}/{status.limit} downloads remaining")
 print(f"Resets: {status.reset_datetime}")
 
-if status.is_low:
+if status.usage_percent > 80:
     print("⚠️ Running low on downloads!")
 ```
 
@@ -178,11 +178,11 @@ if result["rate_limit"]:
 
 ## Downloading Files
 
-!!! tip "Automatic Local Caching"
-    If the file already exists at the target location, `download_file()` returns the cached file without making an API call. This saves your monthly quota when re-running workflows.
-
-!!! warning "Each New Download Counts"
-    Each **new** download consumes one credit from your monthly quota. Cached files are free.
+!!! warning "Each Download Counts"
+    Each call to `download_file()` consumes one credit from your monthly quota,
+    even if you already downloaded the same file before. The SDK does not cache
+    files locally. If you want to avoid re-downloading, check whether the
+    destination path already exists yourself before calling `download_file()`.
 
 ### Save to Directory
 
@@ -199,7 +199,6 @@ item = result["items"][0]
 
 # Download the PAN file to a directory
 # - Uses original filename from the catalog
-# - Automatically caches: re-running returns local file
 content = sf.rcl.download_file(
     item["fileUuid"],         # Unique file identifier from catalog
     item["filename"],         # Original filename (e.g., "CS7N-715TB-AG.PAN")
@@ -229,15 +228,17 @@ content = sf.rcl.download_file(
 # content is bytes - process in memory
 ```
 
-### Force Re-Download
+### Avoiding Duplicate Downloads
+
+Since the SDK does not cache files, check the destination yourself if you want
+to skip files you already have:
 
 ```python
-content = sf.rcl.download_file(
-    item["fileUuid"],
-    item["filename"],
-    directory_path="./equipment/",
-    use_cache=False,  # Force download even if file exists locally
-)
+from pathlib import Path
+
+dest = Path("./equipment/") / item["filename"]
+if not dest.exists():
+    sf.rcl.download_file(item["fileUuid"], item["filename"], directory_path="./equipment/")
 ```
 
 ---
