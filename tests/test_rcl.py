@@ -93,7 +93,7 @@ class TestQueryBuilder:
     def test_kwargs_passthrough_raw_key(self):
         # Raw dot-notation keys (e.g. future RCL filters) pass through unchanged
         params = _build_query_params(**{"filter.someNewField.gte": 100})
-        assert params["filter.filter.someNewField.gte"] == 100  # wrapped because no operator suffix
+        assert params["filter.someNewField.gte"] == 100
 
     def test_kwargs_passthrough_operator_suffix(self):
         params = _build_query_params(someNewField_gte=42)
@@ -135,19 +135,6 @@ class TestRateLimitInfo:
         info = self._make(remaining=0, limit=0)
         assert info.usage_percent == 100.0
 
-    def test_is_low_false_above_threshold(self):
-        info = self._make(remaining=20, limit=100)  # 20% remaining > 15% threshold
-        assert info.is_low is False
-
-    def test_is_low_true_at_threshold(self):
-        info = self._make(remaining=14, limit=100)  # 14% remaining < 15% threshold
-        assert info.is_low is True
-
-    def test_is_low_true_just_below_boundary(self):
-        # 14 < 15.0 is True
-        info = self._make(remaining=14, limit=100)
-        assert info.is_low is True
-
     def test_str_shows_remaining_and_limit(self):
         info = self._make(remaining=42, limit=100)
         s = str(info)
@@ -181,14 +168,16 @@ class TestExtractRateLimit:
         assert info.limit == 100
         assert info.reset_timestamp == 1755043200
 
-    def test_returns_none_on_missing_headers(self):
-        response = self._mock_response({})
-        # Missing headers default to "0" strings — this should parse to 0/0/0, not None
-        info = _extract_rate_limit(response)
-        assert info is not None
-        assert info.remaining == 0
+    def test_raises_on_missing_headers(self):
+        from solarfarmer.api import SolarFarmerAPIError
 
-    def test_returns_none_on_invalid_header_value(self):
+        response = self._mock_response({})
+        with pytest.raises(SolarFarmerAPIError, match="missing rate-limit header"):
+            _extract_rate_limit(response)
+
+    def test_raises_on_invalid_header_value(self):
+        from solarfarmer.api import SolarFarmerAPIError
+
         response = self._mock_response(
             {
                 "X-RateLimit-Remaining": "not-a-number",
@@ -196,10 +185,10 @@ class TestExtractRateLimit:
                 "X-RateLimit-Reset": "1755043200",
             }
         )
-        info = _extract_rate_limit(response)
-        assert info is None
+        with pytest.raises(SolarFarmerAPIError, match="invalid rate-limit header"):
+            _extract_rate_limit(response)
 
-    def test_warns_when_quota_low(self, caplog):
+    def test_logs_quota_info(self, caplog):
         import logging
 
         response = self._mock_response(
@@ -209,11 +198,9 @@ class TestExtractRateLimit:
                 "X-RateLimit-Reset": "1755043200",
             }
         )
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.INFO):
             _extract_rate_limit(response)
-        assert any(
-            "low" in r.message.lower() or "quota" in r.message.lower() for r in caplog.records
-        )
+        assert any("quota" in r.message.lower() for r in caplog.records)
 
 
 class TestCatalogResponse:
