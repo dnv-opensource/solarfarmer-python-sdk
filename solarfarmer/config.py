@@ -24,11 +24,7 @@ __all__ = [
     "PANDAS_INSTALL_MSG",
     # RCL
     "RCL_BASE_URL",
-    "RCL_CATALOG_URL",
-    "RCL_MODULES_URL",
-    "RCL_INVERTERS_URL",
     "RCL_TIMEOUT",
-    "RCL_RATE_LIMIT_WARNING_THRESHOLD",
 ]
 
 BASE_API_URL = os.getenv(
@@ -62,9 +58,6 @@ PANDAS_INSTALL_MSG = (
 )
 
 # RCL (Renewable Component Library) configuration
+# Kept here (rather than in rcl.py) to avoid circular dependency between api.py's RCLClient and rcl.py.
 RCL_BASE_URL = "https://solarfarmer.dnv.com/rcl"
-RCL_CATALOG_URL = f"{RCL_BASE_URL}/catalog"
-RCL_MODULES_URL = f"{RCL_CATALOG_URL}/modules"
-RCL_INVERTERS_URL = f"{RCL_CATALOG_URL}/inverters"
 RCL_TIMEOUT = 30  # seconds
-RCL_RATE_LIMIT_WARNING_THRESHOLD = 0.20  # Warn when < 20% remaining
