@@ -11,13 +11,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
-import requests
-
-from .api import RCLClient, SolarFarmerAPIError
-from .config import RCL_RATE_LIMIT_WARNING_THRESHOLD
+from .api import RCLClient, SolarFarmerAPIError, _parse_error_body, map_http_error_to_message
 from .logging import get_logger
+
+if TYPE_CHECKING:
+    # Only needed for type hints - keeps the `requests` import specific to api.py
+    import requests
 
 _logger = get_logger(__name__)
 
@@ -79,11 +80,6 @@ class RCLRateLimitInfo:
             return 100.0
         return ((self.limit - self.remaining) / self.limit) * 100
 
-    @property
-    def is_low(self) -> bool:
-        """``True`` if remaining downloads are below the warning threshold."""
-        return self.remaining < (self.limit * RCL_RATE_LIMIT_WARNING_THRESHOLD)
-
     def __str__(self) -> str:
         return f"{self.remaining}/{self.limit} downloads remaining (resets {self.reset_datetime})"
 
@@ -140,7 +136,7 @@ class RCLCatalogItem:
     --------
     >>> result = sf.rcl.list_modules(manufacturer_contains="Canadian", top=1)
     >>> item = RCLCatalogItem(result["items"][0])
-    >>> print(item.file_uuid)      # IDE autocomplete works
+    >>> print(item.file_uuid)
     >>> print(item.manufacturer)
     >>> content = sf.rcl.download_file(item.file_uuid, item.filename)
     """
@@ -322,9 +318,9 @@ class RCLCatalogResponse(TypedDict):
 # ---------------------------------------------------------------------------
 
 
-def _extract_rate_limit(response: requests.Response) -> RCLRateLimitInfo | None:
+def _extract_rate_limit(response: requests.Response) -> RCLRateLimitInfo:
     """
-    Parse rate limit headers from an RCL response and warn if quota is low.
+    Parse rate limit headers from an RCL response and log the current quota.
 
     Parameters
     ----------
@@ -333,26 +329,68 @@ def _extract_rate_limit(response: requests.Response) -> RCLRateLimitInfo | None:
 
     Returns
     -------
-    RCLRateLimitInfo or None
-        Parsed rate limit info, or ``None`` if headers are missing or invalid.
+    RCLRateLimitInfo
+        Parsed rate limit info.
+
+    Raises
+    ------
+    SolarFarmerAPIError
+        If any rate-limit header is missing or cannot be parsed as an integer.
     """
+    required_headers = ("X-RateLimit-Remaining", "X-RateLimit-Limit", "X-RateLimit-Reset")
+    missing = [h for h in required_headers if h not in response.headers]
+    if missing:
+        raise SolarFarmerAPIError(
+            response.status_code,
+            f"RCL response is missing rate-limit header(s): {', '.join(missing)}",
+        )
+
     try:
         info = RCLRateLimitInfo(
-            remaining=int(response.headers.get("X-RateLimit-Remaining", 0)),
-            limit=int(response.headers.get("X-RateLimit-Limit", 0)),
-            reset_timestamp=int(response.headers.get("X-RateLimit-Reset", 0)),
+            remaining=int(response.headers["X-RateLimit-Remaining"]),
+            limit=int(response.headers["X-RateLimit-Limit"]),
+            reset_timestamp=int(response.headers["X-RateLimit-Reset"]),
         )
-        if info.is_low:
-            _logger.warning(
-                "RCL download quota low: %d/%d remaining (%.1f%% used). Resets %s",
-                info.remaining,
-                info.limit,
-                info.usage_percent,
-                info.reset_datetime,
-            )
-        return info
-    except (TypeError, ValueError):
-        return None
+    except (TypeError, ValueError) as err:
+        raise SolarFarmerAPIError(
+            response.status_code,
+            f"RCL response has invalid rate-limit header value(s): {dict(response.headers)}",
+        ) from err
+
+    _logger.info(
+        "RCL download quota: %d remaining (%.1f%% used). Resets %s",
+        info.remaining,
+        info.usage_percent,
+        info.reset_datetime,
+    )
+    return info
+
+
+def _raise_for_status(response: requests.Response) -> None:
+    """
+    Raise a ``SolarFarmerAPIError`` carrying the API's own error message.
+
+    Mirrors the message/problem-details extraction done in
+    ``Client._make_request`` so RCL errors read the same as other endpoints
+    instead of a generic "HTTP <code>" string.
+
+    Parameters
+    ----------
+    response : requests.Response
+        A non-OK HTTP response from the RCL API.
+
+    Raises
+    ------
+    SolarFarmerAPIError
+        Always - this function only runs when the response is not OK.
+    """
+    text = response.text
+    message = map_http_error_to_message(response.status_code, text, _parse_error_body(text))
+    try:
+        problem_details_json = response.json()
+    except Exception:
+        problem_details_json = None
+    raise SolarFarmerAPIError(response.status_code, message, problem_details_json)
 
 
 def _build_query_params(
@@ -406,6 +444,12 @@ def _build_query_params(
     for key, value in filters.items():
         if value is None:
             continue
+        if "." in key:
+            # Raw dot-notation key (e.g. "filter.someNewField.gte") - a snake_case
+            # Python identifier can never contain a literal dot, so this can only be
+            # a pre-formatted key passed through **kwargs. Use it unchanged.
+            params[key] = value
+            continue
         parts = key.rsplit("_", 1)
         if len(parts) == 2 and parts[1] in _operators:
             field, op = parts
@@ -430,13 +474,16 @@ def _catalog_request(
     response = client.get(endpoint, params=query_params, api_key=api_key)
 
     if not response.ok:
-        raise SolarFarmerAPIError(
-            response.status_code,
-            f"RCL catalog request failed: HTTP {response.status_code}",
-        )
+        _raise_for_status(response)
 
     data = response.json()
-    rate_limit = _extract_rate_limit(response)
+    try:
+        rate_limit = _extract_rate_limit(response)
+    except SolarFarmerAPIError as err:
+        # Rate-limit metadata is secondary to the catalog data itself - don't
+        # fail the whole search over it, but don't hide the problem either.
+        _logger.warning("Could not read RCL rate-limit headers: %s", err)
+        rate_limit = None
 
     return RCLCatalogResponse(
         items=data.get("items", []),
@@ -611,9 +658,9 @@ def list_inverters(
     model_contains : str, optional
         Model name contains substring.
     p_nom_conv_gte : float, optional
-        Minimum rated AC power (W).
+        Minimum rated AC power (kW).
     p_nom_conv_lte : float, optional
-        Maximum rated AC power (W).
+        Maximum rated AC power (kW).
     effic_max_gte : float, optional
         Minimum maximum efficiency (fraction, e.g. ``0.98``).
     v_mpp_min_lte : float, optional
@@ -648,7 +695,7 @@ def list_inverters(
     --------
     >>> result = sf.rcl.list_inverters(
     ...     manufacturer_contains="SMA",
-    ...     p_nom_conv_gte=100000,
+    ...     p_nom_conv_gte=100,
     ...     nb_mppt_gte=2,
     ...     top=10,
     ... )
@@ -688,18 +735,17 @@ def download_file(
     save_to_file: bool = True,
     directory_path: str | Path | None = None,
     file_path: str | Path | None = None,
-    use_cache: bool = True,
     api_key: str | None = None,
 ) -> bytes:
     """
     Download a PAN or OND file from the Renewable Component Library.
 
-    If the file already exists at the target location and ``use_cache=True``,
-    the local file is returned without making an API call (saving your quota).
-
     .. warning::
-        Each download counts against your monthly quota. Check
-        :func:`get_rate_limit_status` before bulk downloads.
+        Each call consumes one download against your monthly quota, even if
+        the file was already downloaded before. Check
+        :func:`get_rate_limit_status` before bulk downloads, and avoid calling
+        this function more than once for the same file (e.g. by checking
+        whether the destination path already exists yourself).
 
     Parameters
     ----------
@@ -715,10 +761,6 @@ def download_file(
         and ``file_path`` is not given.
     file_path : str or Path, optional
         Full destination path including filename. Overrides ``directory_path``.
-    use_cache : bool
-        If ``True`` (default) and the file already exists at the target path,
-        return its contents without downloading. Set to ``False`` to force
-        re-download.
     api_key : str, optional
         API token. Defaults to the ``SF_API_KEY`` environment variable.
 
@@ -743,7 +785,6 @@ def download_file(
     ...     directory_path="./equipment/",
     ... )
     """
-    # Determine destination path for cache check
     if file_path is not None:
         dest = Path(file_path)
     elif directory_path is not None:
@@ -753,23 +794,19 @@ def download_file(
     else:
         dest = None
 
-    # Check local cache
-    if use_cache and dest is not None and dest.exists():
-        _logger.info("Using cached file: %s (skipping download)", dest)
-        return dest.read_bytes()
-
-    # Download from API
     client = RCLClient()
     response = client.get(f"catalog/{file_uuid}", api_key=api_key)
 
     if not response.ok:
-        raise SolarFarmerAPIError(
-            response.status_code,
-            f"RCL file download failed: HTTP {response.status_code}",
-        )
+        _raise_for_status(response)
 
     content = response.content
-    _extract_rate_limit(response)
+    try:
+        _extract_rate_limit(response)
+    except SolarFarmerAPIError as err:
+        # The file was downloaded successfully - don't fail the download
+        # just because the quota headers couldn't be read.
+        _logger.warning("Could not read RCL rate-limit headers: %s", err)
 
     if save_to_file and dest is not None:
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -808,19 +845,13 @@ def get_rate_limit_status(api_key: str | None = None) -> RCLRateLimitInfo:
     >>> status = sf.rcl.get_rate_limit_status()
     >>> print(f"{status.remaining}/{status.limit} downloads remaining")
     >>> print(f"Resets: {status.reset_datetime}")
-    >>> if status.is_low:
+    >>> if status.usage_percent > 80:
     ...     print("Warning: running low on downloads!")
     """
     client = RCLClient()
     response = client.get("catalog/modules", params={"top": 0}, api_key=api_key)
 
     if not response.ok:
-        raise SolarFarmerAPIError(
-            response.status_code,
-            f"RCL rate limit check failed: HTTP {response.status_code}",
-        )
+        _raise_for_status(response)
 
-    rate_limit = _extract_rate_limit(response)
-    if rate_limit is None:
-        raise SolarFarmerAPIError(500, "Could not parse rate limit headers from RCL response")
-    return rate_limit
+    return _extract_rate_limit(response)

@@ -150,7 +150,10 @@ class RCLClient:
             The raw HTTP response (caller is responsible for status checking).
         """
         url = f"{self.base_url}/{endpoint}"
-        headers = _build_auth_headers(api_key)
+        headers = {
+            **_build_auth_headers(api_key),
+            "User-Agent": "solarfarmer-api-sdk/" + __version__,
+        }
         return requests.get(url, headers=headers, params=params, timeout=self.timeout)
 
 
@@ -213,16 +216,8 @@ class Client:
         params = copy.deepcopy(params)
 
         key = params.pop("api_key", API_TOKEN)
-
-        if key is None:
-            raise ValueError(
-                "no API key provided. Either set it as an environment "
-                "variable `SF_API_KEY`, or provide `api_key` "
-                "as an argument. Visit https://solarfarmer.dnv.com/ to get an API key."
-            )
-
-        if len(key) <= 1:
-            raise ValueError("API key is too short.")
+        # Shared validation rules with RCLClient
+        _build_auth_headers(key)
 
         return params, key
 
@@ -310,7 +305,7 @@ class Client:
         params, key = self._check_params(params)
         timeout = self._get_timeout(params)
         headers = {
-            "Authorization": f"Bearer {key}",
+            **_build_auth_headers(key),
             # Content-Type intentionally omitted — requests sets this automatically
             # based on whether files are present (multipart) or not (form-encoded).
             # Forcing it here overrides the boundary parameter and breaks multipart uploads.
