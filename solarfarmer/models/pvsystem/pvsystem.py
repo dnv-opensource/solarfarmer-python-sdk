@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ... import rcl
 from ...logging import get_logger
 from ..auxiliary_losses import AuxiliaryLosses
 from ..energy_calculation_inputs import EnergyCalculationInputs
@@ -1082,8 +1083,6 @@ class PVSystem:
         ...     model_contains="CS7N-715TB-AG",
         ... )
         """
-        from solarfarmer import rcl  # lazy import to avoid circular dependency
-
         _OUTPUT_FIELDS = [
             "pNom",
             "bifacialityFactor",
@@ -1195,7 +1194,7 @@ class PVSystem:
         model_contains : str, optional
             Model name contains substring.
         p_nom_conv : float, optional
-            Exact rated AC power (W). Useful for disambiguating power-tier variants.
+            Exact rated AC power (kW). Useful for disambiguating power-tier variants.
         effic_max_gte : float, optional
             Minimum maximum efficiency (fraction, e.g. ``0.98``).
         nb_mppt : int, optional
@@ -1233,8 +1232,6 @@ class PVSystem:
         ...     model_contains="STP 110-60",
         ... )
         """
-        from solarfarmer import rcl  # lazy import to avoid circular dependency
-
         _OUTPUT_FIELDS = [
             "pNomConv",
             "efficMax",
@@ -1295,7 +1292,7 @@ class PVSystem:
                 label = f"{mfr} - {mdl}"
                 extras = []
                 if pnom is not None:
-                    extras.append(f"{pnom / 1000:.1f}kW" if pnom >= 1000 else f"{pnom}W")
+                    extras.append(f"{pnom:g}kW")
                 if eff is not None:
                     extras.append(f"eff={eff * 100:.1f}%")
                 if mppt is not None:
