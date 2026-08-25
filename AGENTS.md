@@ -113,7 +113,7 @@ plant.set_module_from_rcl(
   - **Results models**: `CalculationResults` (in `energy_calculation_results.py`) wraps API outputs and provides convenience properties and accessors such as `performance_ratio_bifacial`, `get_performance()`, `print_annual_results()`, `loss_tree_timeseries()`, and `pvsyst_timeseries()`.
   - **`PVSystem`** (`@dataclass`, `solarfarmer/models/pvsystem/pvsystem.py`): **Mutable** high-level builder. Not a Pydantic model. Acts as an entry point for Use case 2; internally converts to `EnergyCalculationInputs` before the API call. Key utility methods: `describe()`, `make_copy()`, `produce_payload()`, `payload_to_file()`, `to_file()`, `from_file()`.
 - **config.py**: Configuration constants, environment variables, timeouts. Single source of truth for URLs and defaults.
-- **rcl.py**: Renewable Component Library client. Exports `list_modules()`, `list_inverters()`, `download_file()`, `get_rate_limit_status()`. Uses `RCLClient` from `api.py`. Returns lightweight TypedDict responses (`RCLCatalogResponse`) and dataclass (`RCLRateLimitInfo`).
+- **rcl.py**: Renewable Component Library client. Exports `list_modules()`, `list_inverters()`, `download_file()`, `get_rate_limit_status()`. Uses `RCLClient` from `api.py`. Returns plain `dict`/list-of-`dict` results typed via `TypedDict`s (`RCLModuleCatalogResponse`, `RCLInverterCatalogResponse`, `RCLModuleItemDict`, `RCLInverterItemDict`) and a dataclass (`RCLRateLimitInfo`).
 
 ### Naming Conventions
 - Files: `endpoint_modelchains.py`, `test_endpoint_modelchain.py` (endpoint features use singular endpoint name in tests)

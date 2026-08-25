@@ -36,8 +36,10 @@ _FIELD_MAP = {
 
 __all__ = [
     "RCLRateLimitInfo",
-    "RCLCatalogItem",
-    "RCLCatalogResponse",
+    "RCLModuleItemDict",
+    "RCLInverterItemDict",
+    "RCLModuleCatalogResponse",
+    "RCLInverterCatalogResponse",
     "list_modules",
     "list_inverters",
     "download_file",
@@ -84,233 +86,78 @@ class RCLRateLimitInfo:
         return f"{self.remaining}/{self.limit} downloads remaining (resets {self.reset_datetime})"
 
 
-@dataclass
-class RCLCatalogItem:
-    """Typed wrapper for an RCL catalog item providing IDE-friendly attribute access.
+class RCLModuleItemDict(TypedDict, total=False):
+    """Shape of a PV module item returned by ``list_modules()``.
 
-    This class wraps the raw dict returned by the RCL API, providing typed
-    properties with consistent snake_case naming. The original dict is accessible
-    via the ``raw`` attribute for fields not explicitly mapped.
-
-    Attributes
-    ----------
-    raw : dict
-        The original API response dict with all fields.
-
-    Properties (always available)
-    -----------------------------
-    file_uuid : str
-        Unique identifier for downloading the file. Aliases: ``fileUuid``.
-    filename : str
-        Original filename (e.g., ``"CS7N-715TB-AG.PAN"``).
-    manufacturer : str
-        Equipment manufacturer name.
-    model : str
-        Equipment model name.
-    component_id : str
-        RCL component identifier. Aliases: ``componentId``.
-
-    Properties (modules, if requested)
-    ----------------------------------
-    p_nom : float | None
-        Nominal power in watts. Aliases: ``pNom``.
-    bifaciality_factor : float | None
-        Bifaciality factor (0-1). Aliases: ``bifacialityFactor``.
-    technol : str | None
-        Technology type (e.g., ``"monoSi"``).
-
-    Properties (inverters, if requested)
-    ------------------------------------
-    p_nom_conv : float | None
-        Rated AC power in kW. Aliases: ``pNomConv``.
-    effic_max : float | None
-        Maximum efficiency. Aliases: ``efficMax``.
-    v_mpp_min : float | None
-        Minimum MPPT voltage in V. Aliases: ``vMppMin``.
-    v_mpp_max : float | None
-        Maximum MPPT voltage in V. Aliases: ``vMppMax``.
-    nb_mppt : int | None
-        Number of MPPT inputs. Aliases: ``nbMppt``.
-
-    Examples
-    --------
-    >>> result = sf.rcl.list_modules(manufacturer_contains="Canadian", top=1)
-    >>> item = RCLCatalogItem(result["items"][0])
-    >>> print(item.file_uuid)
-    >>> print(item.manufacturer)
-    >>> content = sf.rcl.download_file(item.file_uuid, item.filename)
+    All keys are optional since ``output_parameter`` may request only a
+    subset of fields. Items are plain ``dict`` instances at runtime; this
+    ``TypedDict`` exists purely to give IDEs/type checkers autocomplete and
+    key-name checking - no wrapping or conversion is performed.
     """
 
-    raw: dict
-
-    # --- Always available ---
-
-    @property
-    def file_uuid(self) -> str:
-        """File UUID for downloading. Aliases: ``fileUuid``."""
-        return self.raw.get("fileUuid", "")
-
-    @property
-    def fileUuid(self) -> str:
-        """Alias for :attr:`file_uuid` (camelCase)."""
-        return self.file_uuid
-
-    @property
-    def filename(self) -> str:
-        """Original filename (e.g., ``"module.PAN"``)."""
-        return self.raw.get("filename", "")
-
-    @property
-    def manufacturer(self) -> str:
-        """Equipment manufacturer name."""
-        return self.raw.get("manufacturer", "")
-
-    @property
-    def model(self) -> str:
-        """Equipment model name."""
-        return self.raw.get("model", "")
-
-    @property
-    def component_id(self) -> str:
-        """RCL component identifier. Aliases: ``componentId``."""
-        return self.raw.get("componentId", "")
-
-    @property
-    def componentId(self) -> str:
-        """Alias for :attr:`component_id` (camelCase)."""
-        return self.component_id
-
-    # --- Module fields ---
-
-    @property
-    def p_nom(self) -> float | None:
-        """Nominal power in watts. Aliases: ``pNom``."""
-        return self.raw.get("pNom")
-
-    @property
-    def pNom(self) -> float | None:
-        """Alias for :attr:`p_nom` (camelCase)."""
-        return self.p_nom
-
-    @property
-    def bifaciality_factor(self) -> float | None:
-        """Bifaciality factor (0-1). Aliases: ``bifacialityFactor``."""
-        return self.raw.get("bifacialityFactor")
-
-    @property
-    def bifacialityFactor(self) -> float | None:
-        """Alias for :attr:`bifaciality_factor` (camelCase)."""
-        return self.bifaciality_factor
-
-    @property
-    def technol(self) -> str | None:
-        """Technology type (e.g., ``"monoSi"``)."""
-        return self.raw.get("technol")
-
-    # --- Inverter fields ---
-
-    @property
-    def p_nom_conv(self) -> float | None:
-        """Rated AC power in kW. Aliases: ``pNomConv``."""
-        return self.raw.get("pNomConv")
-
-    @property
-    def pNomConv(self) -> float | None:
-        """Alias for :attr:`p_nom_conv` (camelCase)."""
-        return self.p_nom_conv
-
-    @property
-    def effic_max(self) -> float | None:
-        """Maximum efficiency. Aliases: ``efficMax``."""
-        return self.raw.get("efficMax")
-
-    @property
-    def efficMax(self) -> float | None:
-        """Alias for :attr:`effic_max` (camelCase)."""
-        return self.effic_max
-
-    @property
-    def v_mpp_min(self) -> float | None:
-        """Minimum MPPT voltage in V. Aliases: ``vMppMin``."""
-        return self.raw.get("vMppMin")
-
-    @property
-    def vMppMin(self) -> float | None:
-        """Alias for :attr:`v_mpp_min` (camelCase)."""
-        return self.v_mpp_min
-
-    @property
-    def v_mpp_max(self) -> float | None:
-        """Maximum MPPT voltage in V. Aliases: ``vMppMax``."""
-        return self.raw.get("vMppMax")
-
-    @property
-    def vMppMax(self) -> float | None:
-        """Alias for :attr:`v_mpp_max` (camelCase)."""
-        return self.v_mpp_max
-
-    @property
-    def nb_mppt(self) -> int | None:
-        """Number of MPPT inputs. Aliases: ``nbMppt``."""
-        return self.raw.get("nbMppt")
-
-    @property
-    def nbMppt(self) -> int | None:
-        """Alias for :attr:`nb_mppt` (camelCase)."""
-        return self.nb_mppt
-
-    # --- Dict-like access ---
-
-    def __getitem__(self, key: str) -> object:
-        """Allow dict-style access: ``item["fileUuid"]``."""
-        return self.raw[key]
-
-    def get(self, key: str, default: object = None) -> object:
-        """Allow dict-style get: ``item.get("pNom")``."""
-        return self.raw.get(key, default)
-
-    def __contains__(self, key: str) -> bool:
-        """Allow ``"fileUuid" in item``."""
-        return key in self.raw
-
-    def keys(self):
-        """Return dict keys."""
-        return self.raw.keys()
-
-    def values(self):
-        """Return dict values."""
-        return self.raw.values()
-
-    def items(self):
-        """Return dict items."""
-        return self.raw.items()
+    componentId: str
+    fileUuid: str
+    filename: str
+    manufacturer: str
+    model: str
+    pNom: float
+    isc: float
+    voc: float
+    imp: float
+    vmp: float
+    muPmpReq: float
+    nCelS: int
+    nCelP: int
+    bifacialityFactor: float
+    technol: str
+    lifecycleStatus: str
 
 
-class RCLCatalogResponse(TypedDict):
-    """Paginated response from an RCL catalog query.
+class RCLInverterItemDict(TypedDict, total=False):
+    """Shape of an inverter item returned by ``list_inverters()``.
 
-    Keys
-    ----
-    items : list[dict]
-        Raw item dicts returned by the API. Fields vary by query and user
-        permissions. Common fields include ``componentId``, ``fileUuid``,
-        ``filename``, ``manufacturer``, ``model``.
-    total : int
-        Total number of records matching the query (before pagination).
-    skip : int
-        Number of records skipped (pagination offset used).
-    top : int
-        Page size used in the request.
-    rate_limit : RCLRateLimitInfo or None
-        Rate limit status parsed from response headers, or ``None`` if headers
-        were absent or unparseable.
+    All keys are optional since ``output_parameter`` may request only a
+    subset of fields. Items are plain ``dict`` instances at runtime; this
+    ``TypedDict`` exists purely to give IDEs/type checkers autocomplete and
+    key-name checking - no wrapping or conversion is performed.
     """
 
-    items: list[dict]
+    componentId: str
+    fileUuid: str
+    filename: str
+    manufacturer: str
+    model: str
+    pNomConv: float
+    pMaxOut: float
+    efficMax: float
+    efficEuro: float
+    vMppMin: float
+    vMppMax: float
+    vAbsMax: float
+    nbMppt: int
+    transfo: str
+    lifecycleStatus: str
+
+
+class _RCLCatalogResponseBase(TypedDict):
+    """Shared keys for paginated RCL catalog responses."""
+
     total: int
     skip: int
     top: int
     rate_limit: RCLRateLimitInfo | None
+
+
+class RCLModuleCatalogResponse(_RCLCatalogResponseBase):
+    """Paginated response from ``list_modules()``."""
+
+    items: list[RCLModuleItemDict]
+
+
+class RCLInverterCatalogResponse(_RCLCatalogResponseBase):
+    """Paginated response from ``list_inverters()``."""
+
+    items: list[RCLInverterItemDict]
 
 
 # ---------------------------------------------------------------------------
@@ -468,8 +315,13 @@ def _catalog_request(
     endpoint: str,
     query_params: dict,
     api_key: str | None,
-) -> RCLCatalogResponse:
-    """Execute an RCL catalog GET request and return a typed response dict."""
+) -> dict:
+    """Execute an RCL catalog GET request and return a response dict.
+
+    Returns a plain ``dict`` shaped like ``RCLModuleCatalogResponse`` or
+    ``RCLInverterCatalogResponse`` depending on ``endpoint`` - callers narrow
+    to the specific type via their own return annotation.
+    """
     client = RCLClient()
     response = client.get(endpoint, params=query_params, api_key=api_key)
 
@@ -485,13 +337,13 @@ def _catalog_request(
         _logger.warning("Could not read RCL rate-limit headers: %s", err)
         rate_limit = None
 
-    return RCLCatalogResponse(
-        items=data.get("items", []),
-        total=data.get("total", 0),
-        skip=data.get("skip", query_params.get("skip", 0)),
-        top=data.get("top", query_params.get("top", 25)),
-        rate_limit=rate_limit,
-    )
+    return {
+        "items": data.get("items", []),
+        "total": data.get("total", 0),
+        "skip": data.get("skip", query_params.get("skip", 0)),
+        "top": data.get("top", query_params.get("top", 25)),
+        "rate_limit": rate_limit,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -518,7 +370,7 @@ def list_modules(
     lifecycle_status: str | None = None,
     verbose: bool = True,
     **kwargs: object,
-) -> RCLCatalogResponse:
+) -> RCLModuleCatalogResponse:
     """
     List PV modules from the Renewable Component Library.
 
@@ -563,8 +415,9 @@ def list_modules(
 
     Returns
     -------
-    RCLCatalogResponse
-        Dict with keys ``items``, ``total``, ``skip``, ``top``, ``rate_limit``.
+    RCLModuleCatalogResponse
+        Dict with keys ``items`` (list of module dicts, camelCase keys such as
+        ``pNom``/``bifacialityFactor``), ``total``, ``skip``, ``top``, ``rate_limit``.
 
     Raises
     ------
@@ -631,7 +484,7 @@ def list_inverters(
     lifecycle_status: str | None = None,
     verbose: bool = True,
     **kwargs: object,
-) -> RCLCatalogResponse:
+) -> RCLInverterCatalogResponse:
     """
     List inverters from the Renewable Component Library.
 
@@ -681,8 +534,9 @@ def list_inverters(
 
     Returns
     -------
-    RCLCatalogResponse
-        Dict with keys ``items``, ``total``, ``skip``, ``top``, ``rate_limit``.
+    RCLInverterCatalogResponse
+        Dict with keys ``items`` (list of inverter dicts, camelCase keys such as
+        ``pNomConv``/``efficMax``), ``total``, ``skip``, ``top``, ``rate_limit``.
 
     Raises
     ------

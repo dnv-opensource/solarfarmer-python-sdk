@@ -245,31 +245,21 @@ if not dest.exists():
 
 ## Typed Catalog Items (IDE Support)
 
-When accessing catalog results, use `RCLCatalogItem` for IDE autocompletion and type safety:
+Catalog items are plain `dict`s with the API's original camelCase keys — there is no wrapper class to instantiate. `list_modules()` and `list_inverters()` are typed to return `RCLModuleCatalogResponse`/`RCLInverterCatalogResponse`, whose `items` list is typed as `RCLModuleItemDict`/`RCLInverterItemDict`. This gives IDE autocomplete and key-name checking directly on the returned dicts, with no extra step:
 
 ```python
-from solarfarmer import RCLCatalogItem
-
 result = sf.rcl.list_modules(manufacturer_contains="Canadian", top=1)
 
-# Wrap the raw dict in RCLCatalogItem
-item = RCLCatalogItem(result["items"][0])
+item = result["items"][0]
 
-# Now you get IDE autocomplete for common fields:
-print(item.file_uuid)       # snake_case (preferred)
-print(item.fileUuid)        # camelCase alias also works
-print(item.manufacturer)
-print(item.model)
-print(item.p_nom)           # Module power (W)
-print(item.bifaciality_factor)
+print(item["fileUuid"])
+print(item["manufacturer"])
+print(item["model"])
+print(item.get("pNom"))              # Module power (W)
+print(item.get("bifacialityFactor"))
 
 # Use with download_file:
-content = sf.rcl.download_file(item.file_uuid, item.filename)
-
-# Still works as dict for raw field access:
-print(item["fileUuid"])     # Dict-style access
-print(item.get("pNom"))     # .get() method
-print(item.raw)             # Original dict with all fields
+content = sf.rcl.download_file(item["fileUuid"], item["filename"])
 ```
 
 ---

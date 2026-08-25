@@ -161,17 +161,33 @@ Search and download PV modules (PAN files) and inverters (OND files) from DNV's 
         show_root_toc_entry: false
         show_root_members: true
 
-### `RCLCatalogItem`
+### `RCLModuleItemDict`
 
-::: solarfarmer.rcl.RCLCatalogItem
+::: solarfarmer.rcl.RCLModuleItemDict
     options:
       extra:
         show_root_toc_entry: false
         show_root_members: true
 
-### `RCLCatalogResponse`
+### `RCLInverterItemDict`
 
-::: solarfarmer.rcl.RCLCatalogResponse
+::: solarfarmer.rcl.RCLInverterItemDict
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `RCLModuleCatalogResponse`
+
+::: solarfarmer.rcl.RCLModuleCatalogResponse
+    options:
+      extra:
+        show_root_toc_entry: false
+        show_root_members: true
+
+### `RCLInverterCatalogResponse`
+
+::: solarfarmer.rcl.RCLInverterCatalogResponse
     options:
       extra:
         show_root_toc_entry: false

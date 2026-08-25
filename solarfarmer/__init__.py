@@ -76,8 +76,10 @@ from .models import (
     Vector3Double,
 )
 from .rcl import (
-    RCLCatalogItem,
-    RCLCatalogResponse,
+    RCLInverterCatalogResponse,
+    RCLInverterItemDict,
+    RCLModuleCatalogResponse,
+    RCLModuleItemDict,
     RCLRateLimitInfo,
     download_file,
     get_rate_limit_status,
@@ -178,7 +180,9 @@ __all__ = [
     "list_inverters",
     "download_file",
     "get_rate_limit_status",
-    "RCLCatalogItem",
-    "RCLCatalogResponse",
+    "RCLModuleItemDict",
+    "RCLInverterItemDict",
+    "RCLModuleCatalogResponse",
+    "RCLInverterCatalogResponse",
     "RCLRateLimitInfo",
 ]

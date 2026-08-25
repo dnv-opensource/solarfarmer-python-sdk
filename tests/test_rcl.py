@@ -7,8 +7,7 @@ import pytest
 
 import solarfarmer.rcl as rcl
 from solarfarmer.rcl import (
-    RCLCatalogItem,
-    RCLCatalogResponse,
+    RCLModuleCatalogResponse,
     RCLRateLimitInfo,
     _build_query_params,
     _extract_rate_limit,
@@ -204,10 +203,10 @@ class TestExtractRateLimit:
 
 
 class TestCatalogResponse:
-    """Test RCLCatalogResponse TypedDict shape (structural, not strict)."""
+    """Test the catalog response dict shape (structural, not strict)."""
 
-    def _make_response(self, n_items=2) -> RCLCatalogResponse:
-        return RCLCatalogResponse(
+    def _make_response(self, n_items=2) -> RCLModuleCatalogResponse:
+        return RCLModuleCatalogResponse(
             items=[{"manufacturer": "A", "model": f"M{i}"} for i in range(n_items)],
             total=n_items,
             skip=0,
@@ -243,120 +242,6 @@ class TestCatalogResponse:
         r = self._make_response(n_items=5)
         assert r["total"] == 5
         assert len(r["items"]) == 5
-
-
-class TestCatalogItem:
-    """Test RCLCatalogItem typed wrapper for catalog items."""
-
-    @pytest.fixture
-    def module_dict(self) -> dict:
-        """Sample module item dict as returned by the API."""
-        return {
-            "componentId": "MOD-12345",
-            "fileUuid": "abc-123-def-456",
-            "filename": "CS7N-715TB-AG.PAN",
-            "manufacturer": "Canadian Solar Inc.",
-            "model": "CS7N-715TB-AG",
-            "pNom": 715,
-            "bifacialityFactor": 0.7,
-            "technol": "monoSi",
-        }
-
-    @pytest.fixture
-    def inverter_dict(self) -> dict:
-        """Sample inverter item dict as returned by the API."""
-        return {
-            "componentId": "INV-67890",
-            "fileUuid": "xyz-789-uvw-012",
-            "filename": "SG250HX.OND",
-            "manufacturer": "Sungrow",
-            "model": "SG250HX",
-            "pNomConv": 250,
-            "efficMax": 98.7,
-            "vMppMin": 500,
-            "vMppMax": 1500,
-            "nbMppt": 12,
-        }
-
-    def test_snake_case_properties_module(self, module_dict):
-        item = RCLCatalogItem(module_dict)
-        assert item.file_uuid == "abc-123-def-456"
-        assert item.filename == "CS7N-715TB-AG.PAN"
-        assert item.manufacturer == "Canadian Solar Inc."
-        assert item.model == "CS7N-715TB-AG"
-        assert item.component_id == "MOD-12345"
-        assert item.p_nom == 715
-        assert item.bifaciality_factor == 0.7
-        assert item.technol == "monoSi"
-
-    def test_camelcase_aliases_module(self, module_dict):
-        item = RCLCatalogItem(module_dict)
-        assert item.fileUuid == item.file_uuid
-        assert item.componentId == item.component_id
-        assert item.pNom == item.p_nom
-        assert item.bifacialityFactor == item.bifaciality_factor
-
-    def test_snake_case_properties_inverter(self, inverter_dict):
-        item = RCLCatalogItem(inverter_dict)
-        assert item.p_nom_conv == 250
-        assert item.effic_max == 98.7
-        assert item.v_mpp_min == 500
-        assert item.v_mpp_max == 1500
-        assert item.nb_mppt == 12
-
-    def test_camelcase_aliases_inverter(self, inverter_dict):
-        item = RCLCatalogItem(inverter_dict)
-        assert item.pNomConv == item.p_nom_conv
-        assert item.efficMax == item.effic_max
-        assert item.vMppMin == item.v_mpp_min
-        assert item.vMppMax == item.v_mpp_max
-        assert item.nbMppt == item.nb_mppt
-
-    def test_dict_style_getitem(self, module_dict):
-        item = RCLCatalogItem(module_dict)
-        assert item["fileUuid"] == "abc-123-def-456"
-        assert item["pNom"] == 715
-
-    def test_dict_style_get(self, module_dict):
-        item = RCLCatalogItem(module_dict)
-        assert item.get("fileUuid") == "abc-123-def-456"
-        assert item.get("missing", "default") == "default"
-
-    def test_dict_style_contains(self, module_dict):
-        item = RCLCatalogItem(module_dict)
-        assert "fileUuid" in item
-        assert "missing" not in item
-
-    def test_dict_style_keys_values_items(self, module_dict):
-        item = RCLCatalogItem(module_dict)
-        assert "fileUuid" in item.keys()
-        assert "abc-123-def-456" in item.values()
-        assert ("fileUuid", "abc-123-def-456") in item.items()
-
-    def test_raw_attribute(self, module_dict):
-        item = RCLCatalogItem(module_dict)
-        assert item.raw is module_dict
-
-    def test_missing_optional_fields_return_none(self):
-        minimal_dict = {
-            "fileUuid": "uuid-1",
-            "filename": "test.PAN",
-            "manufacturer": "Test",
-            "model": "Model1",
-        }
-        item = RCLCatalogItem(minimal_dict)
-        assert item.p_nom is None
-        assert item.bifaciality_factor is None
-        assert item.p_nom_conv is None
-        assert item.effic_max is None
-
-    def test_empty_string_for_missing_required(self):
-        empty_dict = {}
-        item = RCLCatalogItem(empty_dict)
-        assert item.file_uuid == ""
-        assert item.filename == ""
-        assert item.manufacturer == ""
-        assert item.model == ""
 
 
 # ---------------------------------------------------------------------------
