@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ... import rcl
 from ...logging import get_logger
 from ..auxiliary_losses import AuxiliaryLosses
 from ..energy_calculation_inputs import EnergyCalculationInputs
@@ -1019,6 +1020,308 @@ class PVSystem:
 
         _logger.debug("PVSystem payload saved to %s", path)
         return None
+
+    def set_module_from_rcl(
+        self,
+        *,
+        manufacturer: str | None = None,
+        manufacturer_contains: str | None = None,
+        model: str | None = None,
+        model_contains: str | None = None,
+        p_nom: float | None = None,
+        directory_path: str | Path | None = None,
+        strict: bool = True,
+        api_key: str | None = None,
+        **kwargs: object,
+    ) -> dict | None:
+        """Search RCL for a PV module and assign it to this PVSystem.
+
+        Downloads and assigns the PAN file only when the search returns exactly one
+        match. If multiple matches are found, raises ``ValueError`` with a numbered
+        list of options and suggested filter values so the user can narrow the search.
+
+        Parameters
+        ----------
+        manufacturer : str, optional
+            Exact manufacturer name match.
+        manufacturer_contains : str, optional
+            Manufacturer name contains substring.
+        model : str, optional
+            Exact model name match.
+        model_contains : str, optional
+            Model name contains substring.
+        p_nom : float, optional
+            Exact nominal power (W). Useful for disambiguating power-tier variants.
+        directory_path : str or Path, optional
+            Directory where the downloaded PAN file is saved. Defaults to the
+            current working directory.
+        strict : bool
+            If ``True`` (default), raises ``ValueError`` when zero or multiple
+            matches are found. If ``False``, prints the diagnostic message and
+            returns ``None``, which is friendlier for exploratory use.
+        api_key : str, optional
+            API token. Defaults to the ``SF_API_KEY`` environment variable.
+        **kwargs
+            Additional RCL filter parameters (forward compatibility).
+
+        Returns
+        -------
+        dict or None
+            The matched catalog item dict. Also updates ``self.pan_files``.
+            Returns ``None`` when ``strict=False`` and no unique match is found.
+
+        Raises
+        ------
+        ValueError
+            If no modules match, or if multiple modules match (includes option
+            list). Only raised when ``strict=True``.
+
+        Examples
+        --------
+        >>> plant.set_module_from_rcl(
+        ...     manufacturer_contains="Canadian Solar",
+        ...     model_contains="CS7N-715TB-AG",
+        ... )
+        """
+        _OUTPUT_FIELDS = [
+            "pNom",
+            "bifacialityFactor",
+            "fileUuid",
+            "filename",
+            "manufacturer",
+            "model",
+        ]
+
+        result = rcl.list_modules(
+            manufacturer=manufacturer,
+            manufacturer_contains=manufacturer_contains,
+            model=model,
+            model_contains=model_contains,
+            p_nom=p_nom,
+            output_parameter=_OUTPUT_FIELDS,
+            top=10000,
+            api_key=api_key,
+            **kwargs,
+        )
+        items = result["items"]
+
+        if len(items) == 0:
+            criteria = {
+                k: v
+                for k, v in {
+                    "manufacturer": manufacturer,
+                    "manufacturer_contains": manufacturer_contains,
+                    "model": model,
+                    "model_contains": model_contains,
+                    "p_nom": p_nom,
+                    **kwargs,
+                }.items()
+                if v is not None
+            }
+            msg = f"No modules found matching criteria: {criteria}"
+            if strict:
+                raise ValueError(msg)
+            print(f"INFO: {msg}")
+            return None
+
+        if len(items) > 1:
+            lines = [f"{len(items)} modules found. Narrow your search:\n"]
+            for i, item in enumerate(items, start=1):
+                mfr = item.get("manufacturer", "")
+                mdl = item.get("model", "")
+                pnom = item.get("pNom")
+                bif = item.get("bifacialityFactor")
+                label = f"{mfr} - {mdl}"
+                if pnom is not None:
+                    label += f" ({int(pnom)}W"
+                    label += " bifacial)" if bif else ")"
+                lines.append(f"  {i}. {label}")
+                suggestions = [f'model="{mdl}"']
+                if pnom is not None:
+                    suggestions.append(f"p_nom={int(pnom)}")
+                if bif:
+                    suggestions.append("bifaciality_factor_gte=0.7")
+                lines.append(f"     \u2192 Add: {' or '.join(suggestions)}\n")
+            msg = "\n".join(lines)
+            if strict:
+                raise ValueError(msg)
+            print(f"INFO: {msg}")
+            return None
+
+        item = items[0]
+        content = rcl.download_file(
+            item["fileUuid"],
+            item["filename"],
+            directory_path=directory_path,
+            api_key=api_key,
+        )
+        pan_path = Path(directory_path or ".") / item["filename"]
+        module_name = Path(item["filename"]).stem
+        self.pan_files = {**self._pan_files, module_name: pan_path}
+        _logger.info("Module '%s' set from RCL (%d bytes)", module_name, len(content))
+        return item
+
+    def set_inverter_from_rcl(
+        self,
+        *,
+        manufacturer: str | None = None,
+        manufacturer_contains: str | None = None,
+        model: str | None = None,
+        model_contains: str | None = None,
+        p_nom_conv: float | None = None,
+        effic_max_gte: float | None = None,
+        nb_mppt: int | None = None,
+        transfo: str | None = None,
+        directory_path: str | Path | None = None,
+        strict: bool = True,
+        api_key: str | None = None,
+        **kwargs: object,
+    ) -> dict | None:
+        """Search RCL for an inverter and assign it to this PVSystem.
+
+        Downloads and assigns the OND file only when the search returns exactly one
+        match. If multiple matches are found, raises ``ValueError`` with a numbered
+        list of options and suggested filter values so the user can narrow the search.
+
+        Parameters
+        ----------
+        manufacturer : str, optional
+            Exact manufacturer name match.
+        manufacturer_contains : str, optional
+            Manufacturer name contains substring.
+        model : str, optional
+            Exact model name match.
+        model_contains : str, optional
+            Model name contains substring.
+        p_nom_conv : float, optional
+            Exact rated AC power (kW). Useful for disambiguating power-tier variants.
+        effic_max_gte : float, optional
+            Minimum maximum efficiency (fraction, e.g. ``0.98``).
+        nb_mppt : int, optional
+            Exact number of MPPT inputs.
+        transfo : str, optional
+            Transformer type (e.g. ``"transformerless"``).
+        directory_path : str or Path, optional
+            Directory where the downloaded OND file is saved. Defaults to the
+            current working directory.
+        strict : bool
+            If ``True`` (default), raises ``ValueError`` when zero or multiple
+            matches are found. If ``False``, prints the diagnostic message and
+            returns ``None``, which is friendlier for exploratory use.
+        api_key : str, optional
+            API token. Defaults to the ``SF_API_KEY`` environment variable.
+        **kwargs
+            Additional RCL filter parameters (forward compatibility).
+
+        Returns
+        -------
+        dict or None
+            The matched catalog item dict. Also updates ``self.ond_files``.
+            Returns ``None`` when ``strict=False`` and no unique match is found.
+
+        Raises
+        ------
+        ValueError
+            If no inverters match, or if multiple inverters match (includes option
+            list). Only raised when ``strict=True``.
+
+        Examples
+        --------
+        >>> plant.set_inverter_from_rcl(
+        ...     manufacturer_contains="SMA",
+        ...     model_contains="STP 110-60",
+        ... )
+        """
+        _OUTPUT_FIELDS = [
+            "pNomConv",
+            "efficMax",
+            "nbMppt",
+            "fileUuid",
+            "filename",
+            "manufacturer",
+            "model",
+        ]
+
+        result = rcl.list_inverters(
+            manufacturer=manufacturer,
+            manufacturer_contains=manufacturer_contains,
+            model=model,
+            model_contains=model_contains,
+            p_nom_conv_gte=p_nom_conv,
+            p_nom_conv_lte=p_nom_conv,
+            effic_max_gte=effic_max_gte,
+            nb_mppt_gte=nb_mppt,
+            transfo=transfo,
+            output_parameter=_OUTPUT_FIELDS,
+            top=10000,
+            api_key=api_key,
+            **kwargs,
+        )
+        items = result["items"]
+
+        if len(items) == 0:
+            criteria = {
+                k: v
+                for k, v in {
+                    "manufacturer": manufacturer,
+                    "manufacturer_contains": manufacturer_contains,
+                    "model": model,
+                    "model_contains": model_contains,
+                    "p_nom_conv": p_nom_conv,
+                    "effic_max_gte": effic_max_gte,
+                    "nb_mppt": nb_mppt,
+                    "transfo": transfo,
+                    **kwargs,
+                }.items()
+                if v is not None
+            }
+            msg = f"No inverters found matching criteria: {criteria}"
+            if strict:
+                raise ValueError(msg)
+            print(f"INFO: {msg}")
+            return None
+
+        if len(items) > 1:
+            lines = [f"{len(items)} inverters found. Narrow your search:\n"]
+            for i, item in enumerate(items, start=1):
+                mfr = item.get("manufacturer", "")
+                mdl = item.get("model", "")
+                pnom = item.get("pNomConv")
+                eff = item.get("efficMax")
+                mppt = item.get("nbMppt")
+                label = f"{mfr} - {mdl}"
+                extras = []
+                if pnom is not None:
+                    extras.append(f"{pnom:g}kW")
+                if eff is not None:
+                    extras.append(f"eff={eff * 100:.1f}%")
+                if mppt is not None:
+                    extras.append(f"{mppt} MPPT")
+                if extras:
+                    label += f" ({', '.join(extras)})"
+                lines.append(f"  {i}. {label}")
+                suggestions = [f'model="{mdl}"']
+                if pnom is not None:
+                    suggestions.append(f"p_nom_conv={pnom}")
+                lines.append(f"     \u2192 Add: {' or '.join(suggestions)}\n")
+            msg = "\n".join(lines)
+            if strict:
+                raise ValueError(msg)
+            print(f"INFO: {msg}")
+            return None
+
+        item = items[0]
+        content = rcl.download_file(
+            item["fileUuid"],
+            item["filename"],
+            directory_path=directory_path,
+            api_key=api_key,
+        )
+        ond_path = Path(directory_path or ".") / item["filename"]
+        inverter_name = Path(item["filename"]).stem
+        self.ond_files = {**self._ond_files, inverter_name: ond_path}
+        _logger.info("Inverter '%s' set from RCL (%d bytes)", inverter_name, len(content))
+        return item
 
     def produce_payload(self) -> dict[str, Any]:
         """Construct and return the payload dictionary for the SolarFarmer API based on the current PVSystem configuration.

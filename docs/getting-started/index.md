@@ -90,6 +90,27 @@ Results from `PVSystem` are approximations based on simplified layout assumption
 
 ---
 
+### [Renewable Component Library (RCL)](rcl-component-library.md)
+
+**For:** Users who need validated PAN/OND equipment files
+
+**Goal:** Search and download PV modules and inverters from DNV's curated component database
+
+**Key Functions:**
+
+- `sf.rcl.list_modules()` - Search the module catalog
+- `sf.rcl.list_inverters()` - Search the inverter catalog
+- `sf.rcl.download_file()` - Download PAN/OND files
+- `sf.rcl.get_rate_limit_status()` - Check remaining download quota
+
+**Time to First Result:** 5 minutes
+
+!!! example
+    Search for bifacial modules from a specific manufacturer, download the PAN file,
+    and use it with any workflow above.
+
+---
+
 ## Integrated Class Examples
 
 Once you know your workflow, see how the classes work together in real-world scenarios.
@@ -100,11 +121,12 @@ Once you know your workflow, see how the classes work together in real-world sce
 
 ## Need Help Deciding?
 
-| I want to... | Go to Workflow |
+| I want to... | Go to |
 |---|---|
 | Run calculations on existing API files | [Workflow 1](workflow-1-existing-api-files.md) |
 | Design a new plant from scratch | [Workflow 2](workflow-2-pvplant-builder.md) |
 | Integrate SolarFarmer into my software | [Workflow 3](workflow-3-plantbuilder-advanced.md) |
+| Find and download equipment files | [RCL Component Library](rcl-component-library.md) |
 | See real code examples | [Quick Start Examples](quick-start-examples.md) |
 
 ---

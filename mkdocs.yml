@@ -89,6 +89,7 @@ nav:
     - Workflow 1 - Load Existing API Files: getting-started/workflow-1-existing-api-files.md
     - Workflow 2 - Design Plants with PVSystem: getting-started/workflow-2-pvplant-builder.md
     - Workflow 3 - Advanced Integration: getting-started/workflow-3-plantbuilder-advanced.md
+    - Renewable Component Library (RCL): getting-started/rcl-component-library.md
     - Quick Start Examples: getting-started/quick-start-examples.md
     - End-to-End Examples: getting-started/end-to-end-examples.md
 - API Reference: api.md
@@ -99,9 +100,11 @@ nav:
         - ModelChainAsync: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/ModelChainAsyncEndpoint.html
         - Service: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/ServiceEndpoint.html
         - TerminateModelChainAsync: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/TerminateModelChainAsyncEndpoint.html
+        - Renewable Component Library (RCL): https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/RclApi/RclEndpoint.html
     - Tutorials in SolarFarmer docs:
         - ModelChain endpoint tutorial: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Tutorials/ModelChainEndpointTutorial.html
         - ModelChainAsync endpoint tutorial: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Tutorials/ModelChainAsyncEndpointTutorial.html
+        - RCL endpoint tutorial: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/RclApi/RclEndpointTutorial.html
     - Troubleshooting:
         - Validation service: https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Troubleshooting/ValidationService.html
 - License: license.md

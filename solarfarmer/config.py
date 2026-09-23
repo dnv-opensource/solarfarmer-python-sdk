@@ -24,6 +24,9 @@ __all__ = [
     "MODELCHAIN_ASYNC_TIMEOUT_UPLOAD",
     "MODELCHAIN_ASYNC_POLL_TIME",
     "PANDAS_INSTALL_MSG",
+    # RCL
+    "RCL_BASE_URL",
+    "RCL_TIMEOUT",
 ]
 
 BASE_API_URL = os.getenv(
@@ -57,3 +60,8 @@ MODELCHAIN_ASYNC_POLL_TIME = 4  # Polling frequency for the status of ModelChain
 PANDAS_INSTALL_MSG = (
     "pandas is required for this function. Install it with: pip install 'dnv-solarfarmer[weather]'"
 )
+
+# RCL (Renewable Component Library) configuration
+# Kept here (rather than in rcl.py) to avoid circular dependency between api.py's RCLClient and rcl.py.
+RCL_BASE_URL = "https://solarfarmer.dnv.com/rcl"
+RCL_TIMEOUT = 30  # seconds
