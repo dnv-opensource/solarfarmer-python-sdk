@@ -8,6 +8,7 @@ from .monthly_albedo import MonthlyAlbedo
 from .ond_supplements import OndFileSupplements
 from .pan_supplements import PanFileSupplements
 from .pv_plant import PVPlant
+from .trackers_conditions_dataset import TrackersConditionsDataset
 
 
 class EnergyCalculationInputs(SolarFarmerBaseModel):
@@ -34,6 +35,9 @@ class EnergyCalculationInputs(SolarFarmerBaseModel):
         PAN file overrides keyed by module spec ID
     ond_file_supplements : dict[str, OndFileSupplements] or None
         OND file overrides keyed by inverter spec ID
+    trackers_conditions_dataset : TrackersConditionsDataset or None
+        Custom tracker rotation schedules. Required when any layout uses
+        ``TrackerAlgorithm.CUSTOM_ROTATIONS``.
     """
 
     location: Location
@@ -44,6 +48,7 @@ class EnergyCalculationInputs(SolarFarmerBaseModel):
     horizon_angles: list[float] | None = None
     pan_file_supplements: dict[str, PanFileSupplements] | None = None
     ond_file_supplements: dict[str, OndFileSupplements] | None = None
+    trackers_conditions_dataset: TrackersConditionsDataset | None = None
 
 
 class EnergyCalculationInputsWithFiles(SolarFarmerBaseModel):

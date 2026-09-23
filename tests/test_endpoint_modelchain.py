@@ -70,6 +70,7 @@ class TestResolveRequestPayload:
             ["/path/to/mod.PAN"],
             ["/path/to/inv.OND"],
             "/path/to/inputs.json",
+            tracker_rotation_paths=None,
         )
         assert content == '{"pvPlant":{}}'
 

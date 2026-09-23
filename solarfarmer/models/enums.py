@@ -76,6 +76,22 @@ class IAMModelTypeForOverride(str, Enum):
     CUSTOM = "Custom"
 
 
+class TrackerAlgorithm(str, Enum):
+    """Rotation algorithm used by a single-axis tracker system.
+
+    Determines how the tracker computes its rotation angle at each time step.
+    """
+
+    CUSTOM_ROTATIONS = "CustomRotations"
+    """User-supplied rotation table drives the tracker angle."""
+    SLOPE_AWARE_BACKTRACKING = "SlopeAwareBacktracking"
+    """Backtracking algorithm that accounts for terrain slope."""
+    STANDARD_BACKTRACKING = "StandardBacktracking"
+    """Standard backtracking algorithm (no slope correction)."""
+    SUN_TRACKING = "SunTracking"
+    """Pure astronomical sun-tracking with no backtracking."""
+
+
 class MeteoFileFormat(str, Enum):
     """Meteorological file format.
 

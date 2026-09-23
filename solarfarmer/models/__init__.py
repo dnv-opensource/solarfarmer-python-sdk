@@ -15,6 +15,7 @@ from .enums import (
     MissingMetDataMethod,
     OrderColumnsPvSystFormatTimeSeries,
     PowerOptimizerOperationType,
+    TrackerAlgorithm,
     TransformerLossModelTypes,
 )
 from .indexed_object3d import IndexedObject3D
@@ -44,6 +45,7 @@ from .terrain_row_start_end_columns_dto import TerrainRowStartEndColumnsDto
 from .tracker import Tracker
 from .tracker_system import TrackerSystem
 from .trackers import Trackers
+from .trackers_conditions_dataset import TrackerCondition, TrackersConditionsDataset
 from .transformer import Transformer
 from .transformer_specification import TransformerSpecification
 from .vector3double import Vector3Double
@@ -89,8 +91,11 @@ __all__ = [
     "TerrainRowDto",
     "TerrainRowStartEndColumnsDto",
     "Tracker",
+    "TrackerAlgorithm",
+    "TrackerCondition",
     "TrackerSystem",
     "Trackers",
+    "TrackersConditionsDataset",
     "Transformer",
     "TransformerLossModelTypes",
     "TransformerSpecification",

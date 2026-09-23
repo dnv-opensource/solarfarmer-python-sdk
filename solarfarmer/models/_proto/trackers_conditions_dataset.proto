@@ -1,0 +1,38 @@
+// Proto3 schema for TrackersConditionsDataset wire format.
+// Mirrors the C# protobuf-net DTO (TrackersConditionsDatasetDto) used by
+// the SolarFarmer API to store tracker condition data in binary form.
+//
+// Encoding notes:
+//   • NullableShortWrapper uses proto3 optional so that value=0 can be
+//     distinguished from a null (absent) entry, matching the C# short? type.
+//   • DateTimeOffset is encoded as a pair of .NET ticks: item1 = local
+//     DateTime ticks, item2 = UTC-offset ticks (100 ns intervals since
+//     0001-01-01T00:00:00).
+//
+// Source of truth for the serialized descriptor embedded in _pb2.py.
+
+syntax = "proto3";
+
+message ShortArrayWrapper {
+    repeated int32 values = 1;
+}
+
+message NullableShortWrapper {
+    optional int32 value = 1;
+}
+
+message LongTuple {
+    int64 item1 = 1;
+    int64 item2 = 2;
+}
+
+message TrackersConditionsDatasetDto {
+    double offset_from_utc = 1;
+    bool   rotations_are_at_middle_of_period = 2;
+    repeated string tracker_rotation_ids = 3;
+    optional double period_in_minutes_for_all_records = 4;
+    repeated LongTuple          start_of_period                = 5;
+    repeated float              period_in_minutes              = 6;
+    repeated ShortArrayWrapper  tracker_rotations_array_values = 7;
+    repeated NullableShortWrapper tracker_rotation_unique_value = 8;
+}

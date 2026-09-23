@@ -131,6 +131,18 @@ def get_files(sample_data_folder: str | pathlib.Path) -> list[tuple[str, IO[byte
                 " Only a single meteorological file is supported."
             )
 
+        # Look for TrackersConditionsDatasetDto_Protobuf*.gz files (custom tracker rotation data)
+        tracker_rotation_file_paths = sorted(
+            get_file_paths_in_folder(
+                sample_data_folder, "TrackersConditionsDatasetDto_Protobuf*.gz"
+            )
+        )
+        for tracker_rotation_file_path in tracker_rotation_file_paths:
+            _logger.debug("customRotationDataTransferFiles = %s", tracker_rotation_file_path)
+            fh = pathlib.Path(tracker_rotation_file_path).open("rb")
+            stack.callback(fh.close)
+            files.append(("customRotationDataTransferFiles", fh))
+
         # Look for PAN files in the folder and add them
         pan_file_paths = get_file_paths_in_folder(sample_data_folder, "*.PAN")
         for pan_file_path in pan_file_paths:
@@ -266,6 +278,7 @@ def parse_files_from_paths(
     ond_file_paths: list[str],
     energy_calculation_inputs_file_path: str | None,
     parse_energy_calc_inputs: bool = True,
+    tracker_rotation_paths: list[str] | None = None,
 ) -> tuple[str, list[tuple[str, IO[bytes]]]]:
     """
     Parse input files for the ModelChain or ModelChainAsync call from explicit paths.
@@ -288,6 +301,12 @@ def parse_files_from_paths(
     parse_energy_calc_inputs : bool, default True
         If False, the JSON inputs file is not read and an empty string is
         returned as the request content
+    tracker_rotation_paths : list of str or None, optional
+        Paths to one or more ``TrackersConditionsDatasetDto_Protobuf*.gz``
+        files carrying custom tracker rotation data. When provided, the
+        files are uploaded as ``customRotationDataTransferFiles``.
+        Pass them in the correct order when using multi-part files
+        (e.g. ``001of002`` before ``002of002``)
 
     Returns
     -------
@@ -368,6 +387,19 @@ def parse_files_from_paths(
                     files.append(("ondFiles", fh))
                 else:
                     raise FileNotFoundError(f"Error: Path does not exist -> {ond_file_path}")
+
+        # Add any tracker rotation transfer files
+        if tracker_rotation_paths is not None:
+            for tracker_rotation_path in tracker_rotation_paths:
+                if path_exists(tracker_rotation_path):
+                    _logger.debug("customRotationDataTransferFiles = %s", tracker_rotation_path)
+                    fh = pathlib.Path(tracker_rotation_path).open("rb")
+                    stack.callback(fh.close)
+                    files.append(("customRotationDataTransferFiles", fh))
+                else:
+                    raise FileNotFoundError(
+                        f"Error: Path does not exist -> {tracker_rotation_path}"
+                    )
 
         if parse_energy_calc_inputs:
             # Get the JSON energy calculation inputs from the input folder path
