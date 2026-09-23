@@ -68,6 +68,7 @@ Use this workflow when the user has an existing data model in their own system a
 - **api.py**: HTTP client layer (`Client`, `Response` dataclass). Handles authentication, timeouts, error mapping.
 - **endpoint_*.py**: Feature modules (About, Service, ModelChain, TerminateAsync). Each exports one main function.
 - **weather.py**: Meteorological file format specification and conversion utilities. Exports `TSV_COLUMNS` (format spec), `from_dataframe()`, `from_pvlib()`, `from_solcast()` (converters from common data sources), and `check_sequential_year_timestamps()` (TMY validator). Use when users need to convert weather data from pandas, pvlib, or Solcast into SolarFarmer's TSV format.
+- **custom_rotations.py**: CSV import and protobuf serialization for custom tracker rotation schedules. Exports `from_csv()`, `csv_to_protobuf()`, and `validate_tracker_rotation_ids()`. Datasets that exceed `max_timesteps_per_file` (default 40,000) are automatically split into numbered `*001of002.gz` files. Use when users need to supply a custom rotation schedule to a 3D calculation.
 - **models/**: Two distinct kinds of model:
   - **Pydantic models** (`SolarFarmerBaseModel` subclasses, `frozen=True`): `EnergyCalculationInputs`, `PVPlant`, `Location`, `Inverter`, `Layout`, `Transformer`, etc. These are **immutable** — mutations raise `ValidationError`. Serialize with `model_dump(by_alias=True, exclude_none=True)`.
   - **Results models**: `CalculationResults` (in `energy_calculation_results.py`) wraps API outputs and provides convenience properties and accessors such as `performance_ratio_bifacial`, `get_performance()`, `print_annual_results()`, `loss_tree_timeseries()`, and `pvsyst_timeseries()`.
@@ -190,6 +191,7 @@ The following are **named workflows** for structuring developer work. They are N
 | Add polling timeout logic | EndpointDev workflow | Requires config constants, async pattern |
 | Help SDK user run a calculation | Default referencing Quickstart | Refer to copilot-instructions.md quickstart |
 | Convert weather data to SF format | Default | Use `sf.from_dataframe()`, `sf.from_pvlib()`, or `sf.from_solcast()` |
+| Convert custom tracker rotation CSV to protobuf | Default | Use `sf.custom_rotations.from_csv()` + `to_protobuf_file()`, or one-step `sf.custom_rotations.csv_to_protobuf()` |
 
 ## Tool Restrictions
 
