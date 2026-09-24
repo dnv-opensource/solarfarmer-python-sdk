@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.0] - 2026-09-24
 
 ### Added
 
@@ -13,10 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pydantic models for the 3D API data model: `Rack`, `Racks`, `Tracker` (3D), `Trackers`, `InverterInput`, `ModuleString`, `SimpleTerrain`, `ShadingObjects`, and supporting geometry types (`QuadDouble`, `Vector3Double`, `IndexedObject3D`, `ModuleIndexRange`, `MiniSimpleTerrainDto`, `TerrainRowDto`, `TerrainRowStartEndColumnsDto`). These enable full composition of 3D plant layouts, including power optimizer support via `InverterInput`.
 - `PVSystem.recalculate_modeling_correction_factor` field to control whether the modeling correction factor is recalculated during energy yield assessment (default `True`).
 - `from_solcast` added to the Weather Utilities section of the API reference documentation.
+- `TrackerAlgorithm` enum to define custom rotation strategies for tracker systems, enabling flexible rotation calculation methods beyond predefined algorithms.
+- `TrackersConditionsDataset` class with Protobuf serialization support for storing and transmitting tracker rotation conditions and custom rotation data.
+- `TrackerRotationID` field in the `Layout` class to support custom tracker rotation workflows.
+- `dc_ohmic_connector_loss` and related DC loss resistance fields in the `Layout` class for detailed power loss modeling in tracker systems.
+- CSV export functionality for tracker-specific results, providing detailed rotation and performance data for each tracker row.
+- `custom_rotations` module for importing custom tracker rotation schedules from CSV files with functions `from_csv()`, `from_csv_folder()`, and `csv_to_protobuf()` to load and validate rotation data.
+- Public API exports: `from_custom_rotations_csv()` and `custom_rotations_csv_to_protobuf()` for programmatic CSV rotation ingestion.
+- Utilities for validating the compatibility of custom rotations and plant layout: tracker rotation IDs, checking time resolution compatibility, and verifying weather data coverage for rotation periods.
 
 ### Changed
 
 - `PVSystem.tilt` is now fixed-tilt only. For tracker systems, set `tracker_max_rotation_angle` instead. Previously, `tilt` was silently used as the tracker rotation bound, which caused confusion.
+
+### Fixed
+
+- Documentation examples corrected: GCR spacing value for tracker systems in quick-start example now consistently use 0.35.
+- Documentation clarified: albedo parameter in workflow-2 now shows explicit list format `[0.2] * 12` for clarity.
+- API error message updated to reference latest supported API version (v7) in validation documentation.
 
 ## [0.5.0] - 2026-06-29
 

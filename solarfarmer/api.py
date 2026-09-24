@@ -551,4 +551,4 @@ def build_api_url(version: str | None = None) -> str:
     if re.fullmatch(r"v[1-9]\d*", version):
         return f"{base}/{version}/api"
 
-    raise ValueError(f"Invalid version '{version}'. Must be 'latest' or 'vX' (e.g., 'v5').")
+    raise ValueError(f"Invalid version '{version}'. Must be 'latest' or 'vX' (e.g., 'v7').")
