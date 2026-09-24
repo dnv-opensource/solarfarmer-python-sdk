@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TrackerRotationID` field in the `Layout` class to support custom tracker rotation workflows.
 - `dc_ohmic_connector_loss` and related DC loss resistance fields in the `Layout` class for detailed power loss modeling in tracker systems.
 - CSV export functionality for tracker-specific results, providing detailed rotation and performance data for each tracker row.
+- `custom_rotations` module for importing custom tracker rotation schedules from CSV files with functions `from_csv()`, `from_csv_folder()`, and `csv_to_protobuf()` to load and validate rotation data.
+- Public API exports: `from_custom_rotations_csv()` and `custom_rotations_csv_to_protobuf()` for programmatic CSV rotation ingestion.
+- Utilities for validating the compatibility of custom rotations and plant layout: tracker rotation IDs, checking time resolution compatibility, and verifying weather data coverage for rotation periods.
 
 ### Changed
 
