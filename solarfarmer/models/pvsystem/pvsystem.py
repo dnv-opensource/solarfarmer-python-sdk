@@ -1778,7 +1778,7 @@ def generate_mounting_specs(
         # the orientation is set to the plane in the layout
         if plant.flush_mount:
             height_from_ground = 0.1  # A small height of 10 cm
-            tilt_angle = 0.0
+            tilt_angle = plant.tilt
         else:
             height_from_ground = plant.mounting_height
             tilt_angle = plant.tilt if plant.tilt is not None else round(plant.latitude)
