@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -152,52 +153,66 @@ class TestGenerateMountingSpecs:
 class TestSpecIdDerivation:
     """Verify spec IDs are derived via Path.stem (last-dot split), not split('.')[0]."""
 
+    @staticmethod
+    def _create_multi_dot_alias(source: "Path", target: "Path") -> None:
+        """Create a temp alias file with a multi-dot name for stem extraction tests."""
+        try:
+            target.symlink_to(source)
+            return
+        except OSError:
+            pass
+
+        try:
+            target.hardlink_to(source)
+            return
+        except OSError:
+            pass
+
+        # Last-resort fallback for platforms without link privileges.
+        target.write_bytes(source.read_bytes())
+
     def test_multi_dot_pan_filename_produces_correct_spec_id(self, bern_2d_racks_inputs):
         """PAN filenames with multiple dots must use Path.stem for spec ID."""
-        from pathlib import Path
-
         from solarfarmer.models.pvsystem.pvsystem import get_module_info_from_pan
 
         p = PVSystem(latitude=46.95, longitude=7.44)
         original = Path(bern_2d_racks_inputs) / "CanadianSolar_CS6U-330M_APP.PAN"
         multi_dot = Path(bern_2d_racks_inputs) / "Trina_TSM-DEG19C.20-550_APP.PAN"
 
-        created_link = False
+        created_temp_file = False
         try:
             if not multi_dot.exists():
-                multi_dot.symlink_to(original)
-                created_link = True
+                self._create_multi_dot_alias(original, multi_dot)
+                created_temp_file = True
             p.pan_files = {"TestModule": str(multi_dot)}
             info = get_module_info_from_pan(p)
             # Path.stem gives "Trina_TSM-DEG19C.20-550_APP"
             # split(".")[0] would give "Trina_TSM-DEG19C" — wrong
             assert info["pan_filename"] == "Trina_TSM-DEG19C.20-550_APP"
         finally:
-            if created_link and multi_dot.exists():
+            if created_temp_file and multi_dot.exists():
                 multi_dot.unlink()
 
     def test_multi_dot_ond_filename_produces_correct_spec_id(self, bern_2d_racks_inputs):
         """OND filenames with multiple dots must use Path.stem for spec ID."""
-        from pathlib import Path
-
         from solarfarmer.models.pvsystem.pvsystem import get_inverter_info_from_ond
 
         p = PVSystem(latitude=46.95, longitude=7.44)
         original = Path(bern_2d_racks_inputs) / "Sungrow_SG125HV_APP.OND"
         multi_dot = Path(bern_2d_racks_inputs) / "SMA_Sunny-Central.2200-UP.OND"
 
-        created_link = False
+        created_temp_file = False
         try:
             if not multi_dot.exists():
-                multi_dot.symlink_to(original)
-                created_link = True
+                self._create_multi_dot_alias(original, multi_dot)
+                created_temp_file = True
             p.ond_files = {"TestInverter": str(multi_dot)}
             info = get_inverter_info_from_ond(p)
             # Path.stem gives "SMA_Sunny-Central.2200-UP"
             # split(".")[0] would give "SMA_Sunny-Central" — wrong
             assert info["ond_filename"] == "SMA_Sunny-Central.2200-UP"
         finally:
-            if created_link and multi_dot.exists():
+            if created_temp_file and multi_dot.exists():
                 multi_dot.unlink()
 
 
