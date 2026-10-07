@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Renewable Component Library (RCL) integration via `solarfarmer.rcl`:
+	`list_modules()`, `list_inverters()`, `download_file()`, and
+	`get_rate_limit_status()`.
+- RCL catalog typing and generated wire models, including public filter/field
+	types and response item `TypedDict`s.
+- `RCLRateLimitInfo` helper type with reset time and usage metrics.
+- `PVSystem` integration methods:
+	`set_module_from_rcl()` and `set_inverter_from_rcl()` for catalog search,
+	download, and assignment of PAN/OND files.
+- New RCL documentation and examples:
+	`docs/getting-started/rcl-component-library.md` and
+	`docs/notebooks/Example_RCL_Catalog.ipynb`.
+
+### Changed
+
+- SDK documentation and navigation updated to include RCL workflows and API
+	reference.
+
 ## [0.6.0] - 2026-09-24
 
 ### Added
