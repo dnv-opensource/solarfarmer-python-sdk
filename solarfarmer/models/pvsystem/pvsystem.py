@@ -1196,7 +1196,7 @@ class PVSystem:
         p_nom_conv : float, optional
             Exact rated AC power (kW). Useful for disambiguating power-tier variants.
         effic_max_gte : float, optional
-            Minimum maximum efficiency (fraction, e.g. ``0.98``).
+            Minimum maximum efficiency as a percentage (0-100), e.g. ``98.5``.
         nb_mppt : int, optional
             Exact number of MPPT inputs.
         transfo : str, optional

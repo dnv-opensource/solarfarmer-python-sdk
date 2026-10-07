@@ -346,6 +346,8 @@ class TestGetInfo:
             "has_loss_tree_timeseries",
             "has_pvsyst_timeseries",
             "has_detailed_timeseries",
+            "has_tracker_incidence_angles_timeseries",
+            "has_tracker_rotation_angles_timeseries",
         }
         assert expected_keys == set(results.get_info().keys())
 

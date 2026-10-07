@@ -10,6 +10,7 @@ from solarfarmer.models import (
     MountingTypeSpecification,
     OndFileSupplements,
     PanFileSupplements,
+    TrackerCondition,
     TrackerSystem,
     TransformerLossModelTypes,
     TransformerSpecification,
@@ -125,6 +126,51 @@ class TestLayoutValidation:
                 total_number_of_strings=1,
                 string_length=1,
             )
+
+    def test_dc_ohmic_resistance_and_loss_both_set_raises(self) -> None:
+        with pytest.raises(ValidationError, match="dc_ohmic_connector_resistance"):
+            Layout(
+                layout_count=1,
+                module_specification_id="m",
+                mounting_type_id="mt",
+                is_trackers=False,
+                azimuth=180,
+                pitch=5,
+                total_number_of_strings=1,
+                string_length=1,
+                dc_ohmic_connector_loss=0.01,
+                dc_ohmic_connector_resistance=0.5,
+            )
+
+    def test_dc_ohmic_resistance_alone_is_valid(self) -> None:
+        layout = Layout(
+            layout_count=1,
+            module_specification_id="m",
+            mounting_type_id="mt",
+            is_trackers=False,
+            azimuth=180,
+            pitch=5,
+            total_number_of_strings=1,
+            string_length=1,
+            dc_ohmic_connector_resistance=0.5,
+        )
+        assert layout.dc_ohmic_connector_resistance == 0.5
+        assert layout.dc_ohmic_connector_loss == 0.0
+
+    def test_dc_ohmic_resistance_with_loss_zero_is_valid(self) -> None:
+        layout = Layout(
+            layout_count=1,
+            module_specification_id="m",
+            mounting_type_id="mt",
+            is_trackers=False,
+            azimuth=180,
+            pitch=5,
+            total_number_of_strings=1,
+            string_length=1,
+            dc_ohmic_connector_loss=0.0,
+            dc_ohmic_connector_resistance=0.3,
+        )
+        assert layout.dc_ohmic_connector_resistance == 0.3
 
 
 # ---------------------------------------------------------------------------
@@ -331,3 +377,61 @@ class TestCalcOptionsValidation:
         )
         opts.calculation_year = 2024
         assert opts.calculation_year == 2024
+
+
+# ---------------------------------------------------------------------------
+# TrackerCondition
+# ---------------------------------------------------------------------------
+
+
+class TestTrackerConditionValidation:
+    def test_both_rotation_fields_raises(self) -> None:
+        from datetime import datetime, timezone
+
+        with pytest.raises(ValidationError, match="tracker_rotations_array_values"):
+            TrackerCondition(
+                period_in_minutes=60.0,
+                start_of_period=datetime(2020, 1, 1, tzinfo=timezone.utc),
+                tracker_rotations_array_values=[1234, -500],
+                tracker_rotation_unique_value=0,
+            )
+
+    def test_unique_value_out_of_range_raises(self) -> None:
+        from datetime import datetime, timezone
+
+        with pytest.raises(ValidationError, match="tracker_rotation_unique_value"):
+            TrackerCondition(
+                period_in_minutes=5.0,
+                start_of_period=datetime(2018, 1, 1, tzinfo=timezone.utc),
+                tracker_rotation_unique_value=9000,  # > 8990
+            )
+
+    def test_unique_value_negative_out_of_range_raises(self) -> None:
+        from datetime import datetime, timezone
+
+        with pytest.raises(ValidationError, match="tracker_rotation_unique_value"):
+            TrackerCondition(
+                period_in_minutes=5.0,
+                start_of_period=datetime(2018, 1, 1, tzinfo=timezone.utc),
+                tracker_rotation_unique_value=-9000,  # < -8990
+            )
+
+    def test_array_value_out_of_range_raises(self) -> None:
+        from datetime import datetime, timezone
+
+        with pytest.raises(ValidationError, match="tracker_rotations_array_values"):
+            TrackerCondition(
+                period_in_minutes=5.0,
+                start_of_period=datetime(2018, 1, 1, tzinfo=timezone.utc),
+                tracker_rotations_array_values=[-1570, 9000],  # 9000 > 8990
+            )
+
+    def test_boundary_values_are_valid(self) -> None:
+        from datetime import datetime, timezone
+
+        cond = TrackerCondition(
+            period_in_minutes=5.0,
+            start_of_period=datetime(2018, 1, 1, tzinfo=timezone.utc),
+            tracker_rotations_array_values=[-8990, 0, 8990],
+        )
+        assert cond.tracker_rotations_array_values == [-8990, 0, 8990]

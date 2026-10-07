@@ -255,7 +255,7 @@ def create_plant(mounting_type: str) -> PVSystem:
         plant.gcr = 0.35
     else:  # Tracker
         plant.tracker_max_rotation_angle = 60.0  # Max rotation angle
-        plant.gcr = 0.3   # Trackers need wider spacing
+        plant.gcr = 0.35  # Assuming same spacing conditions
 
     plant.add_pan_files({"Module": Path("data/module.PAN")})
     plant.add_ond_files({"Inverter": Path("data/inverter.OND")})

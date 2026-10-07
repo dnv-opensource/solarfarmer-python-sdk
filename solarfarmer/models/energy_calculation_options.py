@@ -39,6 +39,10 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
         calculations with incorrect results.
     default_wind_speed : float
         Wind speed (m/s) when met data has no wind
+    custom_tracker_rotations_are_at_middle_of_period : bool or None
+        When using a custom rotation table, specifies whether the supplied
+        rotation values represent the middle of each time-step (``True``) or
+        the start (``False``). If ``None``, the engine uses its own default.
     calculate_dhi : bool
         Whether to calculate diffuse horizontal irradiance (DHI) from global
         horizontal irradiance (GHI) when the ``DHI`` column is missing from the
@@ -104,6 +108,10 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
         Return detailed time-series results
     return_loss_tree_time_series_results : bool
         Return loss-tree time-series results
+    return_tracker_rotations_time_series : bool
+        Return tracker rotation angles as a time-series output. Default is False
+    return_tracker_incidence_angles_time_series : bool
+        Return tracker incidence angles as a time-series output. Default is False
     desired_variables_for_pv_syst_format_time_series : list[str] or None
         Specific variables to include in PVsyst-format output
     choice_columns_order_pv_syst_format_time_series : OrderColumnsPvSystFormatTimeSeries or None
@@ -146,6 +154,7 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
     # --- General options ---
     calculation_year: int = 1990
     default_wind_speed: float = 0.0
+    custom_tracker_rotations_are_at_middle_of_period: bool | None = None
     calculate_dhi: bool = Field(False, alias="calculateDHI")
 
     # --- Horizon options ---
@@ -188,6 +197,8 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
     return_pv_syst_format_time_series_results: bool = True
     return_detailed_time_series_results: bool = False
     return_loss_tree_time_series_results: bool = False
+    return_tracker_rotations_time_series: bool = False
+    return_tracker_incidence_angles_time_series: bool = False
     desired_variables_for_pv_syst_format_time_series: list[str] | None = Field(default_factory=list)
     choice_columns_order_pv_syst_format_time_series: OrderColumnsPvSystFormatTimeSeries | None = (
         None

@@ -71,7 +71,7 @@ for item in result["items"]:
 | `p_nom_lte` | Maximum nominal power (W) | `800` |
 | `bifaciality_factor_gte` | Minimum bifaciality factor | `0.7` |
 | `technol` | Technology type | `"mtSi"` |
-| `lifecycle_status` | Lifecycle status | `"active"` |
+| `lifecycle_status` | Lifecycle status | `"published"` |
 
 ### List Inverters
 
