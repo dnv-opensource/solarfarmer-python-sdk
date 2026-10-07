@@ -30,7 +30,7 @@ class TestAboutEndpoint:
         assert len(result["solarFarmerCoreVersion"]) > 0
         assert len(result["solarFarmerApiVersion"]) > 0
 
-    @pytest.mark.parametrize("version,expected_version_prefix", [("v5", "5."), ("v6", "6.")])
+    @pytest.mark.parametrize("version,expected_version_prefix", [("v6", "6."), ("v7", "7.")])
     def test_about_all_versions_return_proper_structure(
         self, api_key, version, expected_version_prefix
     ):
@@ -88,14 +88,14 @@ class TestAboutEndpointUnit:
     @patch("solarfarmer.endpoint_about.Client")
     def test_version_forwarded_to_build_api_url(self, mock_client_cls, mock_build_url):
         """The version argument is forwarded to build_api_url."""
-        mock_build_url.return_value = "http://mock/v5"
+        mock_build_url.return_value = "http://mock/v7"
         mock_client = MagicMock()
         mock_client_cls.return_value = mock_client
         mock_client.get.return_value = self._ok_response()
 
-        solarfarmer.about(version="v5", api_key="test_key")
+        solarfarmer.about(version="v7", api_key="test_key")
 
-        mock_build_url.assert_called_once_with("v5")
+        mock_build_url.assert_called_once_with("v7")
 
     @patch("solarfarmer.endpoint_about.Client")
     def test_malformed_success_response_logs_error_and_returns_data(self, mock_client_cls, caplog):
