@@ -7,6 +7,7 @@ from solarfarmer.models import PVPlant
 from solarfarmer.models.pvsystem.pvsystem import (
     construct_plant,
     design_plant,
+    generate_mounting_specs,
     generate_pan_file_supplements,
 )
 
@@ -120,6 +121,32 @@ class TestDesignPlant:
         small_plant, _ = design_plant(small)
         large_plant, _ = design_plant(large)
         assert total_inverters(small_plant) < total_inverters(large_plant)
+
+
+class TestGenerateMountingSpecs:
+    """Regression tests for generate_mounting_specs()."""
+
+    def test_flush_mount_uses_plant_tilt(self):
+        """Flush-mount fixed systems should preserve plant.tilt in mounting specs."""
+        plant = PVSystem(
+            latitude=46.95,
+            longitude=7.44,
+            mounting="Fixed",
+            flush_mount=True,
+            tilt=15.0,
+        )
+
+        specs = generate_mounting_specs(
+            mounting_type_id="Mounting Type 1",
+            plant=plant,
+            are_modules_landscape=False,
+            rack_height=2.0,
+            y_spacing=0.02,
+        )
+
+        spec = specs["Mounting Type 1"]
+        assert spec.tilt == pytest.approx(15.0)
+        assert spec.height_of_lowest_edge_from_ground == pytest.approx(0.1)
 
 
 class TestSpecIdDerivation:
