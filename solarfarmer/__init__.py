@@ -1,4 +1,4 @@
-from . import custom_rotations
+from . import custom_rotations, rcl
 from .__version__ import __version__
 from .api import SolarFarmerAPIError
 from .config import (
@@ -87,6 +87,17 @@ from .models import (
     TransformerSpecification,
     ValidationMessage,
     Vector3Double,
+)
+from .rcl import (
+    RCLInverterCatalogResponse,
+    RCLInverterItemDict,
+    RCLModuleCatalogResponse,
+    RCLModuleItemDict,
+    RCLRateLimitInfo,
+    download_file,
+    get_rate_limit_status,
+    list_inverters,
+    list_modules,
 )
 from .weather import (
     TSV_COLUMNS,
@@ -184,4 +195,15 @@ __all__ = [
     "check_sequential_year_timestamps",
     "RotationSignConventionWarning",
     "validate_tracker_rotation_ids",
+    # RCL
+    "rcl",
+    "list_modules",
+    "list_inverters",
+    "download_file",
+    "get_rate_limit_status",
+    "RCLModuleItemDict",
+    "RCLInverterItemDict",
+    "RCLModuleCatalogResponse",
+    "RCLInverterCatalogResponse",
+    "RCLRateLimitInfo",
 ]

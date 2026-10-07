@@ -75,6 +75,9 @@ Issues = "https://github.com/dnv-opensource/solarfarmer-python-sdk/issues"
 where = ["."]
 include = ["solarfarmer*"]
 
+[tool.setuptools.package-data]
+solarfarmer = ["py.typed"]
+
 [tool.ruff]
 # Target Python 3.10+
 target-version = "py310"

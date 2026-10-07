@@ -16,6 +16,7 @@ These examples provide detailed explorations of specific API features and workfl
 | [Creating Plants with PVSystem](#creating-plants-with-pvsystem) | Master plant design with the PVSystem class | Workflow 2 | Designing new plants |
 | [Creating Plants with EnergyCalculationInputs](#creating-plants-with-energycalculationinputs) | Build flexible plant configurations with Pydantic model payloads | Workflow 3 | Advanced integration and batch processing |
 | [Terminating Asynchronous Calculations](#terminating-asynchronous-calculations) | Manage long-running 3D calculations | Workflow 3 | Advanced integration and async 3D workflows |
+| [Using the Renewable Component Library](#using-the-renewable-component-library) | Search and download PV modules and inverters from DNV's catalog | All | Equipment sourcing |
 
 ---
 
@@ -74,6 +75,22 @@ These examples provide detailed explorations of specific API features and workfl
 - Preparing payloads for batch processing
 
 **Use this when:** You're following [Workflow 3 (advanced integration)](./workflow-3-plantbuilder-advanced.md) and integrating SolarFarmer with your own systems or processing multiple projects.
+
+---
+
+## Using the Renewable Component Library
+
+**Notebook:** [Example_RCL_Catalog.ipynb](https://github.com/dnv-opensource/solarfarmer-python-sdk/blob/main/docs/notebooks/Example_RCL_Catalog.ipynb){ target="_blank" .external }
+
+**Topics Covered:**
+
+- Searching for PV modules and inverters in DNV's curated catalog
+- Filtering by manufacturer, power, efficiency, and other specifications
+- Managing rate limits and download quotas
+- Downloading PAN and OND equipment files
+- Integrating RCL with PVSystem for automatic equipment assignment
+
+**Use this when:** You need validated equipment files for energy calculations and want to source them from DNV's Renewable Component Library rather than managing files manually.
 
 ---
 
