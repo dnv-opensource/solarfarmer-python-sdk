@@ -38,10 +38,6 @@ _logger = get_logger(__name__)
 
 __all__ = [
     "RCLRateLimitInfo",
-    "InverterField",
-    "ModuleField",
-    "InverterFilters",
-    "ModuleFilters",
     "RCLInverterItemDict",
     "RCLModuleItemDict",
     "RCLInverterCatalogResponse",
@@ -92,7 +88,7 @@ class _RCLCatalogResponseBase(TypedDict):
 
     total: int
     skip: int
-    top: int
+    take: int
     rate_limit: RCLRateLimitInfo | None
 
 
@@ -160,8 +156,7 @@ _OPERATORS = {"contains", "fuzzy", "gt", "gte", "lt", "lte"}
 
 
 def _build_query_params(
-    top: int | None = 25,
-    take: int | None = None,
+    take: int = 25,
     skip: int = 0,
     order_by: str | None = None,
     order_dir: str = "ASC",
@@ -174,13 +169,7 @@ def _build_query_params(
     pattern and convert to the dot-notation form the RCL API expects
     (e.g. ``filter.pNom.gte=400``).
     """
-    page_size = take if take is not None else top
-    if page_size is None:
-        page_size = 25
-
-    # Preserve historic `top` parameter naming used by this SDK while still
-    # accepting `take` as an alias.
-    params: dict = {"top": page_size, "skip": skip}
+    params: dict = {"take": take, "skip": skip}
 
     if order_by:
         params["orderBy"] = order_by
@@ -236,7 +225,7 @@ def _catalog_request(endpoint: str, query_params: dict, api_key: str | None) -> 
         "items": data["items"],
         "total": data["total"],
         "skip": data.get("skip", query_params.get("skip", 0)),
-        "top": data.get("top", query_params.get("top", 25)),
+        "take": data.get("take", query_params.get("take", 25)),
         "rate_limit": rate_limit,
     }
 
@@ -244,8 +233,7 @@ def _catalog_request(endpoint: str, query_params: dict, api_key: str | None) -> 
 def list_inverters(
     *,
     api_key: str | None = None,
-    top: int = 25,
-    take: int | None = None,
+    take: int = 25,
     skip: int = 0,
     order_by: InverterField | None = None,
     order_dir: str = "ASC",
@@ -260,8 +248,6 @@ def list_inverters(
     ----------
     api_key : str, optional
         API token. Defaults to the ``SF_API_KEY`` environment variable.
-    top : int
-        Page size (maximum 10000). Default 25. Kept for backward compatibility.
     take : int
         Page size (maximum 10000). Default 25.
     skip : int
@@ -295,7 +281,7 @@ def list_inverters(
     -------
     RCLInverterCatalogResponse
         Dict with keys ``items`` (list of dicts with camelCase wire keys),
-        ``total``, ``skip``, ``top``, ``rate_limit``.
+        ``total``, ``skip``, ``take``, ``rate_limit``.
 
     Raises
     ------
@@ -314,7 +300,6 @@ def list_inverters(
     ...     print(item["manufacturer"], item["model"])
     """
     params = _build_query_params(
-        top=top,
         take=take,
         skip=skip,
         order_by=order_by,
@@ -331,8 +316,7 @@ def list_inverters(
 def list_modules(
     *,
     api_key: str | None = None,
-    top: int = 25,
-    take: int | None = None,
+    take: int = 25,
     skip: int = 0,
     order_by: ModuleField | None = None,
     order_dir: str = "ASC",
@@ -347,8 +331,6 @@ def list_modules(
     ----------
     api_key : str, optional
         API token. Defaults to the ``SF_API_KEY`` environment variable.
-    top : int
-        Page size (maximum 10000). Default 25. Kept for backward compatibility.
     take : int
         Page size (maximum 10000). Default 25.
     skip : int
@@ -381,7 +363,7 @@ def list_modules(
     -------
     RCLModuleCatalogResponse
         Dict with keys ``items`` (list of dicts with camelCase wire keys),
-        ``total``, ``skip``, ``top``, ``rate_limit``.
+        ``total``, ``skip``, ``take``, ``rate_limit``.
 
     Raises
     ------
@@ -400,7 +382,6 @@ def list_modules(
     ...     print(item["manufacturer"], item["model"])
     """
     params = _build_query_params(
-        top=top,
         take=take,
         skip=skip,
         order_by=order_by,
@@ -498,7 +479,7 @@ def get_rate_limit_status(api_key: str | None = None) -> RCLRateLimitInfo:
     """
     Return current RCL rate limit status without consuming a download.
 
-    Uses ``GET /catalog/modules?top=0``, which returns an empty page but
+    Uses ``GET /catalog/modules?take=0``, which returns an empty page but
     includes the rate-limit headers.
 
     Raises
@@ -509,7 +490,7 @@ def get_rate_limit_status(api_key: str | None = None) -> RCLRateLimitInfo:
         If no API key is found.
     """
     client = RCLClient()
-    response = client.get("catalog/modules", params={"top": 0}, api_key=api_key)
+    response = client.get("catalog/modules", params={"take": 0}, api_key=api_key)
 
     if not response.ok:
         _raise_for_status(response)
