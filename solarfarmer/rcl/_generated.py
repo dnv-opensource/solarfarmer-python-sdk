@@ -28,9 +28,7 @@ class RCLInverterItemDict(TypedDict, total=False):
     iMaxDc: float
     iNomAc: float
     isolSurvey: str
-    lifecycleStatus: Literal[
-        "draft", "under_review", "validated", "published", "deprecated", "archived"
-    ]
+    lifecycleStatus: Literal["draft", "under_review", "validated", "published", "deprecated", "archived"]
     lifecycleStatusDate: str
     manufacturer: str
     masterSlave: str
@@ -113,9 +111,7 @@ class InverterFilters(TypedDict, total=False):
     i_max_dc_gte: float
     i_max_dc_lt: float
     i_max_dc_lte: float
-    lifecycle_status: Literal[
-        "draft", "under_review", "validated", "published", "deprecated", "archived"
-    ]
+    lifecycle_status: Literal["draft", "under_review", "validated", "published", "deprecated", "archived"]
     lifecycle_status_contains: str
     lifecycle_status_date: str
     lifecycle_status_date_contains: str
@@ -212,9 +208,7 @@ class RCLModuleItemDict(TypedDict, total=False):
     imp: float
     isc: float
     lidLoss: float
-    lifecycleStatus: Literal[
-        "draft", "under_review", "validated", "published", "deprecated", "archived"
-    ]
+    lifecycleStatus: Literal["draft", "under_review", "validated", "published", "deprecated", "archived"]
     lifecycleStatusDate: str
     manufacturer: str
     model: str
@@ -286,9 +280,7 @@ class ModuleFilters(TypedDict, total=False):
     isc_gte: float
     isc_lt: float
     isc_lte: float
-    lifecycle_status: Literal[
-        "draft", "under_review", "validated", "published", "deprecated", "archived"
-    ]
+    lifecycle_status: Literal["draft", "under_review", "validated", "published", "deprecated", "archived"]
     lifecycle_status_contains: str
     lifecycle_status_date: str
     lifecycle_status_date_contains: str
