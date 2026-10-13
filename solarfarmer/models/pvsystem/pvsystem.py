@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import copy as copy_module
 import json
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -63,6 +64,52 @@ from .plant_utils import (
 )
 
 _logger = get_logger("models.pvsystem")
+
+# Attributes coerced to their enum on every assignment (case-insensitive for strings).
+_ENUM_FIELDS: dict[str, type[Enum]] = {
+    "mounting": MountingType,
+    "module_orientation": OrientationType,
+    "inverter_type": InverterType,
+}
+
+_VALID_TRANSFORMER_STAGES = (0, 1)
+_TRANSFORMER_KEYS = {0: "Ideal", 1: "FixedType1"}
+
+
+def _bifacial_params(plant: PVSystem) -> dict[str, float]:
+    return BIFACIAL_DICT[True][plant.mounting.value] if plant.bifacial else BIFACIAL_DICT[False]
+
+
+# Fields with a default derived from other fields; recomputed only while still auto-filled.
+_DERIVED_DEFAULTS: dict[str, Callable[[PVSystem], float]] = {
+    "mounting_height": lambda p: (
+        HEIGHT_FROM_GROUND_FIXED if p.mounting == MountingType.FIXED else HEIGHT_FROM_GROUND_TRACKER
+    ),
+    "dc_ohmic_loss": lambda p: OHMIC_DICT[p.inverter_type.value]["dc"],
+    "ac_ohmic_loss": lambda p: OHMIC_DICT[p.inverter_type.value]["ac"],
+    "bifacial_transmission": lambda p: _bifacial_params(p)["transmission"],
+    "bifacial_shade_loss": lambda p: _bifacial_params(p)["shade"],
+    "bifacial_mismatch_loss": lambda p: _bifacial_params(p)["mismatch"],
+    "transformer_fixed_loss": lambda p: TRANSFORMER_DICT[_TRANSFORMER_KEYS[p.transformer_stages]][
+        "fixed"
+    ],
+    "transformer_variable_loss": lambda p: TRANSFORMER_DICT[
+        _TRANSFORMER_KEYS[p.transformer_stages]
+    ]["variable"],
+}
+
+_BIFACIAL_FIELDS = ("bifacial_transmission", "bifacial_shade_loss", "bifacial_mismatch_loss")
+
+# Outputs and bookkeeping: changing them must not invalidate the cached payload.
+_NON_CONFIG_FIELDS = frozenset({"payload", "results", "design_summary", "_auto_filled"})
+
+# Input field -> derived fields to refresh when it is reassigned.
+_DERIVED_DEPENDENTS: dict[str, tuple[str, ...]] = {
+    "mounting": ("mounting_height", *_BIFACIAL_FIELDS),
+    "bifacial": _BIFACIAL_FIELDS,
+    "inverter_type": ("dc_ohmic_loss", "ac_ohmic_loss"),
+    "transformer_stages": ("transformer_fixed_loss", "transformer_variable_loss"),
+}
 
 PathLike = str | Path
 
@@ -487,6 +534,7 @@ class PVSystem:
             contains paths whose stems collide (duplicate filenames).
         """
         self._pan_files.clear()
+        self.payload = None
         if isinstance(mapping, Mapping):
             for name, p in mapping.items():
                 key = str(name).strip()
@@ -524,6 +572,7 @@ class PVSystem:
             if not key:
                 raise ValueError("Module name cannot be empty")
             self._pan_files[key] = Path(p)
+        self.payload = None
         return self
 
     @property
@@ -552,6 +601,7 @@ class PVSystem:
             contains paths whose stems collide (duplicate filenames).
         """
         self._ond_files.clear()
+        self.payload = None
         if isinstance(mapping, Mapping):
             for name, p in mapping.items():
                 key = str(name).strip()
@@ -589,6 +639,7 @@ class PVSystem:
             if not key:
                 raise ValueError("Inverter name cannot be empty")
             self._ond_files[key] = Path(p)
+        self.payload = None
         return self
 
     @property
@@ -601,99 +652,68 @@ class PVSystem:
         """A (shallow) copy of inverter -> OND file mapping."""
         return dict(self._ond_files)
 
+    def __setattr__(self, name: str, value: Any) -> None:
+        enum_cls = _ENUM_FIELDS.get(name)
+        if enum_cls is not None and not isinstance(value, enum_cls):
+            # inverter_type=None means "use the default".
+            if value is None and name == "inverter_type":
+                value = InverterType.CENTRAL
+            else:
+                try:
+                    value = enum_cls(value)
+                except ValueError as err:
+                    raise ValueError(
+                        f"{value!r} is not a valid {enum_cls.__name__} for '{name}'. "
+                        f"Must be one of: {', '.join(e.value for e in enum_cls)} "
+                        "(case-insensitive)."
+                    ) from err
+        elif name == "transformer_stages" and value not in _VALID_TRANSFORMER_STAGES:
+            raise ValueError(
+                f"Invalid transformer_stages: {value}. "
+                f"Must be one of: {list(_VALID_TRANSFORMER_STAGES)}"
+            )
+
+        super().__setattr__(name, value)
+
+        # Not yet created while the dataclass __init__ is still assigning fields.
+        auto_filled = self.__dict__.get("_auto_filled")
+        if auto_filled is None:
+            return
+        if name not in _NON_CONFIG_FIELDS:
+            object.__setattr__(self, "payload", None)
+        if name in _DERIVED_DEFAULTS:
+            if value is None:
+                self._refresh_derived(name)  # None resets the field to its default
+            else:
+                auto_filled.discard(name)  # explicit user value from now on
+        for dependent in _DERIVED_DEPENDENTS.get(name, ()):
+            self._refresh_derived(dependent)
+
+    def _refresh_derived(self, name: str) -> None:
+        """Set a derived default if the field is empty or was previously auto-filled."""
+        if getattr(self, name) is None or name in self._auto_filled:
+            # object.__setattr__ bypasses the hook so the field stays marked as auto-filled.
+            object.__setattr__(self, name, _DERIVED_DEFAULTS[name](self))
+            self._auto_filled.add(name)
+
     def __post_init__(self) -> None:
         """Post-initialization processing and validation."""
 
-        # Convert string values to enums if necessary
-        # (useful when loading JSON via `from_file()`)
-        if isinstance(self.mounting, str):
-            self.mounting = MountingType(self.mounting)
-        if isinstance(self.module_orientation, str):
-            self.module_orientation = OrientationType(self.module_orientation)
-        if isinstance(self.inverter_type, str):
-            self.inverter_type = InverterType(self.inverter_type)
-
-        # Initialize mounting_height based on mounting type if not explicitly set
-        if self.mounting == MountingType.FIXED:
-            if self.mounting_height is None or not hasattr(self, "mounting_height"):
-                self.mounting_height = HEIGHT_FROM_GROUND_FIXED
-        elif self.mounting == MountingType.TRACKER:
-            if self.mounting_height is None or not hasattr(self, "mounting_height"):
-                self.mounting_height = HEIGHT_FROM_GROUND_TRACKER
-        else:
-            raise ValueError(
-                f"Invalid mounting type: '{self.mounting}'. "
-                f"Must be one of: {', '.join([e.value for e in MountingType])}"
-            )
+        # Enum fields and transformer_stages are already validated by __setattr__.
+        self._auto_filled: set[str] = set()
+        for name in _DERIVED_DEFAULTS:
+            self._refresh_derived(name)
 
         # Initialize modules_across with default if not set
         if self.modules_across is None:
-            self.modules_across = NUMBER_OF_MODULES_HIGH
+            # Bypass the hook so a payload loaded via from_file() is not discarded.
+            object.__setattr__(self, "modules_across", NUMBER_OF_MODULES_HIGH)
 
         # Validate modules_across
         if not isinstance(self.modules_across, int) or self.modules_across <= 0:
             raise ValueError(
                 f"modules_across must be a positive integer, got {self.modules_across}."
             )
-
-        # Initialize and validate inverter_type
-        if self.inverter_type is None:
-            self.inverter_type = InverterType(
-                InverterType.CENTRAL
-            )  # Default to 'Central' if not set
-
-        try:
-            (
-                self.inverter_type.value
-                if isinstance(self.inverter_type, InverterType)
-                else self.inverter_type
-            )
-        except (AttributeError, ValueError) as err:
-            raise ValueError(
-                f"Invalid inverter_type: '{self.inverter_type}'. "
-                f"Must be one of: {', '.join([e.value for e in InverterType])}"
-            ) from err
-
-        # Initialize dc_ohmic_loss and ac_ohmic_loss based on inverter_type
-        if self.dc_ohmic_loss is None:
-            self.dc_ohmic_loss = OHMIC_DICT[self.inverter_type.value]["dc"]
-
-        if self.ac_ohmic_loss is None:
-            self.ac_ohmic_loss = OHMIC_DICT[self.inverter_type.value]["ac"]
-
-        # Initialize bifacial parameters based on bifacial flag and mounting type
-        if self.bifacial:
-            bifacial_params = BIFACIAL_DICT[True][self.mounting.value]
-        else:
-            bifacial_params = BIFACIAL_DICT[False]
-
-        if self.bifacial_transmission is None:
-            self.bifacial_transmission = bifacial_params["transmission"]
-
-        if self.bifacial_shade_loss is None:
-            self.bifacial_shade_loss = bifacial_params["shade"]
-
-        if self.bifacial_mismatch_loss is None:
-            self.bifacial_mismatch_loss = bifacial_params["mismatch"]
-
-        # Initialize and validate transformer_stages
-        valid_transformer_stages = {0, 1}
-        if self.transformer_stages not in valid_transformer_stages:
-            raise ValueError(
-                f"Invalid transformer_stages: {self.transformer_stages}. "
-                f"Must be one of: {sorted(valid_transformer_stages)}"
-            )
-
-        # Map transformer_stages to TRANSFORMER_DICT keys and initialize losses
-        transformer_key_map = {0: "Ideal", 1: "FixedType1"}
-        transformer_type = transformer_key_map[self.transformer_stages]
-        transformer_params = TRANSFORMER_DICT[transformer_type]
-
-        if self.transformer_fixed_loss is None:
-            self.transformer_fixed_loss = transformer_params["fixed"]
-
-        if self.transformer_variable_loss is None:
-            self.transformer_variable_loss = transformer_params["variable"]
 
         # Validate location
         if self.latitude is not None and not (-90.0 <= float(self.latitude) <= 90.0):
@@ -763,7 +783,10 @@ class PVSystem:
         plant_dict["name"] = f"Copy of {original_name}"
 
         # Create and return new PVSystem instance
-        return PVSystem(**plant_dict)
+        new_plant = PVSystem(**plant_dict)
+        # Values were passed in explicitly above; keep the original's auto-filled tracking.
+        new_plant._auto_filled = set(self._auto_filled)
+        return new_plant
 
     def describe(self, verbose=False) -> None:
         """Print a comprehensive summary of all PV plant configuration properties.
