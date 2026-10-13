@@ -1011,12 +1011,12 @@ class PVSystem:
         else:
             payload_dict = self.payload
 
+        # construct_plant returns compact JSON; re-serialize so the file is indented
+        if isinstance(payload_dict, str):
+            payload_dict = json.loads(payload_dict)
+
         with path.open("w", encoding="utf-8") as f:
-            # If payload is a string (JSON), write directly; if dict, use json.dump
-            if isinstance(payload_dict, str):
-                f.write(payload_dict)
-            else:
-                json.dump(payload_dict, f, indent=4)
+            json.dump(payload_dict, f, indent=4)
 
         _logger.debug("PVSystem payload saved to %s", path)
         return None
