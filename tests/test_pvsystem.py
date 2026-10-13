@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from solarfarmer import PVSystem
+from solarfarmer import InverterType, MountingType, OrientationType, PVSystem
 from solarfarmer.models.pvsystem.pvsystem import construct_plant
 
 
@@ -177,6 +177,141 @@ class TestPVSystemMountingProperties:
         plant = PVSystem(latitude=45.0, longitude=10.0, mounting="Tracker")
 
         assert plant.mounting == "Tracker"
+
+    @pytest.mark.parametrize("value", ["fixed", "FIXED", "Fixed", " fixed "])
+    def test_pvsystem_mounting_case_insensitive(self, value):
+        plant = PVSystem(latitude=45.0, longitude=10.0, mounting=value)
+
+        assert plant.mounting is MountingType.FIXED
+
+    def test_pvsystem_orientation_and_inverter_case_insensitive(self):
+        plant = PVSystem(
+            latitude=45.0,
+            longitude=10.0,
+            module_orientation="LANDSCAPE",
+            inverter_type="string",
+        )
+
+        assert plant.module_orientation is OrientationType.LANDSCAPE
+        assert plant.inverter_type is InverterType.STRING
+
+    def test_pvsystem_enum_fields_normalized_on_reassignment(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        plant.mounting = "tracker"
+        plant.module_orientation = "landscape"
+        plant.inverter_type = "STRING"
+
+        assert plant.mounting is MountingType.TRACKER
+        assert plant.module_orientation is OrientationType.LANDSCAPE
+        assert plant.inverter_type is InverterType.STRING
+
+    def test_pvsystem_enum_reassignment_invalid_value_raises(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        with pytest.raises(ValueError, match="MountingType"):
+            plant.mounting = "Rooftop"
+        with pytest.raises(ValueError, match="MountingType"):
+            plant.mounting = None
+
+    def test_autofilled_defaults_follow_input_changes(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+        assert plant.mounting_height == 0.7
+        assert plant.dc_ohmic_loss == 0.015
+
+        plant.mounting = "tracker"
+        plant.inverter_type = "string"
+        plant.bifacial = True
+        plant.transformer_stages = 0
+
+        assert plant.mounting_height == 1.5
+        assert (plant.dc_ohmic_loss, plant.ac_ohmic_loss) == (0.007, 0.010)
+        assert plant.bifacial_shade_loss == 0.100
+        assert plant.transformer_fixed_loss == 0
+
+    def test_explicit_values_are_not_overwritten(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0, mounting_height=2.0, dc_ohmic_loss=0.02)
+
+        plant.mounting = "Tracker"
+        plant.inverter_type = "String"
+
+        assert plant.mounting_height == 2.0
+        assert plant.dc_ohmic_loss == 0.02
+        assert plant.ac_ohmic_loss == 0.010  # still auto-filled
+
+    def test_assigned_value_stops_autofill_and_none_restores_it(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        plant.mounting_height = 3.0
+        plant.mounting = "Tracker"
+        assert plant.mounting_height == 3.0
+
+        plant.mounting_height = None
+        assert plant.mounting_height == 1.5
+        plant.mounting = "Fixed"
+        assert plant.mounting_height == 0.7
+
+    def test_make_copy_keeps_autofill_tracking(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0, dc_ohmic_loss=0.02)
+
+        copy = plant.make_copy()
+        copy.mounting = "Tracker"
+        copy.inverter_type = "String"
+
+        assert copy.mounting_height == 1.5
+        assert copy.dc_ohmic_loss == 0.02
+        assert copy.ac_ohmic_loss == 0.010
+
+    def test_invalid_transformer_stages_on_reassignment_raises(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        with pytest.raises(ValueError, match="transformer_stages"):
+            plant.transformer_stages = 2
+
+    def test_payload_cache_invalidated_on_config_change(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        plant.payload = "cached"
+        plant.tilt = 20.0
+        assert plant.payload is None
+
+        plant.payload = "cached"
+        plant.mounting = "tracker"
+        assert plant.payload is None
+
+    def test_payload_cache_kept_when_only_outputs_change(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        plant.payload = "cached"
+        plant.results = object()
+        plant.design_summary = {}
+
+        assert plant.payload == "cached"
+
+    def test_payload_cache_invalidated_on_equipment_files_change(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        for update in (
+            lambda: setattr(plant, "pan_files", {"m": "m.PAN"}),
+            lambda: setattr(plant, "ond_files", {"i": "i.OND"}),
+            lambda: plant.add_pan_files({"m2": "m2.PAN"}),
+            lambda: plant.add_ond_files({"i2": "i2.OND"}),
+        ):
+            plant.payload = "cached"
+            update()
+            assert plant.payload is None
+
+    def test_payload_loaded_from_file_is_kept(self, tmp_path):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+        plant.payload = "cached"
+        plant.to_file(tmp_path / "plant.json")
+
+        assert PVSystem.from_file(tmp_path / "plant.json").payload == "cached"
+
+    def test_pvsystem_inverter_type_none_defaults_to_central(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0, inverter_type=None)
+
+        assert plant.inverter_type is InverterType.CENTRAL
 
 
 class TestPVSystemTechnologyProperties:

@@ -10,21 +10,34 @@ from enum import Enum
 # ------------------------------------------------------------------------------
 
 
-class InverterType(str, Enum):
+class _CaseInsensitiveStrEnum(str, Enum):
+    """String enum whose lookup by value ignores case (e.g. ``"fixed"`` -> ``FIXED``)."""
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            folded = value.strip().casefold()
+            for member in cls:
+                if member.value.casefold() == folded:
+                    return member
+        return None
+
+
+class InverterType(_CaseInsensitiveStrEnum):
     """Enumeration for inverter types."""
 
     STRING = "String"
     CENTRAL = "Central"
 
 
-class MountingType(str, Enum):
+class MountingType(_CaseInsensitiveStrEnum):
     """Enumeration for mounting types."""
 
     FIXED = "Fixed"
     TRACKER = "Tracker"
 
 
-class OrientationType(str, Enum):
+class OrientationType(_CaseInsensitiveStrEnum):
     """Enumeration for module orientation types."""
 
     PORTRAIT = "Portrait"
