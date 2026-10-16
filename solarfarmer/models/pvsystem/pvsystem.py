@@ -1316,7 +1316,7 @@ class PVSystem:
                 if pnom is not None:
                     extras.append(f"{pnom:g}kW")
                 if eff is not None:
-                    extras.append(f"eff={eff * 100:.1f}%")
+                    extras.append(f"eff={eff:.1f}%")
                 if mppt is not None:
                     extras.append(f"{mppt} MPPT")
                 if extras:

@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   corresponding derived defaults. Previously they were silently ignored, e.g. bifacial losses stayed 0
   after `plant.bifacial = True`; results from workflows that assign these after construction will change.
 - A stale cached payload could be sent after editing a plant (including via `make_copy()`).
+- `PVSystem.set_inverter_from_rcl()` no longer multiplies the inverter efficiency by 100 in the
+  "Narrow your search" message (e.g. `eff=9860.0%` is now `eff=98.6%`).
 
 ## [0.7.0] - 2026-10-07
 
