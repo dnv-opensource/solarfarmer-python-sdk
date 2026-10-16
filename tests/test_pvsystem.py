@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -214,60 +215,6 @@ class TestPVSystemMountingProperties:
         with pytest.raises(ValueError, match="MountingType"):
             plant.mounting = None
 
-    def test_autofilled_defaults_follow_input_changes(self):
-        plant = PVSystem(latitude=45.0, longitude=10.0)
-        assert plant.mounting_height == 0.7
-        assert plant.dc_ohmic_loss == 0.015
-
-        plant.mounting = "tracker"
-        plant.inverter_type = "string"
-        plant.bifacial = True
-        plant.transformer_stages = 0
-
-        assert plant.mounting_height == 1.5
-        assert (plant.dc_ohmic_loss, plant.ac_ohmic_loss) == (0.007, 0.010)
-        assert plant.bifacial_shade_loss == 0.100
-        assert plant.transformer_fixed_loss == 0
-
-    def test_explicit_values_are_not_overwritten(self):
-        plant = PVSystem(latitude=45.0, longitude=10.0, mounting_height=2.0, dc_ohmic_loss=0.02)
-
-        plant.mounting = "Tracker"
-        plant.inverter_type = "String"
-
-        assert plant.mounting_height == 2.0
-        assert plant.dc_ohmic_loss == 0.02
-        assert plant.ac_ohmic_loss == 0.010  # still auto-filled
-
-    def test_assigned_value_stops_autofill_and_none_restores_it(self):
-        plant = PVSystem(latitude=45.0, longitude=10.0)
-
-        plant.mounting_height = 3.0
-        plant.mounting = "Tracker"
-        assert plant.mounting_height == 3.0
-
-        plant.mounting_height = None
-        assert plant.mounting_height == 1.5
-        plant.mounting = "Fixed"
-        assert plant.mounting_height == 0.7
-
-    def test_make_copy_keeps_autofill_tracking(self):
-        plant = PVSystem(latitude=45.0, longitude=10.0, dc_ohmic_loss=0.02)
-
-        copy = plant.make_copy()
-        copy.mounting = "Tracker"
-        copy.inverter_type = "String"
-
-        assert copy.mounting_height == 1.5
-        assert copy.dc_ohmic_loss == 0.02
-        assert copy.ac_ohmic_loss == 0.010
-
-    def test_invalid_transformer_stages_on_reassignment_raises(self):
-        plant = PVSystem(latitude=45.0, longitude=10.0)
-
-        with pytest.raises(ValueError, match="transformer_stages"):
-            plant.transformer_stages = 2
-
     def test_pvsystem_inverter_type_none_defaults_to_central(self):
         plant = PVSystem(latitude=45.0, longitude=10.0, inverter_type=None)
 
@@ -284,6 +231,7 @@ class TestPVSystemPayloadSnapshot:
             dc_capacity_MW=5.0,
             ac_capacity_MW=4.0,
             tilt=20.0,
+            print_design_summary=False,
         )
         plant.pan_files = {"Module": data_dir / "CanadianSolar_CS6U-330M_APP.PAN"}
         plant.ond_files = {"Inverter": data_dir / "Sungrow_SG125HV_APP.OND"}
@@ -758,14 +706,14 @@ class TestPVSystemBifacial:
 
     def test_bifacial_fixed_defaults_are_correct(self):
         """Fixed-tilt bifacial defaults must match BIFACIAL_DICT[True]['Fixed']."""
-        plant = PVSystem(bifacial=True, mounting="Fixed")
+        plant = PVSystem(bifacial=True, mounting="Fixed").with_defaults_applied()
         assert plant.bifacial_transmission == 0.05
         assert plant.bifacial_shade_loss == 0.200
         assert plant.bifacial_mismatch_loss == 0.01
 
     def test_bifacial_tracker_defaults_are_correct(self):
         """Tracker bifacial defaults must match BIFACIAL_DICT[True]['Tracker']."""
-        plant = PVSystem(bifacial=True, mounting="Tracker")
+        plant = PVSystem(bifacial=True, mounting="Tracker").with_defaults_applied()
         assert plant.bifacial_transmission == 0.05
         assert plant.bifacial_shade_loss == 0.100
         assert plant.bifacial_mismatch_loss == 0.005
@@ -778,17 +726,144 @@ class TestPVSystemBifacial:
             bifacial_transmission=0.03,
             bifacial_shade_loss=0.15,
             bifacial_mismatch_loss=0.008,
-        )
+        ).with_defaults_applied()
         assert plant.bifacial_transmission == 0.03
         assert plant.bifacial_shade_loss == 0.15
         assert plant.bifacial_mismatch_loss == 0.008
 
     def test_non_bifacial_defaults_unchanged(self):
         """Regression: non-bifacial construction must still produce zero bifacial params."""
-        plant = PVSystem(bifacial=False)
+        plant = PVSystem(bifacial=False).with_defaults_applied()
         assert plant.bifacial_transmission == 0.0
         assert plant.bifacial_shade_loss == 0.0
         assert plant.bifacial_mismatch_loss == 0.0
+
+
+class TestPVSystemDerivedDefaults:
+    def test_documented_flow_applies_defaults(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+        plant.mounting = "Tracker"
+        plant.bifacial = True
+        plant.inverter_type = "String"
+        plant.transformer_stages = 0
+
+        derived_fields = (
+            "mounting_height",
+            "dc_ohmic_loss",
+            "ac_ohmic_loss",
+            "bifacial_transmission",
+            "bifacial_shade_loss",
+            "bifacial_mismatch_loss",
+            "transformer_fixed_loss",
+            "transformer_variable_loss",
+        )
+        assert all(getattr(plant, name) is None for name in derived_fields)
+
+        resolved = plant.with_defaults_applied()
+
+        assert resolved.mounting_height == 1.5
+        assert (
+            resolved.bifacial_transmission,
+            resolved.bifacial_shade_loss,
+            resolved.bifacial_mismatch_loss,
+        ) == (0.05, 0.100, 0.005)
+        assert (resolved.dc_ohmic_loss, resolved.ac_ohmic_loss) == (0.007, 0.010)
+        assert (resolved.transformer_fixed_loss, resolved.transformer_variable_loss) == (0, 0)
+
+    def test_with_defaults_applied_does_not_mutate_original(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0, mounting="Tracker", bifacial=True)
+
+        resolved = plant.with_defaults_applied()
+
+        assert resolved is not plant
+        assert plant.mounting_height is None
+        assert plant.bifacial_shade_loss is None
+
+    def test_explicit_values_are_preserved_including_zero(self):
+        plant = PVSystem(
+            latitude=45.0,
+            longitude=10.0,
+            mounting_height=2.0,
+            bifacial_transmission=0.0,
+        )
+        plant.mounting = "Tracker"
+        plant.bifacial = True
+
+        resolved = plant.with_defaults_applied()
+
+        assert resolved.mounting_height == 2.0
+        assert resolved.bifacial_transmission == 0.0
+        assert resolved.bifacial_shade_loss == 0.100
+
+    def test_defaults_follow_after_to_file_from_file(self, tmp_path):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+        file_path = tmp_path / "plant.json"
+        plant.to_file(file_path)
+
+        loaded = PVSystem.from_file(file_path)
+        loaded.mounting = "Tracker"
+
+        assert loaded.with_defaults_applied().mounting_height == 1.5
+
+    def test_defaults_follow_after_make_copy(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        copy = plant.make_copy()
+        copy.mounting = "Tracker"
+
+        assert copy.with_defaults_applied().mounting_height == 1.5
+
+    def test_defaults_follow_after_dataclasses_replace(self):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+
+        copy = replace(plant, name="Replacement")
+        copy.mounting = "Tracker"
+
+        assert copy.with_defaults_applied().mounting_height == 1.5
+
+    def test_legacy_json_with_frozen_values_is_treated_as_explicit(self, tmp_path):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+        file_path = tmp_path / "plant.json"
+        plant.to_file(file_path)
+        plant_data = json.loads(file_path.read_text())
+        plant_data["mounting_height"] = 0.7
+        file_path.write_text(json.dumps(plant_data))
+
+        loaded = PVSystem.from_file(file_path)
+        loaded.mounting = "Tracker"
+
+        assert loaded.with_defaults_applied().mounting_height == 0.7
+
+    def test_invalid_transformer_stages(self):
+        with pytest.raises(ValueError, match="transformer_stages"):
+            PVSystem(latitude=45.0, longitude=10.0, transformer_stages=3)
+
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+        plant.transformer_stages = 2
+        with pytest.raises(ValueError, match="transformer_stages"):
+            plant.with_defaults_applied()
+
+    def test_produce_payload_does_not_mutate_plant_inputs(self, sample_data_dir):
+        plant = TestPVSystemPayloadSnapshot._plant(sample_data_dir)
+        plant.gcr = 0.4
+        first_payload = plant.produce_payload()
+        first_summary = plant.design_summary.copy()
+        second_payload = plant.produce_payload()
+
+        assert plant.dc_capacity_MW == 5.0
+        assert plant.ac_capacity_MW == 4.0
+        assert plant.gcr == 0.4
+        assert first_summary["target_dc_capacity_MW"] == 5.0
+        assert plant.design_summary["target_dc_capacity_MW"] == 5.0
+        assert first_summary == plant.design_summary
+        assert first_payload == second_payload
+
+    def test_describe_prints_effective_defaults(self, capsys):
+        plant = PVSystem(latitude=45.0, longitude=10.0, mounting="Tracker")
+
+        plant.describe(verbose=True)
+
+        assert "Mounting Height: 1.5" in capsys.readouterr().out
 
 
 class TestPVSystemPersistence:
