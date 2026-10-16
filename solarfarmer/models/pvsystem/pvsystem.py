@@ -151,17 +151,21 @@ class PVSystem:
         Defines the symmetric rotation bounds: ``[-tracker_max_rotation_angle, +tracker_max_rotation_angle]``.
     azimuth : float
         Array azimuth in degrees (default 180, i.e., south-facing).
-    mounting: str
+    mounting : str
         Mounting configuration: 'Fixed' for fixed-tilt or 'Tracker' for single-axis trackers.
-        Available as ``solarfarmer.MountingType`` enum (e.g., ``sf.MountingType.FIXED``).
+        Strings are case-insensitive (e.g., ``"tracker"``) and are stored as
+        ``solarfarmer.MountingType`` enum values.
+    module_orientation : str
+        Module orientation: 'Portrait' or 'Landscape'. Strings are case-insensitive and are
+        stored as ``solarfarmer.OrientationType`` enum values.
     flush_mount : bool
         If True, indicates flush-mounted arrays (default is False).
     bifacial: bool
         If True, indicates bifacial modules (default is False).
-    inverter_type: str
+    inverter_type : str
         Inverter type: 'Central' or 'String' (default is 'Central').
-        Affects the default DC and AC ohmic losses used, which can be overridden via
-        `dc_ohmic_loss` and `ac_ohmic_loss`.
+        Strings are case-insensitive and are stored as ``solarfarmer.InverterType`` enum values.
+        Determines the default DC and AC ohmic losses when building a payload.
     transformer_stages: int
         Number of transformer stages. 0 for ideal behaviour or 1 for one stage (default is 1).
     plant_unavailability : float
@@ -182,19 +186,20 @@ class PVSystem:
 
     Other Effects and Settings
     --------------------------
-    mounting_height: Optional[float] = None
+    mounting_height : Optional[float]
         Mounting height in meters. It refers to the minimum height from ground for fixed-tilt
-         and axis-tube height for single-axis trackers (default is 1.5 m).
+        and axis-tube height for single-axis trackers. ``None`` means derive from ``mounting``
+        when building the payload; the default is 0.7 m for fixed mounting and 1.5 m for trackers.
     modules_across: Optional[int] = None
         Number of modules across in the mounting configuration
         (default is 1 for both trackers and fixed-tilt).
     string_length: Optional[int] = None
         Number of modules in series per string
         (default is calculated from the module and inverter provided).
-    dc_ohmic_loss: Optional[float] = None
-        DC ohmic loss (per unit) (default depends on inverter type).
-    ac_ohmic_loss: Optional[float] = None
-        AC ohmic loss (per unit) (default depends on inverter type).
+    dc_ohmic_loss : Optional[float]
+        DC ohmic loss (per unit). ``None`` means derive from ``inverter_type`` at build time.
+    ac_ohmic_loss : Optional[float]
+        AC ohmic loss (per unit). ``None`` means derive from ``inverter_type`` at build time.
     module_mismatch: Optional[float] = None
         Module mismatch loss (per unit) (default is 0.005).
     recalculate_modeling_correction_factor: bool
@@ -216,16 +221,19 @@ class PVSystem:
         Monthly soiling loss (per unit), 12 values in [0,1]. If set with 1 value, it's expanded to 12.
     albedo: Optional[List[float]] = None
         Monthly albedo (per unit), 12 values in [0,1]. If set with 1 value, it's expanded to 12.
-    transformer_fixed_loss : Optional[float] = None
-        Transformer fixed loss (per unit).
-    transformer_variable_loss : Optional[float] = None
-        Transformer variable loss (per unit).
-    bifacial_transmission : Optional[float] = None
-        Bifacial transmission gain (per unit). Applicable only if `bifacial` is True.
-    bifacial_shade_loss : Optional[float] = None
-        Bifacial shade loss (per unit). Applicable only if `bifacial` is True.
-    bifacial_mismatch_loss : Optional[float] = None
-        Bifacial mismatch loss (per unit). Applicable only if `bifacial` is True.
+    transformer_fixed_loss : Optional[float]
+        Transformer fixed loss (per unit). ``None`` means derive from ``transformer_stages``.
+    transformer_variable_loss : Optional[float]
+        Transformer variable loss (per unit). ``None`` means derive from ``transformer_stages``.
+    bifacial_transmission : Optional[float]
+        Bifacial transmission gain (per unit). ``None`` means derive from ``bifacial`` and
+        ``mounting`` at build time.
+    bifacial_shade_loss : Optional[float]
+        Bifacial shade loss (per unit). ``None`` means derive from ``bifacial`` and
+        ``mounting`` at build time.
+    bifacial_mismatch_loss : Optional[float]
+        Bifacial mismatch loss (per unit). ``None`` means derive from ``bifacial`` and
+        ``mounting`` at build time.
     aux_loss_fixed_factor: Optional[float] = None
         Simple loss as a fraction of AC output (per unit).
     aux_loss_power: Optional[float] = None
@@ -262,10 +270,14 @@ class PVSystem:
     - from_file(path)
     - make_copy()
     - payload_to_file(path)
+    - with_defaults_applied()
 
     Notes
     -----
     - All setters accept `str` or `Path` for paths; stored internally as `Path`.
+    - Unset derived inputs remain ``None`` until used to build a payload. Use
+      ``with_defaults_applied()`` to inspect effective values; explicit values, including
+      ``0.0``, override the derived defaults.
     """
 
     # Basic metadata
@@ -296,21 +308,21 @@ class PVSystem:
         None  # For trackers only; default is MAX_ROTATION_ANGLE (60°)
     )
     azimuth: float = 180.0
-    mounting: MountingType = MountingType.FIXED
+    mounting: MountingType | str = MountingType.FIXED
     flush_mount: bool = False
     bifacial: bool = False
-    inverter_type: InverterType | None = InverterType.CENTRAL
+    inverter_type: InverterType | str | None = InverterType.CENTRAL
     transformer_stages: int = 1
     plant_unavailability: float = 0.0
     grid_unavailability: float = 0.0
 
     # Effects and settings
-    mounting_height: float | None = None  # Changed from: mounting_height: float
+    mounting_height: float | None = None  # None = derive from mounting at build time
     modules_across: int | None = None
-    module_orientation: OrientationType = OrientationType.PORTRAIT
+    module_orientation: OrientationType | str = OrientationType.PORTRAIT
     string_length: int | None = None  # Estimated from module and inverter provided
-    dc_ohmic_loss: float | None = None  # Default depends on inverter type
-    ac_ohmic_loss: float | None = None  # Default depends on inverter type
+    dc_ohmic_loss: float | None = None  # None = derive from inverter_type at build time
+    ac_ohmic_loss: float | None = None  # None = derive from inverter_type at build time
     module_mismatch: float | None = MODULE_MISMATCH_FACTOR
     recalculate_modeling_correction_factor: bool = True
     module_quality_factor: float | None = 0.0
@@ -318,11 +330,11 @@ class PVSystem:
     module_iam_model_override: str | None = None
     constant_heat_coefficient: float | None = CONSTANT_HEAT_COEFFICIENT
     convective_heat_coefficient: float | None = CONVECTIVE_HEAT_COEFFICIENT
-    transformer_fixed_loss: float | None = None  # Default depends on transformer stages
-    transformer_variable_loss: float | None = None  # Default depends on transformer stages
-    bifacial_transmission: float | None = None  # Default depends on bifacial flag
-    bifacial_shade_loss: float | None = None  # Default depends on bifacial flag
-    bifacial_mismatch_loss: float | None = None  # Default depends on bifacial flag
+    transformer_fixed_loss: float | None = None  # None = derive from transformer_stages
+    transformer_variable_loss: float | None = None  # None = derive from transformer_stages
+    bifacial_transmission: float | None = None  # None = derive from bifacial and mounting
+    bifacial_shade_loss: float | None = None  # None = derive from bifacial and mounting
+    bifacial_mismatch_loss: float | None = None  # None = derive from bifacial and mounting
     aux_loss_fixed_factor: float | None = None
     aux_loss_power: float | None = None
     aux_loss_apply_at_night: bool | None = None

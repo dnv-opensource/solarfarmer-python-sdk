@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `PVSystem` enum inputs (`mounting`, `module_orientation`, `inverter_type`) accept case-insensitive strings,
+  at construction and on assignment.
+- `PVSystem.with_defaults_applied()` returns a copy with all unset derived inputs resolved.
+
+### Changed
+
+- Derived `PVSystem` inputs (`mounting_height`, ohmic losses, bifacial parameters, transformer losses) are now
+  resolved when the payload is built; they read as `None` until set explicitly. Use `describe()` or
+  `with_defaults_applied()` to see effective values.
+- `PVSystem.payload` is now an output-only snapshot (JSON string) and is no longer read back; it is omitted
+  from `to_file()` output.
+- Building a payload no longer overwrites the plant's `dc_capacity_MW`, `ac_capacity_MW` or `gcr`.
+
+### Fixed
+
+- Payloads built after changing `mounting`, `bifacial`, `inverter_type` or `transformer_stages` now use the
+  corresponding derived defaults. Previously they were silently ignored, e.g. bifacial losses stayed 0
+  after `plant.bifacial = True`; results from workflows that assign these after construction will change.
+- A stale cached payload could be sent after editing a plant (including via `make_copy()`).
+
 ## [0.7.0] - 2026-10-07
 
 ### Added
@@ -31,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Flush-mount `PVSystem` tilt handling now preserves `plant.tilt` in mounting
 	specifications instead of forcing `0.0`, aligning flush-mount behaviour with
-	user-provided fixed-tilt inputs. 
+	user-provided fixed-tilt inputs.
 
 ## [0.6.0] - 2026-09-24
 
