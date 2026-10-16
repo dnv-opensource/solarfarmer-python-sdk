@@ -100,9 +100,6 @@ _DERIVED_DEFAULTS: dict[str, Callable[[PVSystem], float]] = {
 
 _BIFACIAL_FIELDS = ("bifacial_transmission", "bifacial_shade_loss", "bifacial_mismatch_loss")
 
-# Outputs and bookkeeping: changing them must not invalidate the cached payload.
-_NON_CONFIG_FIELDS = frozenset({"payload", "results", "design_summary", "_auto_filled"})
-
 # Input field -> derived fields to refresh when it is reassigned.
 _DERIVED_DEPENDENTS: dict[str, tuple[str, ...]] = {
     "mounting": ("mounting_height", *_BIFACIAL_FIELDS),
@@ -357,8 +354,8 @@ class PVSystem:
     # Results
     results: CalculationResults = None
 
-    # payload dictionary
-    payload: dict[str, Any] = None
+    # Last payload built or sent (JSON string); output only, never read back.
+    payload: str | None = None
 
     # design summary dictionary
     design_summary: dict[str, Any] = None
@@ -534,7 +531,6 @@ class PVSystem:
             contains paths whose stems collide (duplicate filenames).
         """
         self._pan_files.clear()
-        self.payload = None
         if isinstance(mapping, Mapping):
             for name, p in mapping.items():
                 key = str(name).strip()
@@ -572,7 +568,6 @@ class PVSystem:
             if not key:
                 raise ValueError("Module name cannot be empty")
             self._pan_files[key] = Path(p)
-        self.payload = None
         return self
 
     @property
@@ -601,7 +596,6 @@ class PVSystem:
             contains paths whose stems collide (duplicate filenames).
         """
         self._ond_files.clear()
-        self.payload = None
         if isinstance(mapping, Mapping):
             for name, p in mapping.items():
                 key = str(name).strip()
@@ -639,7 +633,6 @@ class PVSystem:
             if not key:
                 raise ValueError("Inverter name cannot be empty")
             self._ond_files[key] = Path(p)
-        self.payload = None
         return self
 
     @property
@@ -675,12 +668,9 @@ class PVSystem:
 
         super().__setattr__(name, value)
 
-        # Not yet created while the dataclass __init__ is still assigning fields.
         auto_filled = self.__dict__.get("_auto_filled")
         if auto_filled is None:
             return
-        if name not in _NON_CONFIG_FIELDS:
-            object.__setattr__(self, "payload", None)
         if name in _DERIVED_DEFAULTS:
             if value is None:
                 self._refresh_derived(name)  # None resets the field to its default
@@ -764,6 +754,7 @@ class PVSystem:
 
         # Explicitly clear results in the copy
         plant_dict["results"] = None
+        plant_dict["payload"] = None
 
         # Deep copy mutable fields to avoid shared references
         mutable_fields = [
@@ -946,6 +937,7 @@ class PVSystem:
           including metadata, location, plant definition, effects, and auxiliary files.
         - The results field is not included in the saved configuration, as it is typically generated
           after running the energy calculation and may contain complex data structures.
+        - The payload snapshot is not included; it is rebuilt from the saved configuration when needed.
         """
         path = Path(file_path)
         path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent directories exist
@@ -953,6 +945,7 @@ class PVSystem:
         # Convert PVSystem to dictionary and exclude results for saving
         plant_dict = asdict(self)
         plant_dict.pop("results", None)  # Remove results from saved config
+        plant_dict.pop("payload", None)  # Payload is an output snapshot, not plant configuration.
 
         # Convert Path objects to strings for JSON compatibility
         for key in ("_weather_file", "_horizon_file"):
@@ -1004,6 +997,9 @@ class PVSystem:
             if plant_dict.get(key):
                 plant_dict[key] = {k: Path(v) for k, v in plant_dict[key].items()}
 
+        # Ignore payloads saved by older SDK versions; they may no longer match the configuration.
+        plant_dict.pop("payload", None)
+
         # Create PVSystem instance from loaded dictionary
         return cls(**plant_dict)
 
@@ -1024,22 +1020,15 @@ class PVSystem:
         -----
         - This method constructs the payload using the current PVSystem configuration and saves it as JSON.
         - The payload is what is sent to the SolarFarmer API for energy calculation.
-        - If the payload has already been constructed and stored in self.payload, it will save that instead of reconstructing.
+        - The payload is always rebuilt from the current configuration.
         """
         path = Path(file_path)
         path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent directories exist
 
-        if self.payload is None:
-            payload_dict = construct_plant(self)
-        else:
-            payload_dict = self.payload
+        payload = self.produce_payload()
 
         with path.open("w", encoding="utf-8") as f:
-            # If payload is a string (JSON), write directly; if dict, use json.dump
-            if isinstance(payload_dict, str):
-                f.write(payload_dict)
-            else:
-                json.dump(payload_dict, f, indent=4)
+            f.write(payload)
 
         _logger.debug("PVSystem payload saved to %s", path)
         return None
@@ -1346,26 +1335,21 @@ class PVSystem:
         _logger.info("Inverter '%s' set from RCL (%d bytes)", inverter_name, len(content))
         return item
 
-    def produce_payload(self) -> dict[str, Any]:
-        """Construct and return the payload dictionary for the SolarFarmer API based on the current PVSystem configuration.
+    def produce_payload(self) -> str:
+        """Build and return the JSON payload for the current PVSystem configuration.
 
         Returns
         -------
-        dict[str, Any]
-            A dictionary representing the payload to be sent to the SolarFarmer API for energy calculation.
+        str
+            A JSON string representing the payload to be sent to the SolarFarmer API.
 
         Notes
         -----
-        - This method constructs the payload using the current configuration of the PVSystem instance.
-        - The payload includes all necessary information about the plant design, location, losses, and other parameters required by the API.
-        - If the payload has already been constructed and stored in self.payload, it will return that instead of reconstructing.
+        The payload is always rebuilt from the current configuration and stored in
+        ``self.payload`` for inspection.
         """
-        if self.payload is None:
-            payload = construct_plant(self)
-            self.payload = payload  # Cache the constructed payload for future use
-            return payload
-        else:
-            return self.payload
+        self.payload = construct_plant(self)
+        return self.payload
 
     def run_energy_calculation(
         self,
@@ -1421,11 +1405,8 @@ class PVSystem:
         """
         from ...endpoint_modelchains import run_energy_calculation
 
-        # Build the JSON payload from the PVSystem configuration
-        if self.payload is None:
-            builder = construct_plant(self)
-        else:
-            builder = self.payload
+        # Always build from the current configuration and retain what was sent for inspection.
+        builder = self.produce_payload()
 
         # Make API call via modelchain function
         results = run_energy_calculation(

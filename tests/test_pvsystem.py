@@ -268,50 +268,74 @@ class TestPVSystemMountingProperties:
         with pytest.raises(ValueError, match="transformer_stages"):
             plant.transformer_stages = 2
 
-    def test_payload_cache_invalidated_on_config_change(self):
-        plant = PVSystem(latitude=45.0, longitude=10.0)
-
-        plant.payload = "cached"
-        plant.tilt = 20.0
-        assert plant.payload is None
-
-        plant.payload = "cached"
-        plant.mounting = "tracker"
-        assert plant.payload is None
-
-    def test_payload_cache_kept_when_only_outputs_change(self):
-        plant = PVSystem(latitude=45.0, longitude=10.0)
-
-        plant.payload = "cached"
-        plant.results = object()
-        plant.design_summary = {}
-
-        assert plant.payload == "cached"
-
-    def test_payload_cache_invalidated_on_equipment_files_change(self):
-        plant = PVSystem(latitude=45.0, longitude=10.0)
-
-        for update in (
-            lambda: setattr(plant, "pan_files", {"m": "m.PAN"}),
-            lambda: setattr(plant, "ond_files", {"i": "i.OND"}),
-            lambda: plant.add_pan_files({"m2": "m2.PAN"}),
-            lambda: plant.add_ond_files({"i2": "i2.OND"}),
-        ):
-            plant.payload = "cached"
-            update()
-            assert plant.payload is None
-
-    def test_payload_loaded_from_file_is_kept(self, tmp_path):
-        plant = PVSystem(latitude=45.0, longitude=10.0)
-        plant.payload = "cached"
-        plant.to_file(tmp_path / "plant.json")
-
-        assert PVSystem.from_file(tmp_path / "plant.json").payload == "cached"
-
     def test_pvsystem_inverter_type_none_defaults_to_central(self):
         plant = PVSystem(latitude=45.0, longitude=10.0, inverter_type=None)
 
         assert plant.inverter_type is InverterType.CENTRAL
+
+
+class TestPVSystemPayloadSnapshot:
+    @staticmethod
+    def _plant(sample_data_dir):
+        data_dir = Path(sample_data_dir) / "Inputs_Bern_2D_racks"
+        plant = PVSystem(
+            latitude=46.9,
+            longitude=7.4,
+            dc_capacity_MW=5.0,
+            ac_capacity_MW=4.0,
+            tilt=20.0,
+        )
+        plant.pan_files = {"Module": data_dir / "CanadianSolar_CS6U-330M_APP.PAN"}
+        plant.ond_files = {"Inverter": data_dir / "Sungrow_SG125HV_APP.OND"}
+        plant.weather_file = data_dir / "Bern-hour.dat"
+        return plant
+
+    @staticmethod
+    def _tilt_values(value, result):
+        if isinstance(value, dict):
+            for key, nested_value in value.items():
+                if key == "tilt":
+                    result.add(nested_value)
+                TestPVSystemPayloadSnapshot._tilt_values(nested_value, result)
+        elif isinstance(value, list):
+            for nested_value in value:
+                TestPVSystemPayloadSnapshot._tilt_values(nested_value, result)
+        return result
+
+    def test_produce_payload_reflects_edits(self, sample_data_dir):
+        plant = self._plant(sample_data_dir)
+
+        first = json.loads(plant.produce_payload())
+        plant.tilt = 35.0
+        second = json.loads(plant.produce_payload())
+
+        assert self._tilt_values(first, set()) == {20.0}
+        assert self._tilt_values(second, set()) == {35.0}
+
+    def test_make_copy_resets_payload(self, sample_data_dir):
+        plant = self._plant(sample_data_dir)
+        plant.produce_payload()
+
+        assert plant.make_copy().payload is None
+
+    def test_to_file_omits_payload(self, sample_data_dir, tmp_path):
+        plant = self._plant(sample_data_dir)
+        plant.produce_payload()
+        file_path = tmp_path / "plant.json"
+
+        plant.to_file(file_path)
+
+        assert "payload" not in json.loads(file_path.read_text())
+
+    def test_from_file_ignores_legacy_payload(self, tmp_path):
+        plant = PVSystem(latitude=45.0, longitude=10.0)
+        file_path = tmp_path / "plant.json"
+        plant.to_file(file_path)
+        plant_data = json.loads(file_path.read_text())
+        plant_data["payload"] = "stale"
+        file_path.write_text(json.dumps(plant_data))
+
+        assert PVSystem.from_file(file_path).payload is None
 
 
 class TestPVSystemTechnologyProperties:
