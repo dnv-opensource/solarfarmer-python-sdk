@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import solarfarmer.rcl as rcl
+from solarfarmer import PVSystem
 from solarfarmer.rcl import (
     RCLModuleCatalogResponse,
     RCLRateLimitInfo,
@@ -416,6 +417,24 @@ class TestGetRateLimitStatusUnit:
         MockClient.return_value.get.return_value = response
         with pytest.raises(SolarFarmerAPIError):
             rcl.get_rate_limit_status()
+
+
+class TestSetInverterFromRclUnit:
+    """Unit tests for PVSystem.set_inverter_from_rcl with mocked catalog search."""
+
+    @patch("solarfarmer.rcl.list_inverters")
+    def test_multiple_matches_list_efficiency_as_percentage(self, mock_list):
+        # efficMax is already a percentage in the catalog, so it must not be scaled by 100
+        mock_list.return_value = {
+            "items": [
+                {"manufacturer": "SMA", "model": "A", "pNomConv": 4000.0, "efficMax": 98.6},
+                {"manufacturer": "SMA", "model": "B", "pNomConv": 3000.0, "efficMax": 98.2},
+            ],
+            "total": 2,
+        }
+        with pytest.raises(ValueError, match=r"SMA - A \(4000kW, eff=98\.6%\)") as exc_info:
+            PVSystem().set_inverter_from_rcl(manufacturer="SMA")
+        assert "eff=98.2%" in str(exc_info.value)
 
 
 # ---------------------------------------------------------------------------
