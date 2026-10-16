@@ -729,6 +729,8 @@ class PVSystem:
         >>> plant.mounting_height is None
         True
         """
+        # Shallow copy: containers such as _pan_files and _albedo are shared with self,
+        # so the build path must only read them, never mutate them in place.
         resolved = replace(self, results=None, payload=None, design_summary=None)
         for name, default in _default_derived_values(resolved).items():
             if getattr(resolved, name) is None:
