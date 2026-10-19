@@ -88,6 +88,10 @@ plant.azimuth = 180.0           # South-facing (0=North, 90=East, 180=South, 270
 plant.gcr = 0.4                 # Ground coverage ratio (spacing between rows)
 plant.flush_mount = False       # Flush-mounted or rack-mounted
 
+# Terrain (optional; ignored for flush-mounted fixed-tilt systems)
+plant.terrain_azimuth = 0.0     # Direction the ground slopes down, degrees clockwise from North
+plant.terrain_slope = 0.0       # Slope of the ground in degrees (0 = flat)
+
 # Module orientation
 plant.module_orientation = "Portrait"  # or "Landscape" (sf.OrientationType)
 plant.modules_across = 1        # Number of modules in height direction
