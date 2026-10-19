@@ -155,11 +155,15 @@ class PVSystem:
         Direction in which the terrain slopes down, in degrees clockwise from North
         (default 0.0). For example, an azimuth of 0 with a positive ``terrain_slope`` is
         ground that descends towards the North (a north-facing slope).
+        For single-axis trackers, the angle between this direction and the tracker azimuth
+        (``azimuth``) determines how much of the slope tilts the tracker axis.
         Ignored when ``flush_mount=True`` on fixed-tilt systems, where the terrain follows
         the array plane (``azimuth`` and ``tilt``).
     terrain_slope : float
         Slope of the terrain in degrees, in the direction of ``terrain_azimuth``
         (default 0.0, i.e., flat ground).
+        For single-axis trackers, this is the slope that is resolved along the tracker axis
+        to give the axis tilt; the part across the axis is not applied.
         Ignored when ``flush_mount=True`` on fixed-tilt systems.
     mounting : str
         Mounting configuration: 'Fixed' for fixed-tilt or 'Tracker' for single-axis trackers.
