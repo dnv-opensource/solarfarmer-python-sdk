@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from solarfarmer import PVSystem
 from solarfarmer.models import PVPlant
@@ -139,18 +140,41 @@ class TestTerrainProperties:
     def test_defaults_are_zero(self, plant):
         assert plant.terrain_azimuth == 0.0
         assert plant.terrain_slope == 0.0
-        assert all(
-            lo.terrain_azimuth == 0.0 and lo.terrain_slope == 0.0 for lo in self._layouts(plant)
-        )
 
-    @pytest.mark.parametrize("mounting", ["Fixed", "Tracker"])
-    def test_user_values_applied_to_all_layouts(self, plant, mounting):
+    @pytest.mark.parametrize(
+        ("mounting", "flush_mount"),
+        [("Fixed", False), ("Tracker", False), ("Tracker", True)],
+    )
+    def test_user_values_applied_to_all_layouts(self, plant, mounting, flush_mount):
         plant.mounting = mounting
+        plant.flush_mount = flush_mount
         plant.terrain_azimuth = 90.0
         plant.terrain_slope = 5.0
         layouts = self._layouts(plant)
         assert all(lo.terrain_azimuth == pytest.approx(90.0) for lo in layouts)
         assert all(lo.terrain_slope == pytest.approx(5.0) for lo in layouts)
+
+    @pytest.mark.parametrize(("azimuth", "slope"), [(-360.0, -89.9), (360.0, 89.9), (-90.0, -5.0)])
+    def test_values_within_bounds_are_accepted(self, plant, azimuth, slope):
+        plant.terrain_azimuth = azimuth
+        plant.terrain_slope = slope
+        layouts = self._layouts(plant)
+        assert all(lo.terrain_azimuth == pytest.approx(azimuth) for lo in layouts)
+        assert all(lo.terrain_slope == pytest.approx(slope) for lo in layouts)
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [
+            ("terrain_azimuth", -360.1),
+            ("terrain_azimuth", 360.1),
+            ("terrain_slope", -90.0),
+            ("terrain_slope", 90.0),
+        ],
+    )
+    def test_values_outside_bounds_are_rejected(self, plant, field, value):
+        setattr(plant, field, value)
+        with pytest.raises(ValidationError, match=field):
+            design_plant(plant.with_defaults_applied())
 
     def test_flush_mount_ignores_terrain_properties(self, plant):
         plant.flush_mount = True
