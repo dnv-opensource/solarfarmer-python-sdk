@@ -1039,7 +1039,7 @@ class PVSystem:
         payload = json.loads(self.produce_payload())
 
         with path.open("w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=4)
+            json.dump(payload, f, indent=4, ensure_ascii=False)
 
         _logger.debug("PVSystem payload saved to %s", path)
         return None
