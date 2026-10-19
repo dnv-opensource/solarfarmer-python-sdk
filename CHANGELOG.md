@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PVSystem.payload` is now an output-only snapshot (JSON string) and is no longer read back; it is omitted
   from `to_file()` output.
 - Building a payload no longer overwrites the plant's `dc_capacity_MW`, `ac_capacity_MW` or `gcr`.
-- `Layout.terrain_azimuth` is now validated to [-360, 360] and `Layout.terrain_slope` to (-90, 90), exclusive.
+- `Layout.terrain_azimuth` is now validated to [-360, 360] and `Layout.terrain_slope` to [-90, 90].
 
 ### Fixed
 

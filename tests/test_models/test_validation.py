@@ -127,6 +127,48 @@ class TestLayoutValidation:
                 string_length=1,
             )
 
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [
+            ("terrain_azimuth", -360.1),
+            ("terrain_azimuth", 360.1),
+            ("terrain_slope", -90.1),
+            ("terrain_slope", 90.1),
+        ],
+    )
+    def test_terrain_out_of_range(self, field: str, value: float) -> None:
+        with pytest.raises(ValidationError, match=field):
+            Layout(
+                layout_count=1,
+                module_specification_id="m",
+                mounting_type_id="mt",
+                is_trackers=False,
+                azimuth=180,
+                pitch=5,
+                total_number_of_strings=1,
+                string_length=1,
+                **{field: value},
+            )
+
+    @pytest.mark.parametrize(
+        ("azimuth", "slope"), [(-360.0, -90.0), (360.0, 90.0), (-90.0, -5.0), (0.0, 0.0)]
+    )
+    def test_terrain_limits_are_inclusive(self, azimuth: float, slope: float) -> None:
+        layout = Layout(
+            layout_count=1,
+            module_specification_id="m",
+            mounting_type_id="mt",
+            is_trackers=False,
+            azimuth=180,
+            pitch=5,
+            total_number_of_strings=1,
+            string_length=1,
+            terrain_azimuth=azimuth,
+            terrain_slope=slope,
+        )
+        assert layout.terrain_azimuth == azimuth
+        assert layout.terrain_slope == slope
+
     def test_dc_ohmic_resistance_and_loss_both_set_raises(self) -> None:
         with pytest.raises(ValidationError, match="dc_ohmic_connector_resistance"):
             Layout(

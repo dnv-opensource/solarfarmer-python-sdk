@@ -154,7 +154,7 @@ class TestTerrainProperties:
         assert all(lo.terrain_azimuth == pytest.approx(90.0) for lo in layouts)
         assert all(lo.terrain_slope == pytest.approx(5.0) for lo in layouts)
 
-    @pytest.mark.parametrize(("azimuth", "slope"), [(-360.0, -89.9), (360.0, 89.9), (-90.0, -5.0)])
+    @pytest.mark.parametrize(("azimuth", "slope"), [(-360.0, -90.0), (360.0, 90.0), (-90.0, -5.0)])
     def test_values_within_bounds_are_accepted(self, plant, azimuth, slope):
         plant.terrain_azimuth = azimuth
         plant.terrain_slope = slope
@@ -167,14 +167,19 @@ class TestTerrainProperties:
         [
             ("terrain_azimuth", -360.1),
             ("terrain_azimuth", 360.1),
-            ("terrain_slope", -90.0),
-            ("terrain_slope", 90.0),
+            ("terrain_slope", -90.1),
+            ("terrain_slope", 90.1),
         ],
     )
     def test_values_outside_bounds_are_rejected(self, plant, field, value):
         setattr(plant, field, value)
         with pytest.raises(ValidationError, match=field):
             design_plant(plant.with_defaults_applied())
+
+    def test_vertical_flush_mount_is_allowed(self, plant):
+        plant.flush_mount = True
+        plant.tilt = 90.0
+        assert all(lo.terrain_slope == pytest.approx(90.0) for lo in self._layouts(plant))
 
     def test_flush_mount_ignores_terrain_properties(self, plant):
         plant.flush_mount = True
