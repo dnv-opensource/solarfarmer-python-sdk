@@ -151,21 +151,17 @@ class PVSystem:
         Defines the symmetric rotation bounds: ``[-tracker_max_rotation_angle, +tracker_max_rotation_angle]``.
     azimuth : float
         Array azimuth in degrees (default 180, i.e., south-facing).
-    terrain_azimuth : float | None
+    terrain_azimuth : float
         Direction in which the terrain slopes down, in degrees clockwise from North
-        (default 0.0 when not set). For example, an azimuth of 0 with a positive
-        ``terrain_slope`` is ground that descends towards the North (a north-facing slope).
-        For single-axis trackers this is the axis tilt, the angle between the X and Z axes:
-        a negative angle is a north-facing slope and a positive angle is a south-facing slope.
+        (default 0.0). For example, an azimuth of 0 with a positive ``terrain_slope`` is
+        ground that descends towards the North (a north-facing slope).
         Ignored when ``flush_mount=True`` on fixed-tilt systems, where the terrain follows
         the array plane (``azimuth`` and ``tilt``).
-    terrain_slope : float | None
+    terrain_slope : float
         Slope of the terrain in degrees, in the direction of ``terrain_azimuth``
-        (default 0.0 when not set, i.e., flat ground).
-        For single-axis trackers this is the side slope, the angle between the Y and Z axes:
-        a negative angle is an east-facing slope and a positive angle is a west-facing slope.
+        (default 0.0, i.e., flat ground).
         Ignored when ``flush_mount=True`` on fixed-tilt systems.
-    mounting: str
+    mounting : str
         Mounting configuration: 'Fixed' for fixed-tilt or 'Tracker' for single-axis trackers.
         Strings are case-insensitive (e.g., ``"tracker"``) and are stored as
         ``solarfarmer.MountingType`` enum values.
@@ -329,8 +325,8 @@ class PVSystem:
     transformer_stages: int = 1
     plant_unavailability: float = 0.0
     grid_unavailability: float = 0.0
-    terrain_azimuth: float | None = None  # If None, TERRAIN_AZIMUTH default is used
-    terrain_slope: float | None = None  # If None, TERRAIN_SLOPE default is used
+    terrain_azimuth: float = TERRAIN_AZIMUTH
+    terrain_slope: float = TERRAIN_SLOPE
 
     # Effects and settings
     mounting_height: float | None = None  # None = derive from mounting at build time
@@ -847,12 +843,8 @@ class PVSystem:
         else:
             print(f"Tilt: {self.tilt}°")
         print(f"Azimuth: {self.azimuth}°")
-        print(
-            f"Terrain Azimuth: {TERRAIN_AZIMUTH if self.terrain_azimuth is None else self.terrain_azimuth}°"
-        )
-        print(
-            f"Terrain Slope: {TERRAIN_SLOPE if self.terrain_slope is None else self.terrain_slope}°"
-        )
+        print(f"Terrain Azimuth: {self.terrain_azimuth}°")
+        print(f"Terrain Slope: {self.terrain_slope}°")
 
         # Mounting & Orientation
         print("\n--- MOUNTING & ORIENTATION ---")
@@ -1741,12 +1733,8 @@ def calculate_layout_objects(
             terrain_slope = plant.tilt
             number_strings_isolated = number_of_strings
         else:
-            terrain_azimuth = (
-                plant.terrain_azimuth if plant.terrain_azimuth is not None else TERRAIN_AZIMUTH
-            )
-            terrain_slope = (
-                plant.terrain_slope if plant.terrain_slope is not None else TERRAIN_SLOPE
-            )
+            terrain_azimuth = plant.terrain_azimuth
+            terrain_slope = plant.terrain_slope
             number_strings_isolated = STRINGS_IN_ISOLATED_ROW
 
         layout = Layout(

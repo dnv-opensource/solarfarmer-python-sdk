@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PVSystem` enum inputs (`mounting`, `module_orientation`, `inverter_type`) accept case-insensitive strings,
   at construction and on assignment.
 - `PVSystem.with_defaults_applied()` returns a copy with all unset derived inputs resolved.
+- `PVSystem.terrain_azimuth` and `PVSystem.terrain_slope` set the terrain orientation of all layouts
+  (default `0.0`). They are ignored for flush-mount fixed-tilt systems.
 
 ### Changed
 

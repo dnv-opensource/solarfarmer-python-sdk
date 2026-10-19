@@ -128,40 +128,46 @@ class TestTerrainProperties:
     """terrain_azimuth / terrain_slope flow into the layouts, defaulting to 0.0."""
 
     @staticmethod
-    def _layouts(pv_plant):
-        return [
+    def _layouts(plant):
+        pv_plant, _ = design_plant(plant.with_defaults_applied())
+        layouts = [
             layout for t in pv_plant.transformers for inv in t.inverters for layout in inv.layouts
         ]
-
-    def test_defaults_are_zero_when_not_set(self, plant):
-        assert plant.terrain_azimuth is None
-        assert plant.terrain_slope is None
-        layouts = self._layouts(design_plant(plant)[0])
         assert layouts
-        assert all(lo.terrain_azimuth == 0.0 and lo.terrain_slope == 0.0 for lo in layouts)
+        return layouts
 
-    def test_user_values_applied_to_all_layouts(self, plant):
+    def test_defaults_are_zero(self, plant):
+        assert plant.terrain_azimuth == 0.0
+        assert plant.terrain_slope == 0.0
+        assert all(
+            lo.terrain_azimuth == 0.0 and lo.terrain_slope == 0.0 for lo in self._layouts(plant)
+        )
+
+    @pytest.mark.parametrize("mounting", ["Fixed", "Tracker"])
+    def test_user_values_applied_to_all_layouts(self, plant, mounting):
+        plant.mounting = mounting
         plant.terrain_azimuth = 90.0
         plant.terrain_slope = 5.0
-        layouts = self._layouts(design_plant(plant)[0])
-        assert layouts
+        layouts = self._layouts(plant)
         assert all(lo.terrain_azimuth == pytest.approx(90.0) for lo in layouts)
         assert all(lo.terrain_slope == pytest.approx(5.0) for lo in layouts)
-
-    def test_zero_is_respected_as_explicit_value(self, plant):
-        plant.terrain_azimuth = 0.0
-        plant.terrain_slope = 0.0
-        layouts = self._layouts(design_plant(plant)[0])
-        assert all(lo.terrain_azimuth == 0.0 and lo.terrain_slope == 0.0 for lo in layouts)
 
     def test_flush_mount_ignores_terrain_properties(self, plant):
         plant.flush_mount = True
         plant.tilt = 15.0
         plant.terrain_azimuth = 90.0
         plant.terrain_slope = 5.0
-        layouts = self._layouts(design_plant(plant)[0])
+        layouts = self._layouts(plant)
         assert all(lo.terrain_azimuth == pytest.approx(plant.azimuth) for lo in layouts)
         assert all(lo.terrain_slope == pytest.approx(15.0) for lo in layouts)
+
+    def test_values_survive_file_round_trip(self, plant, tmp_path):
+        plant.terrain_azimuth = 45.0
+        plant.terrain_slope = 3.0
+        plant.to_file(tmp_path / "plant.json")
+        loaded = PVSystem.from_file(tmp_path / "plant.json")
+        assert loaded.terrain_azimuth == 45.0
+        assert loaded.terrain_slope == 3.0
 
 
 class TestGenerateMountingSpecs:
