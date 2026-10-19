@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from solarfarmer import PVSystem
 from solarfarmer.models import PVPlant
@@ -122,6 +123,80 @@ class TestDesignPlant:
         small_plant, _ = design_plant(small.with_defaults_applied())
         large_plant, _ = design_plant(large.with_defaults_applied())
         assert total_inverters(small_plant) < total_inverters(large_plant)
+
+
+class TestTerrainProperties:
+    """terrain_azimuth / terrain_slope flow into the layouts, defaulting to 0.0."""
+
+    @staticmethod
+    def _layouts(plant):
+        pv_plant, _ = design_plant(plant.with_defaults_applied())
+        layouts = [
+            layout for t in pv_plant.transformers for inv in t.inverters for layout in inv.layouts
+        ]
+        assert layouts
+        return layouts
+
+    def test_defaults_are_zero(self, plant):
+        assert plant.terrain_azimuth == 0.0
+        assert plant.terrain_slope == 0.0
+
+    @pytest.mark.parametrize(
+        ("mounting", "flush_mount"),
+        [("Fixed", False), ("Tracker", False), ("Tracker", True)],
+    )
+    def test_user_values_applied_to_all_layouts(self, plant, mounting, flush_mount):
+        plant.mounting = mounting
+        plant.flush_mount = flush_mount
+        plant.terrain_azimuth = 90.0
+        plant.terrain_slope = 5.0
+        layouts = self._layouts(plant)
+        assert all(lo.terrain_azimuth == pytest.approx(90.0) for lo in layouts)
+        assert all(lo.terrain_slope == pytest.approx(5.0) for lo in layouts)
+
+    @pytest.mark.parametrize(("azimuth", "slope"), [(-360.0, -90.0), (360.0, 90.0), (-90.0, -5.0)])
+    def test_values_within_bounds_are_accepted(self, plant, azimuth, slope):
+        plant.terrain_azimuth = azimuth
+        plant.terrain_slope = slope
+        layouts = self._layouts(plant)
+        assert all(lo.terrain_azimuth == pytest.approx(azimuth) for lo in layouts)
+        assert all(lo.terrain_slope == pytest.approx(slope) for lo in layouts)
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [
+            ("terrain_azimuth", -360.1),
+            ("terrain_azimuth", 360.1),
+            ("terrain_slope", -90.1),
+            ("terrain_slope", 90.1),
+        ],
+    )
+    def test_values_outside_bounds_are_rejected(self, plant, field, value):
+        setattr(plant, field, value)
+        with pytest.raises(ValidationError, match=field):
+            design_plant(plant.with_defaults_applied())
+
+    def test_vertical_flush_mount_is_allowed(self, plant):
+        plant.flush_mount = True
+        plant.tilt = 90.0
+        assert all(lo.terrain_slope == pytest.approx(90.0) for lo in self._layouts(plant))
+
+    def test_flush_mount_ignores_terrain_properties(self, plant):
+        plant.flush_mount = True
+        plant.tilt = 15.0
+        plant.terrain_azimuth = 90.0
+        plant.terrain_slope = 5.0
+        layouts = self._layouts(plant)
+        assert all(lo.terrain_azimuth == pytest.approx(plant.azimuth) for lo in layouts)
+        assert all(lo.terrain_slope == pytest.approx(15.0) for lo in layouts)
+
+    def test_values_survive_file_round_trip(self, plant, tmp_path):
+        plant.terrain_azimuth = 45.0
+        plant.terrain_slope = 3.0
+        plant.to_file(tmp_path / "plant.json")
+        loaded = PVSystem.from_file(tmp_path / "plant.json")
+        assert loaded.terrain_azimuth == 45.0
+        assert loaded.terrain_slope == 3.0
 
 
 class TestGenerateMountingSpecs:

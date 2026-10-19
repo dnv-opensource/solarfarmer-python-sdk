@@ -62,9 +62,10 @@ class Layout(SolarFarmerBaseModel):
     number_of_strings_in_isolated_row : int
         Number of strings with no near-shading neighbors
     terrain_azimuth : float
-        Terrain slope azimuth in degrees
+        Terrain slope azimuth in degrees, range [-360, 360]
     terrain_slope : float
-        Terrain slope angle in degrees
+        Terrain slope angle in degrees, range [-90, 90]. A negative slope is
+        equivalent to the opposite ``terrain_azimuth``. 90 is a vertical surface
     module_quality_factor : float or None
         Module quality factor override, negative implies loss, range [-0.4, 0.1]
     """
@@ -89,8 +90,8 @@ class Layout(SolarFarmerBaseModel):
     number_of_strings_in_right_row: int = 0
     number_of_strings_in_left_row: int = 0
     number_of_strings_in_isolated_row: int = 0
-    terrain_azimuth: float = 0.0
-    terrain_slope: float = 0.0
+    terrain_azimuth: float = Field(0.0, ge=-360, le=360)
+    terrain_slope: float = Field(0.0, ge=-90, le=90)
     module_quality_factor: float | None = Field(None, ge=-0.4, le=0.1)
 
     @model_validator(mode="after")

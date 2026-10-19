@@ -151,6 +151,21 @@ class PVSystem:
         Defines the symmetric rotation bounds: ``[-tracker_max_rotation_angle, +tracker_max_rotation_angle]``.
     azimuth : float
         Array azimuth in degrees (default 180, i.e., south-facing).
+    terrain_azimuth : float
+        Direction in which the terrain slopes down, in degrees clockwise from North,
+        range [-360, 360] (default 0.0). For example, an azimuth of 0 with a positive
+        ``terrain_slope`` is ground that descends towards the North (a north-facing slope).
+        For single-axis trackers, the angle between this direction and the tracker azimuth
+        (``azimuth``) determines how much of the slope tilts the tracker axis.
+        Ignored when ``flush_mount=True`` on fixed-tilt systems, where the terrain follows
+        the array plane (``azimuth`` and ``tilt``).
+    terrain_slope : float
+        Slope of the terrain in degrees, in the direction of ``terrain_azimuth``, range
+        [-90, 90] (default 0.0, i.e., flat ground). A negative slope is equivalent to the
+        opposite ``terrain_azimuth``.
+        For single-axis trackers, this is the slope that is resolved along the tracker axis
+        to give the axis tilt; the part across the axis is not applied.
+        Ignored when ``flush_mount=True`` on fixed-tilt systems.
     mounting : str
         Mounting configuration: 'Fixed' for fixed-tilt or 'Tracker' for single-axis trackers.
         Strings are case-insensitive (e.g., ``"tracker"``) and are stored as
@@ -315,6 +330,8 @@ class PVSystem:
     transformer_stages: int = 1
     plant_unavailability: float = 0.0
     grid_unavailability: float = 0.0
+    terrain_azimuth: float = TERRAIN_AZIMUTH
+    terrain_slope: float = TERRAIN_SLOPE
 
     # Effects and settings
     mounting_height: float | None = None  # None = derive from mounting at build time
@@ -831,6 +848,8 @@ class PVSystem:
         else:
             print(f"Tilt: {self.tilt}°")
         print(f"Azimuth: {self.azimuth}°")
+        print(f"Terrain Azimuth: {self.terrain_azimuth}°")
+        print(f"Terrain Slope: {self.terrain_slope}°")
 
         # Mounting & Orientation
         print("\n--- MOUNTING & ORIENTATION ---")
@@ -1719,8 +1738,8 @@ def calculate_layout_objects(
             terrain_slope = plant.tilt
             number_strings_isolated = number_of_strings
         else:
-            terrain_azimuth = TERRAIN_AZIMUTH
-            terrain_slope = TERRAIN_SLOPE
+            terrain_azimuth = plant.terrain_azimuth
+            terrain_slope = plant.terrain_slope
             number_strings_isolated = STRINGS_IN_ISOLATED_ROW
 
         layout = Layout(
