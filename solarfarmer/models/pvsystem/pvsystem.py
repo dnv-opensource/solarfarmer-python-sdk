@@ -3,7 +3,8 @@ from __future__ import annotations
 import copy as copy_module
 import json
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +65,36 @@ from .plant_utils import (
 
 _logger = get_logger("models.pvsystem")
 
+# Attributes coerced to their enum on every assignment (case-insensitive for strings).
+_ENUM_FIELDS: dict[str, type[Enum]] = {
+    "mounting": MountingType,
+    "module_orientation": OrientationType,
+    "inverter_type": InverterType,
+}
+
+
+def _default_derived_values(plant: PVSystem) -> dict[str, float]:
+    """Defaults for the derived inputs, computed from the plant's current inputs."""
+    bifacial = BIFACIAL_DICT[True][plant.mounting.value] if plant.bifacial else BIFACIAL_DICT[False]
+    transformer_key = {0: "Ideal", 1: "FixedType1"}[plant.transformer_stages]
+    transformer = TRANSFORMER_DICT[transformer_key]
+    ohmic = OHMIC_DICT[plant.inverter_type.value]
+    return {
+        "mounting_height": (
+            HEIGHT_FROM_GROUND_FIXED
+            if plant.mounting == MountingType.FIXED
+            else HEIGHT_FROM_GROUND_TRACKER
+        ),
+        "dc_ohmic_loss": ohmic["dc"],
+        "ac_ohmic_loss": ohmic["ac"],
+        "bifacial_transmission": bifacial["transmission"],
+        "bifacial_shade_loss": bifacial["shade"],
+        "bifacial_mismatch_loss": bifacial["mismatch"],
+        "transformer_fixed_loss": transformer["fixed"],
+        "transformer_variable_loss": transformer["variable"],
+    }
+
+
 PathLike = str | Path
 
 
@@ -120,17 +151,21 @@ class PVSystem:
         Defines the symmetric rotation bounds: ``[-tracker_max_rotation_angle, +tracker_max_rotation_angle]``.
     azimuth : float
         Array azimuth in degrees (default 180, i.e., south-facing).
-    mounting: str
+    mounting : str
         Mounting configuration: 'Fixed' for fixed-tilt or 'Tracker' for single-axis trackers.
-        Available as ``solarfarmer.MountingType`` enum (e.g., ``sf.MountingType.FIXED``).
+        Strings are case-insensitive (e.g., ``"tracker"``) and are stored as
+        ``solarfarmer.MountingType`` enum values.
+    module_orientation : str
+        Module orientation: 'Portrait' or 'Landscape'. Strings are case-insensitive and are
+        stored as ``solarfarmer.OrientationType`` enum values.
     flush_mount : bool
         If True, indicates flush-mounted arrays (default is False).
     bifacial: bool
         If True, indicates bifacial modules (default is False).
-    inverter_type: str
+    inverter_type : str
         Inverter type: 'Central' or 'String' (default is 'Central').
-        Affects the default DC and AC ohmic losses used, which can be overridden via
-        `dc_ohmic_loss` and `ac_ohmic_loss`.
+        Strings are case-insensitive and are stored as ``solarfarmer.InverterType`` enum values.
+        Determines the default DC and AC ohmic losses when building a payload.
     transformer_stages: int
         Number of transformer stages. 0 for ideal behaviour or 1 for one stage (default is 1).
     plant_unavailability : float
@@ -151,19 +186,20 @@ class PVSystem:
 
     Other Effects and Settings
     --------------------------
-    mounting_height: Optional[float] = None
+    mounting_height : Optional[float]
         Mounting height in meters. It refers to the minimum height from ground for fixed-tilt
-         and axis-tube height for single-axis trackers (default is 1.5 m).
+        and axis-tube height for single-axis trackers. ``None`` means derive from ``mounting``
+        when building the payload; the default is 0.7 m for fixed mounting and 1.5 m for trackers.
     modules_across: Optional[int] = None
         Number of modules across in the mounting configuration
         (default is 1 for both trackers and fixed-tilt).
     string_length: Optional[int] = None
         Number of modules in series per string
         (default is calculated from the module and inverter provided).
-    dc_ohmic_loss: Optional[float] = None
-        DC ohmic loss (per unit) (default depends on inverter type).
-    ac_ohmic_loss: Optional[float] = None
-        AC ohmic loss (per unit) (default depends on inverter type).
+    dc_ohmic_loss : Optional[float]
+        DC ohmic loss (per unit). ``None`` means derive from ``inverter_type`` at build time.
+    ac_ohmic_loss : Optional[float]
+        AC ohmic loss (per unit). ``None`` means derive from ``inverter_type`` at build time.
     module_mismatch: Optional[float] = None
         Module mismatch loss (per unit) (default is 0.005).
     recalculate_modeling_correction_factor: bool
@@ -185,16 +221,19 @@ class PVSystem:
         Monthly soiling loss (per unit), 12 values in [0,1]. If set with 1 value, it's expanded to 12.
     albedo: Optional[List[float]] = None
         Monthly albedo (per unit), 12 values in [0,1]. If set with 1 value, it's expanded to 12.
-    transformer_fixed_loss : Optional[float] = None
-        Transformer fixed loss (per unit).
-    transformer_variable_loss : Optional[float] = None
-        Transformer variable loss (per unit).
-    bifacial_transmission : Optional[float] = None
-        Bifacial transmission gain (per unit). Applicable only if `bifacial` is True.
-    bifacial_shade_loss : Optional[float] = None
-        Bifacial shade loss (per unit). Applicable only if `bifacial` is True.
-    bifacial_mismatch_loss : Optional[float] = None
-        Bifacial mismatch loss (per unit). Applicable only if `bifacial` is True.
+    transformer_fixed_loss : Optional[float]
+        Transformer fixed loss (per unit). ``None`` means derive from ``transformer_stages``.
+    transformer_variable_loss : Optional[float]
+        Transformer variable loss (per unit). ``None`` means derive from ``transformer_stages``.
+    bifacial_transmission : Optional[float]
+        Bifacial transmission gain (per unit). ``None`` means derive from ``bifacial`` and
+        ``mounting`` at build time.
+    bifacial_shade_loss : Optional[float]
+        Bifacial shade loss (per unit). ``None`` means derive from ``bifacial`` and
+        ``mounting`` at build time.
+    bifacial_mismatch_loss : Optional[float]
+        Bifacial mismatch loss (per unit). ``None`` means derive from ``bifacial`` and
+        ``mounting`` at build time.
     aux_loss_fixed_factor: Optional[float] = None
         Simple loss as a fraction of AC output (per unit).
     aux_loss_power: Optional[float] = None
@@ -231,10 +270,14 @@ class PVSystem:
     - from_file(path)
     - make_copy()
     - payload_to_file(path)
+    - with_defaults_applied()
 
     Notes
     -----
     - All setters accept `str` or `Path` for paths; stored internally as `Path`.
+    - Unset derived inputs remain ``None`` until used to build a payload. Use
+      ``with_defaults_applied()`` to inspect effective values; explicit values, including
+      ``0.0``, override the derived defaults.
     """
 
     # Basic metadata
@@ -265,21 +308,21 @@ class PVSystem:
         None  # For trackers only; default is MAX_ROTATION_ANGLE (60°)
     )
     azimuth: float = 180.0
-    mounting: MountingType = MountingType.FIXED
+    mounting: MountingType | str = MountingType.FIXED
     flush_mount: bool = False
     bifacial: bool = False
-    inverter_type: InverterType | None = InverterType.CENTRAL
+    inverter_type: InverterType | str | None = InverterType.CENTRAL
     transformer_stages: int = 1
     plant_unavailability: float = 0.0
     grid_unavailability: float = 0.0
 
     # Effects and settings
-    mounting_height: float | None = None  # Changed from: mounting_height: float
+    mounting_height: float | None = None  # None = derive from mounting at build time
     modules_across: int | None = None
-    module_orientation: OrientationType = OrientationType.PORTRAIT
+    module_orientation: OrientationType | str = OrientationType.PORTRAIT
     string_length: int | None = None  # Estimated from module and inverter provided
-    dc_ohmic_loss: float | None = None  # Default depends on inverter type
-    ac_ohmic_loss: float | None = None  # Default depends on inverter type
+    dc_ohmic_loss: float | None = None  # None = derive from inverter_type at build time
+    ac_ohmic_loss: float | None = None  # None = derive from inverter_type at build time
     module_mismatch: float | None = MODULE_MISMATCH_FACTOR
     recalculate_modeling_correction_factor: bool = True
     module_quality_factor: float | None = 0.0
@@ -287,11 +330,11 @@ class PVSystem:
     module_iam_model_override: str | None = None
     constant_heat_coefficient: float | None = CONSTANT_HEAT_COEFFICIENT
     convective_heat_coefficient: float | None = CONVECTIVE_HEAT_COEFFICIENT
-    transformer_fixed_loss: float | None = None  # Default depends on transformer stages
-    transformer_variable_loss: float | None = None  # Default depends on transformer stages
-    bifacial_transmission: float | None = None  # Default depends on bifacial flag
-    bifacial_shade_loss: float | None = None  # Default depends on bifacial flag
-    bifacial_mismatch_loss: float | None = None  # Default depends on bifacial flag
+    transformer_fixed_loss: float | None = None  # None = derive from transformer_stages
+    transformer_variable_loss: float | None = None  # None = derive from transformer_stages
+    bifacial_transmission: float | None = None  # None = derive from bifacial and mounting
+    bifacial_shade_loss: float | None = None  # None = derive from bifacial and mounting
+    bifacial_mismatch_loss: float | None = None  # None = derive from bifacial and mounting
     aux_loss_fixed_factor: float | None = None
     aux_loss_power: float | None = None
     aux_loss_apply_at_night: bool | None = None
@@ -310,8 +353,8 @@ class PVSystem:
     # Results
     results: CalculationResults = None
 
-    # payload dictionary
-    payload: dict[str, Any] = None
+    # Last payload built or sent (JSON string); output only, never read back.
+    payload: str | None = None
 
     # design summary dictionary
     design_summary: dict[str, Any] = None
@@ -601,30 +644,25 @@ class PVSystem:
         """A (shallow) copy of inverter -> OND file mapping."""
         return dict(self._ond_files)
 
+    def __setattr__(self, name: str, value: Any) -> None:
+        enum_cls = _ENUM_FIELDS.get(name)
+        if enum_cls is not None and not isinstance(value, enum_cls):
+            # inverter_type=None means "use the default".
+            if value is None and name == "inverter_type":
+                value = InverterType.CENTRAL
+            else:
+                try:
+                    value = enum_cls(value)
+                except ValueError as err:
+                    raise ValueError(
+                        f"{value!r} is not a valid {enum_cls.__name__} for '{name}'. "
+                        f"Must be one of: {', '.join(e.value for e in enum_cls)} "
+                        "(case-insensitive)."
+                    ) from err
+        super().__setattr__(name, value)
+
     def __post_init__(self) -> None:
         """Post-initialization processing and validation."""
-
-        # Convert string values to enums if necessary
-        # (useful when loading JSON via `from_file()`)
-        if isinstance(self.mounting, str):
-            self.mounting = MountingType(self.mounting)
-        if isinstance(self.module_orientation, str):
-            self.module_orientation = OrientationType(self.module_orientation)
-        if isinstance(self.inverter_type, str):
-            self.inverter_type = InverterType(self.inverter_type)
-
-        # Initialize mounting_height based on mounting type if not explicitly set
-        if self.mounting == MountingType.FIXED:
-            if self.mounting_height is None or not hasattr(self, "mounting_height"):
-                self.mounting_height = HEIGHT_FROM_GROUND_FIXED
-        elif self.mounting == MountingType.TRACKER:
-            if self.mounting_height is None or not hasattr(self, "mounting_height"):
-                self.mounting_height = HEIGHT_FROM_GROUND_TRACKER
-        else:
-            raise ValueError(
-                f"Invalid mounting type: '{self.mounting}'. "
-                f"Must be one of: {', '.join([e.value for e in MountingType])}"
-            )
 
         # Initialize modules_across with default if not set
         if self.modules_across is None:
@@ -636,64 +674,13 @@ class PVSystem:
                 f"modules_across must be a positive integer, got {self.modules_across}."
             )
 
-        # Initialize and validate inverter_type
-        if self.inverter_type is None:
-            self.inverter_type = InverterType(
-                InverterType.CENTRAL
-            )  # Default to 'Central' if not set
-
-        try:
-            (
-                self.inverter_type.value
-                if isinstance(self.inverter_type, InverterType)
-                else self.inverter_type
-            )
-        except (AttributeError, ValueError) as err:
-            raise ValueError(
-                f"Invalid inverter_type: '{self.inverter_type}'. "
-                f"Must be one of: {', '.join([e.value for e in InverterType])}"
-            ) from err
-
-        # Initialize dc_ohmic_loss and ac_ohmic_loss based on inverter_type
-        if self.dc_ohmic_loss is None:
-            self.dc_ohmic_loss = OHMIC_DICT[self.inverter_type.value]["dc"]
-
-        if self.ac_ohmic_loss is None:
-            self.ac_ohmic_loss = OHMIC_DICT[self.inverter_type.value]["ac"]
-
-        # Initialize bifacial parameters based on bifacial flag and mounting type
-        if self.bifacial:
-            bifacial_params = BIFACIAL_DICT[True][self.mounting.value]
-        else:
-            bifacial_params = BIFACIAL_DICT[False]
-
-        if self.bifacial_transmission is None:
-            self.bifacial_transmission = bifacial_params["transmission"]
-
-        if self.bifacial_shade_loss is None:
-            self.bifacial_shade_loss = bifacial_params["shade"]
-
-        if self.bifacial_mismatch_loss is None:
-            self.bifacial_mismatch_loss = bifacial_params["mismatch"]
-
-        # Initialize and validate transformer_stages
+        # Validate transformer stages.
         valid_transformer_stages = {0, 1}
         if self.transformer_stages not in valid_transformer_stages:
             raise ValueError(
                 f"Invalid transformer_stages: {self.transformer_stages}. "
                 f"Must be one of: {sorted(valid_transformer_stages)}"
             )
-
-        # Map transformer_stages to TRANSFORMER_DICT keys and initialize losses
-        transformer_key_map = {0: "Ideal", 1: "FixedType1"}
-        transformer_type = transformer_key_map[self.transformer_stages]
-        transformer_params = TRANSFORMER_DICT[transformer_type]
-
-        if self.transformer_fixed_loss is None:
-            self.transformer_fixed_loss = transformer_params["fixed"]
-
-        if self.transformer_variable_loss is None:
-            self.transformer_variable_loss = transformer_params["variable"]
 
         # Validate location
         if self.latitude is not None and not (-90.0 <= float(self.latitude) <= 90.0):
@@ -714,6 +701,41 @@ class PVSystem:
             for v in self.horizon_elevation_angles + self.horizon_azimuth_angles:
                 if v is None:
                     raise ValueError("Horizon angles must not contain None")
+
+    def with_defaults_applied(self) -> PVSystem:
+        """Return a copy with unset derived inputs filled from the current plant settings.
+
+        Derived inputs left as ``None`` are resolved from the final values of
+        ``mounting``, ``bifacial``, ``inverter_type``, and ``transformer_stages``.
+        Explicit values, including ``0.0``, are preserved. This method does not
+        modify the current plant.
+
+        Returns
+        -------
+        PVSystem
+            A copy of this plant with all unset derived inputs resolved.
+
+        Raises
+        ------
+        ValueError
+            If the plant configuration, including ``transformer_stages``, is invalid.
+
+        Examples
+        --------
+        >>> plant = PVSystem(latitude=45.0, longitude=10.0, mounting="Tracker")
+        >>> resolved = plant.with_defaults_applied()
+        >>> resolved.mounting_height
+        1.5
+        >>> plant.mounting_height is None
+        True
+        """
+        # Shallow copy: containers such as _pan_files and _albedo are shared with self,
+        # so the build path must only read them, never mutate them in place.
+        resolved = replace(self, results=None, payload=None, design_summary=None)
+        for name, default in _default_derived_values(resolved).items():
+            if getattr(resolved, name) is None:
+                setattr(resolved, name, default)
+        return resolved
 
     def make_copy(self) -> PVSystem:
         """Create a deep copy of the PVSystem instance with results cleared.
@@ -744,6 +766,7 @@ class PVSystem:
 
         # Explicitly clear results in the copy
         plant_dict["results"] = None
+        plant_dict["payload"] = None
 
         # Deep copy mutable fields to avoid shared references
         mutable_fields = [
@@ -771,6 +794,7 @@ class PVSystem:
         Displays all settings organized by category: metadata, location, capacity,
         array configuration, mounting, inverter/transformer, losses, and files.
         """
+        plant = self.with_defaults_applied()
         print("\n" + "=" * 70)
         print("PV PLANT SUMMARY")
         print("=" * 70)
@@ -814,16 +838,16 @@ class PVSystem:
         print(f"Module Orientation: {self.module_orientation}")
         print(f"Modules Across: {self.modules_across}")
         if verbose:
-            print(f"Mounting Height: {self.mounting_height} m")
+            print(f"Mounting Height: {plant.mounting_height} m")
             print(f"Flush Mount: {self.flush_mount}")
 
         # Bifacial
         print("\n--- BIFACIAL PARAMETERS ---")
         print(f"Bifacial Modules: {self.bifacial}")
         if verbose:
-            print(f"  - Transmission Factor: {self.bifacial_transmission}")
-            print(f"  - Shade Loss Factor: {self.bifacial_shade_loss}")
-            print(f"  - Mismatch Loss Factor: {self.bifacial_mismatch_loss}")
+            print(f"  - Transmission Factor: {plant.bifacial_transmission}")
+            print(f"  - Shade Loss Factor: {plant.bifacial_shade_loss}")
+            print(f"  - Mismatch Loss Factor: {plant.bifacial_mismatch_loss}")
 
         # Inverter & Transformer
         print("\n--- INVERTER & TRANSFORMER ---")
@@ -839,13 +863,13 @@ class PVSystem:
         if verbose:
             # Losses
             print("\n--- LOSSES ---")
-            print(f"DC Ohmic Loss: {self.dc_ohmic_loss} (per unit)")
-            print(f"AC Ohmic Loss: {self.ac_ohmic_loss} (per unit)")
+            print(f"DC Ohmic Loss: {plant.dc_ohmic_loss} (per unit)")
+            print(f"AC Ohmic Loss: {plant.ac_ohmic_loss} (per unit)")
             print(f"Module Mismatch Loss: {self.module_mismatch} (per unit)")
             print(f"Module Quality Factor: {self.module_quality_factor} (per unit)")
             print(f"LID Loss: {self.lid_loss} (per unit)")
-            print(f"Transformer Fixed Loss: {self.transformer_fixed_loss} (per unit)")
-            print(f"Transformer Variable Loss: {self.transformer_variable_loss} (per unit)")
+            print(f"Transformer Fixed Loss: {plant.transformer_fixed_loss} (per unit)")
+            print(f"Transformer Variable Loss: {plant.transformer_variable_loss} (per unit)")
             print(f"Auxiliary Loss (Fixed Factor): {self.aux_loss_fixed_factor} (per unit)")
             print(f"Auxiliary Loss (Power): {self.aux_loss_power} W")
             print(f"Auxiliary Loss Applied at Night: {self.aux_loss_apply_at_night}")
@@ -923,6 +947,7 @@ class PVSystem:
           including metadata, location, plant definition, effects, and auxiliary files.
         - The results field is not included in the saved configuration, as it is typically generated
           after running the energy calculation and may contain complex data structures.
+        - The payload snapshot is not included; it is rebuilt from the saved configuration when needed.
         """
         path = Path(file_path)
         path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent directories exist
@@ -930,6 +955,7 @@ class PVSystem:
         # Convert PVSystem to dictionary and exclude results for saving
         plant_dict = asdict(self)
         plant_dict.pop("results", None)  # Remove results from saved config
+        plant_dict.pop("payload", None)  # Payload is an output snapshot, not plant configuration.
 
         # Convert Path objects to strings for JSON compatibility
         for key in ("_weather_file", "_horizon_file"):
@@ -981,6 +1007,9 @@ class PVSystem:
             if plant_dict.get(key):
                 plant_dict[key] = {k: Path(v) for k, v in plant_dict[key].items()}
 
+        # Ignore payloads saved by older SDK versions; they may no longer match the configuration.
+        plant_dict.pop("payload", None)
+
         # Create PVSystem instance from loaded dictionary
         return cls(**plant_dict)
 
@@ -1001,22 +1030,15 @@ class PVSystem:
         -----
         - This method constructs the payload using the current PVSystem configuration and saves it as JSON.
         - The payload is what is sent to the SolarFarmer API for energy calculation.
-        - If the payload has already been constructed and stored in self.payload, it will save that instead of reconstructing.
+        - The payload is always rebuilt from the current configuration.
         """
         path = Path(file_path)
         path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent directories exist
 
-        if self.payload is None:
-            payload_dict = construct_plant(self)
-        else:
-            payload_dict = self.payload
+        payload = self.produce_payload()
 
         with path.open("w", encoding="utf-8") as f:
-            # If payload is a string (JSON), write directly; if dict, use json.dump
-            if isinstance(payload_dict, str):
-                f.write(payload_dict)
-            else:
-                json.dump(payload_dict, f, indent=4)
+            f.write(payload)
 
         _logger.debug("PVSystem payload saved to %s", path)
         return None
@@ -1323,26 +1345,21 @@ class PVSystem:
         _logger.info("Inverter '%s' set from RCL (%d bytes)", inverter_name, len(content))
         return item
 
-    def produce_payload(self) -> dict[str, Any]:
-        """Construct and return the payload dictionary for the SolarFarmer API based on the current PVSystem configuration.
+    def produce_payload(self) -> str:
+        """Build and return the JSON payload for the current PVSystem configuration.
 
         Returns
         -------
-        dict[str, Any]
-            A dictionary representing the payload to be sent to the SolarFarmer API for energy calculation.
+        str
+            A JSON string representing the payload to be sent to the SolarFarmer API.
 
         Notes
         -----
-        - This method constructs the payload using the current configuration of the PVSystem instance.
-        - The payload includes all necessary information about the plant design, location, losses, and other parameters required by the API.
-        - If the payload has already been constructed and stored in self.payload, it will return that instead of reconstructing.
+        The payload is always rebuilt from the current configuration and stored in
+        ``self.payload`` for inspection.
         """
-        if self.payload is None:
-            payload = construct_plant(self)
-            self.payload = payload  # Cache the constructed payload for future use
-            return payload
-        else:
-            return self.payload
+        self.payload = construct_plant(self)
+        return self.payload
 
     def run_energy_calculation(
         self,
@@ -1398,11 +1415,8 @@ class PVSystem:
         """
         from ...endpoint_modelchains import run_energy_calculation
 
-        # Build the JSON payload from the PVSystem configuration
-        if self.payload is None:
-            builder = construct_plant(self)
-        else:
-            builder = self.payload
+        # Always build from the current configuration and retain what was sent for inspection.
+        builder = self.produce_payload()
 
         # Make API call via modelchain function
         results = run_energy_calculation(
@@ -1432,43 +1446,44 @@ def construct_plant(pvplant: PVSystem) -> str:
     Returns a JSON string ready to be sent to the SolarFarmer API.
     """
 
+    plant = pvplant.with_defaults_applied()
+
     # Location
-    location = Location(
-        longitude=pvplant.longitude, latitude=pvplant.latitude, altitude=pvplant.altitude
-    )
+    location = Location(longitude=plant.longitude, latitude=plant.latitude, altitude=plant.altitude)
 
     # PV plant
-    pv_plant, pan_file_supplements = design_plant(pvplant=pvplant)
+    pv_plant, pan_file_supplements = design_plant(pvplant=plant)
 
     # Energy calculation options
-    has_horizon = bool(pvplant.horizon_elevation_angles)
+    has_horizon = bool(plant.horizon_elevation_angles)
     calculation_options = EnergyCalculationOptions(
         diffuse_model=DiffuseModel.PEREZ,
         include_horizon=has_horizon,
     )
     # update non-default energy calculation options
-    calculation_options.return_loss_tree_time_series_results = pvplant.generate_loss_tree_timeseries
+    calculation_options.return_loss_tree_time_series_results = plant.generate_loss_tree_timeseries
     calculation_options.return_pv_syst_format_time_series_results = (
-        pvplant.generate_pvsyst_format_timeseries
+        plant.generate_pvsyst_format_timeseries
     )
-    calculation_options.apply_spectral_mismatch_modifier = pvplant.enable_spectral_modeling
-    calculation_options.calculate_dhi = pvplant.calculate_dhi_from_ghi
-    calculation_options.system_availability_loss = pvplant.plant_unavailability
-    calculation_options.grid_availability_loss = pvplant.grid_unavailability
+    calculation_options.apply_spectral_mismatch_modifier = plant.enable_spectral_modeling
+    calculation_options.calculate_dhi = plant.calculate_dhi_from_ghi
+    calculation_options.system_availability_loss = plant.plant_unavailability
+    calculation_options.grid_availability_loss = plant.grid_unavailability
 
     # Build the full inputs model
     inputs = EnergyCalculationInputs(
         location=location,
         pv_plant=pv_plant,
-        monthly_albedo=MonthlyAlbedo(values=pvplant.albedo),
+        monthly_albedo=MonthlyAlbedo(values=plant.albedo),
         energy_calculation_options=calculation_options,
-        horizon_azimuths=pvplant.horizon_azimuth_angles or None,
-        horizon_angles=pvplant.horizon_elevation_angles or None,
+        horizon_azimuths=plant.horizon_azimuth_angles or None,
+        horizon_angles=plant.horizon_elevation_angles or None,
         pan_file_supplements=pan_file_supplements or None,
     )
 
     # TODO: Integrate OND file supplements into payload construction
 
+    pvplant.design_summary = plant.design_summary
     return inputs.model_dump_json(by_alias=True, exclude_none=True)
 
 

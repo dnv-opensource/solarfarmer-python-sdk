@@ -98,7 +98,7 @@ class TestDesignPlant:
     """Tests for design_plant() → (PVPlant, supplements dict)."""
 
     def test_returns_pvplant_and_supplements_dict(self, plant):
-        pv_plant, supplements = design_plant(plant)
+        pv_plant, supplements = design_plant(plant.with_defaults_applied())
         assert isinstance(pv_plant, PVPlant)
         assert isinstance(supplements, dict)
 
@@ -119,8 +119,8 @@ class TestDesignPlant:
         def total_inverters(pv_plant):
             return sum(inv.inverter_count for t in pv_plant.transformers for inv in t.inverters)
 
-        small_plant, _ = design_plant(small)
-        large_plant, _ = design_plant(large)
+        small_plant, _ = design_plant(small.with_defaults_applied())
+        large_plant, _ = design_plant(large.with_defaults_applied())
         assert total_inverters(small_plant) < total_inverters(large_plant)
 
 
@@ -139,7 +139,7 @@ class TestGenerateMountingSpecs:
 
         specs = generate_mounting_specs(
             mounting_type_id="Mounting Type 1",
-            plant=plant,
+            plant=plant.with_defaults_applied(),
             are_modules_landscape=False,
             rack_height=2.0,
             y_spacing=0.02,

@@ -124,6 +124,15 @@ plant.bifacial_shade_loss = 0.15
 plant.bifacial_mismatch_loss = 0.01
 ```
 
+### Derived defaults
+
+Unset mounting height, inverter and transformer losses, and bifacial parameters are derived when the
+payload is built, using the final values of `mounting`, `bifacial`, `inverter_type` and
+`transformer_stages`. You can assign these inputs in any order. Set an individual derived field to
+override its default; explicit values including `0.0` are preserved. Read effective values with
+`plant.with_defaults_applied()` or `plant.describe(verbose=True)`. Enum strings such as `"tracker"`
+are accepted case-insensitively.
+
 ---
 
 ## Step 3: Add Module and Inverter Files
