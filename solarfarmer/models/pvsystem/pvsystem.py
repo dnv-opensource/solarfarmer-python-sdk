@@ -1035,10 +1035,11 @@ class PVSystem:
         path = Path(file_path)
         path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent directories exist
 
-        payload = self.produce_payload()
+        # produce_payload returns compact JSON; re-serialize so the file is indented
+        payload = json.loads(self.produce_payload())
 
         with path.open("w", encoding="utf-8") as f:
-            f.write(payload)
+            json.dump(payload, f, indent=4, ensure_ascii=False)
 
         _logger.debug("PVSystem payload saved to %s", path)
         return None

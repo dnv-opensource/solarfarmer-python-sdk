@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A stale cached payload could be sent after editing a plant (including via `make_copy()`).
 - `PVSystem.set_inverter_from_rcl()` no longer multiplies the inverter efficiency by 100 in the
   "Narrow your search" message (e.g. `eff=9860.0%` is now `eff=98.6%`).
+- `PVSystem.payload_to_file()` now writes indented JSON instead of a single compact line, and keeps
+  non-ASCII characters (e.g. in module or inverter file names) instead of escaping them as `\uXXXX`.
 
 ## [0.7.0] - 2026-10-07
 

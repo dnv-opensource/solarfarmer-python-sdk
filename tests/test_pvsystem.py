@@ -266,6 +266,30 @@ class TestPVSystemPayloadSnapshot:
 
         assert plant.make_copy().payload is None
 
+    def test_payload_to_file_is_indented(self, sample_data_dir, tmp_path):
+        plant = self._plant(sample_data_dir)
+        file_path = tmp_path / "payload.json"
+
+        plant.payload_to_file(file_path)
+
+        text = file_path.read_text(encoding="utf-8")
+        assert text.count("\n") > 1
+        assert '\n    "' in text
+        assert json.loads(text) == json.loads(plant.payload)
+
+    def test_payload_to_file_keeps_non_ascii_characters(self, sample_data_dir, tmp_path):
+        plant = self._plant(sample_data_dir)
+        pan_path = tmp_path / "Módulo.PAN"
+        pan_path.write_bytes(plant.pan_files["Module"].read_bytes())
+        plant.pan_files = {"Module": pan_path}
+        file_path = tmp_path / "payload.json"
+
+        plant.payload_to_file(file_path)
+
+        text = file_path.read_text(encoding="utf-8")
+        assert "Módulo" in text
+        assert "\\u00f3" not in text
+
     def test_to_file_omits_payload(self, sample_data_dir, tmp_path):
         plant = self._plant(sample_data_dir)
         plant.produce_payload()
