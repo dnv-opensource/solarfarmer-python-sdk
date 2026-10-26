@@ -113,24 +113,18 @@ class PVSystem:
        assumptions (e.g., uniform mid-row shading). Results are suitable for early-stage
        energy yield screening but do not represent a fully detailed design.
 
-    Basic Metadata
-    --------------
-    name: str | None
+    Attributes
+    ----------
+    name : str | None
         Name of the plant/project. Optional.
-
-    Location Metadata
-    -----------------
     latitude : float | None
         Plant latitude in degrees (-90 .. 90).
     longitude : float | None
         Plant longitude in degrees (-180 .. 180).
-    altitude : float | 0.0
-        Plant altitude in meters above sea level.
+    altitude : float
+        Plant altitude in meters above sea level (default 0.0).
     timezone : str
         IANA timezone name (e.g., 'UTC', 'Europe/Amsterdam'). Default is 'UTC'.
-
-    Plant Definition
-    ----------------
     dc_capacity_MW : float
         Plant DC capacity in MW (default 10.0).
     ac_capacity_MW : float
@@ -187,9 +181,6 @@ class PVSystem:
         Plant availability loss (per unit) (default 0.0, i.e., no unavailability loss).
     grid_unavailability : float
         Grid availability loss (per unit) (default 0.0, i.e., no unavailability loss).
-
-    Auxiliary Files
-    ---------------
     pan_files : dict[str, Path]
         Mapping of module names to PAN file paths.
     ond_files : dict[str, Path]
@@ -198,9 +189,6 @@ class PVSystem:
         Path to a weather file (string or Path accepted via property).
     horizon_file : Path | None
         Path to a horizon file (string or Path accepted via property).
-
-    Other Effects and Settings
-    --------------------------
     mounting_height : Optional[float]
         Mounting height in meters. It refers to the minimum height from ground for fixed-tilt
         and axis-tube height for single-axis trackers. ``None`` means derive from ``mounting``
