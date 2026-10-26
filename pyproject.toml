@@ -52,8 +52,11 @@ all = [
 
 [dependency-groups]
 docs = [
-  "zensical>=0.0.20",
-  "mkdocstrings[python]>=1.0.8",
+  # Python 3.10 cannot use the latest docs toolchain; pin to the last 3.10-compatible releases.
+  "zensical>=0.0.20,<0.0.68; python_version < '3.11'",
+  "zensical>=0.0.68; python_version >= '3.11'",
+  "mkdocstrings[python]>=1.0.6,<1.0.7; python_version < '3.11'",
+  "mkdocstrings[python]>=1.0.8; python_version >= '3.11'",
 ]
 
 test = [
