@@ -104,5 +104,6 @@ def _get_release_date():
 
     return "unreleased"
 
+
 __version__ = _get_version()
 __released__ = _get_release_date()
