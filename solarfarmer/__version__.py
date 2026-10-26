@@ -65,7 +65,8 @@ def _get_release_date():
              or "unreleased" if it cannot be determined (development mode).
     """
     try:
-        from ._release_info import RELEASE_DATE
+        # Generated only in release builds (see release.yml), hence absent in source checkouts
+        from ._release_info import RELEASE_DATE  # pyright: ignore[reportMissingImports]
 
         return RELEASE_DATE
     except ImportError:
