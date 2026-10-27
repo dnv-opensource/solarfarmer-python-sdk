@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class DiffuseModel(str, Enum):
+class DiffuseModel(StrEnum):
     """Diffuse transposition model for converting horizontal to tilted irradiance."""
 
     ISOTROPIC = "Isotropic"
@@ -10,14 +10,14 @@ class DiffuseModel(str, Enum):
     PEREZ_EMULATE_PVSYST = "PerezEmulatePVsyst"
 
 
-class MissingMetDataMethod(str, Enum):
+class MissingMetDataMethod(StrEnum):
     """Behaviour when required meteorological variables have missing data."""
 
     FAIL_ON_VALIDATION = "FailOnValidation"
     REMOVE_TIMESTAMP = "RemoveTimestamp"
 
 
-class HorizonType(str, Enum):
+class HorizonType(StrEnum):
     """Azimuth convention of the horizon file.
 
     Different data providers use different azimuth conventions.
@@ -30,28 +30,28 @@ class HorizonType(str, Enum):
     PVSYST_HEMISPHERE_AWARE = "PVsystHemisphereAware"
 
 
-class OrderColumnsPvSystFormatTimeSeries(str, Enum):
+class OrderColumnsPvSystFormatTimeSeries(StrEnum):
     """Column ordering for PVsyst-format time-series output."""
 
     ALPHABETIC = "Alphabetic"
     CALCULATION = "Calculation"
 
 
-class TransformerLossModelTypes(str, Enum):
+class TransformerLossModelTypes(StrEnum):
     """Transformer loss model type."""
 
     SIMPLE_LOSS_FACTOR = "SimpleLossFactor"
     NO_LOAD_AND_OHMIC = "NoLoadAndOhmic"
 
 
-class InverterOverPowerShutdownMode(str, Enum):
+class InverterOverPowerShutdownMode(StrEnum):
     """Inverter behaviour when over-power shutdown conditions occur."""
 
     USE_MAXIMUM_MPPT_VOLTAGE = "UseMaximumMpptVoltage"
     USE_VOLTAGE_DERATE_PROFILE = "UseVoltageDerateProfile"
 
 
-class PowerOptimizerOperationType(str, Enum):
+class PowerOptimizerOperationType(StrEnum):
     """Connection configuration for DC power optimizers (3D calculations only).
 
     Defines how many modules share a single power optimizer and how they
@@ -66,7 +66,7 @@ class PowerOptimizerOperationType(str, Enum):
     """One optimizer shared by two modules connected in series."""
 
 
-class IAMModelTypeForOverride(str, Enum):
+class IAMModelTypeForOverride(StrEnum):
     """IAM model types available for overriding the PAN file default."""
 
     FRESNEL_NORMAL = "FresnelNormal"
@@ -76,7 +76,7 @@ class IAMModelTypeForOverride(str, Enum):
     CUSTOM = "Custom"
 
 
-class TrackerAlgorithm(str, Enum):
+class TrackerAlgorithm(StrEnum):
     """Rotation algorithm used by a single-axis tracker system.
 
     Determines how the tracker computes its rotation angle at each time step.
@@ -92,7 +92,7 @@ class TrackerAlgorithm(str, Enum):
     """Pure astronomical sun-tracking with no backtracking."""
 
 
-class MeteoFileFormat(str, Enum):
+class MeteoFileFormat(StrEnum):
     """Meteorological file format.
 
     The SDK maps file extensions to the correct multipart upload field

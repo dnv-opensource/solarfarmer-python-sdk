@@ -1,7 +1,7 @@
 """Tests for custom tracker rotations CSV parsing and protobuf export."""
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
@@ -567,7 +567,7 @@ class TestFromCsvFolder:
 
         # January data must come first regardless of filename order.
         first_ts = dataset.data[0].start_of_period
-        assert first_ts == datetime(2025, 1, 1, 8, 0, tzinfo=timezone.utc)
+        assert first_ts == datetime(2025, 1, 1, 8, 0, tzinfo=UTC)
         assert len(dataset.data) == 6
 
     def test_single_file_folder(self, tmp_path) -> None:

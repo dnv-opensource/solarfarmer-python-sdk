@@ -1,4 +1,5 @@
 import json
+from datetime import UTC
 
 import pytest
 
@@ -229,26 +230,26 @@ class TestRoundTrip:
         assert rebuilt == spec
 
     def test_tracker_condition_round_trip(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Mirrors the first data row in EnergyCalcInputsTrackerTest.json:
         # all trackers flat (angle = 0) early morning.
         cond = TrackerCondition(
             period_in_minutes=5.0,
-            start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=timezone.utc),
+            start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=UTC),
             tracker_rotation_unique_value=0,
         )
         rebuilt = TrackerCondition.model_validate(cond.model_dump(by_alias=True))
         assert rebuilt == cond
 
     def test_tracker_condition_array_round_trip(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Mirrors the second data row in EnergyCalcInputsTrackerTest.json:
         # trackers have different angles, encoded as degrees × 100.
         cond = TrackerCondition(
             period_in_minutes=5.0,
-            start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=timezone.utc),
+            start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=UTC),
             tracker_rotations_array_values=[-1570, -780, -1050],
         )
         d = cond.model_dump(by_alias=True)
@@ -258,7 +259,7 @@ class TestRoundTrip:
         assert rebuilt == cond
 
     def test_trackers_conditions_dataset_round_trip(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Small 3-tracker / 2-timestep dataset representative of the JSON file.
         dataset = TrackersConditionsDataset(
@@ -268,12 +269,12 @@ class TestRoundTrip:
             data=[
                 TrackerCondition(
                     period_in_minutes=5.0,
-                    start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=timezone.utc),
+                    start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=UTC),
                     tracker_rotation_unique_value=0,
                 ),
                 TrackerCondition(
                     period_in_minutes=5.0,
-                    start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=timezone.utc),
+                    start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=UTC),
                     tracker_rotations_array_values=[-1570, -780, -1050],
                 ),
             ],
@@ -305,7 +306,7 @@ class TestJsonSerialization:
 
     def test_parse_tracker_conditions_large_dataset(self) -> None:
         """TrackersConditionsDataset handles large tracker counts and mixed condition types."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         n_trackers = 536
         tracker_ids = [f"Index_{i}" for i in range(n_trackers)]
@@ -317,12 +318,12 @@ class TestJsonSerialization:
             data=[
                 TrackerCondition(
                     period_in_minutes=5.0,
-                    start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=timezone.utc),
+                    start_of_period=datetime(2018, 1, 1, 8, 0, tzinfo=UTC),
                     tracker_rotation_unique_value=0,
                 ),
                 TrackerCondition(
                     period_in_minutes=5.0,
-                    start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=timezone.utc),
+                    start_of_period=datetime(2018, 1, 1, 8, 5, tzinfo=UTC),
                     tracker_rotations_array_values=list(range(n_trackers)),
                 ),
             ],

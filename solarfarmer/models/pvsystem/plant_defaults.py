@@ -3,14 +3,14 @@ Defines a default structure for
 the SDK PVSystem class when constructing the API JSON payload.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 # ------------------------------------------------------------------------------
 # Enum definitions for inverter types, mounting types, and orientation types.
 # ------------------------------------------------------------------------------
 
 
-class _CaseInsensitiveStrEnum(str, Enum):
+class _CaseInsensitiveStrEnum(StrEnum):
     """String enum whose lookup by value ignores case (e.g. ``"fixed"`` -> ``FIXED``)."""
 
     @classmethod
