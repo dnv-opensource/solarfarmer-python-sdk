@@ -16,6 +16,7 @@ from ..energy_calculation_options import EnergyCalculationOptions
 from ..energy_calculation_results import CalculationResults
 from ..enums import (
     DiffuseModel,
+    TrackerAlgorithm,
     TransformerLossModelTypes,
 )
 from ..inverter import Inverter
@@ -35,7 +36,6 @@ from .plant_defaults import (
     FRAME_BOTTOM_WIDTH,
     HEIGHT_FROM_GROUND_FIXED,
     HEIGHT_FROM_GROUND_TRACKER,
-    IS_BACKTRACKING,
     MAX_ROTATION_ANGLE,
     MODULE_MISMATCH_FACTOR,
     NUMBER_OF_MODULES_HIGH,
@@ -71,6 +71,29 @@ _ENUM_FIELDS: dict[str, type[Enum]] = {
     "module_orientation": OrientationType,
     "inverter_type": InverterType,
 }
+
+# CustomRotations is excluded: PVSystem has no way to supply a rotation table.
+_PVSYSTEM_TRACKING_ALGORITHMS: tuple[TrackerAlgorithm, ...] = (
+    TrackerAlgorithm.SLOPE_AWARE_BACKTRACKING,
+    TrackerAlgorithm.STANDARD_BACKTRACKING,
+    TrackerAlgorithm.SUN_TRACKING,
+)
+
+
+def _coerce_tracking_algorithm(value: Any) -> TrackerAlgorithm:
+    """Convert ``value`` (case-insensitive string or enum) to a supported TrackerAlgorithm."""
+    if value is None:
+        return TrackerAlgorithm.STANDARD_BACKTRACKING
+    if isinstance(value, str):
+        folded = value.strip().casefold()
+        for member in _PVSYSTEM_TRACKING_ALGORITHMS:
+            if member.value.casefold() == folded:
+                return member
+    raise ValueError(
+        f"{value!r} is not a valid TrackerAlgorithm for 'tracking_algorithm'. "
+        f"Must be one of: {', '.join(m.value for m in _PVSYSTEM_TRACKING_ALGORITHMS)} "
+        "(case-insensitive)."
+    )
 
 
 def _default_derived_values(plant: PVSystem) -> dict[str, float]:
@@ -143,6 +166,10 @@ class PVSystem:
         Maximum tracker rotation angle in degrees (default is 60°).
         Only applicable when ``mounting='Tracker'``.
         Defines the symmetric rotation bounds: ``[-tracker_max_rotation_angle, +tracker_max_rotation_angle]``.
+    tracking_algorithm : TrackerAlgorithm or str
+        Tracker rotation algorithm (case-insensitive). One of ``'StandardBacktracking'``
+        (default), ``'SlopeAwareBacktracking'`` or ``'SunTracking'``.
+        Only applicable when ``mounting='Tracker'``.
     azimuth : float
         Array azimuth in degrees (default 180, i.e., south-facing).
     terrain_azimuth : float
@@ -310,6 +337,7 @@ class PVSystem:
     tracker_max_rotation_angle: float | None = (
         None  # For trackers only; default is MAX_ROTATION_ANGLE (60°)
     )
+    tracking_algorithm: TrackerAlgorithm | str | None = TrackerAlgorithm.STANDARD_BACKTRACKING
     azimuth: float = 180.0
     mounting: MountingType | str = MountingType.FIXED
     flush_mount: bool = False
@@ -650,6 +678,8 @@ class PVSystem:
         return dict(self._ond_files)
 
     def __setattr__(self, name: str, value: Any) -> None:
+        if name == "tracking_algorithm":
+            value = _coerce_tracking_algorithm(value)
         enum_cls = _ENUM_FIELDS.get(name)
         if enum_cls is not None and not isinstance(value, enum_cls):
             # inverter_type=None means "use the default".
@@ -833,6 +863,7 @@ class PVSystem:
                 else MAX_ROTATION_ANGLE
             )
             print(f"Max Rotation Angle (Tracker): {effective_max_rotation}°")
+            print(f"Tracking Algorithm: {self.tracking_algorithm}")
         else:
             print(f"Tilt: {self.tilt}°")
         print(f"Azimuth: {self.azimuth}°")
@@ -1854,8 +1885,7 @@ def generate_tracker_systems(
             east_west_gcr=plant.gcr,
             rotation_min_deg=-max_rotation,
             rotation_max_deg=max_rotation,
-            is_backtracking=IS_BACKTRACKING,
-            use_slope_aware_backtracking=False,
+            tracker_algorithm=plant.tracking_algorithm,
         )
         key = tracker_system_id if tracker_system_id is not None else "Layout Region 1"
         return {key: tracker_system}
