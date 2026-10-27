@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PVSystem.terrain_azimuth` and `PVSystem.terrain_slope` set the terrain orientation of all layouts
   (default `0.0`). They are ignored for flush-mount fixed-tilt systems.
 - `PVSystem.with_defaults_applied()` returns a copy with all unset derived inputs resolved.
+- `PVSystem.tracking_algorithm` selects the tracker rotation algorithm (`StandardBacktracking` (default),
+  `SlopeAwareBacktracking` or `SunTracking`, case-insensitive). The generated `TrackerSystem` now sets
+  `tracker_algorithm` instead of the deprecated `is_backtracking`/`use_slope_aware_backtracking`.
 
 ### Changed
 
