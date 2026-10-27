@@ -453,6 +453,53 @@ class TestPVSystemComplexScenarios:
         assert tracker_system["rotationMaxDeg"] == 60.0
         assert tracker_system["rotationMinDeg"] == -60.0
 
+    def test_tracking_algorithm_defaults_to_standard_backtracking(self):
+        assert PVSystem().tracking_algorithm == "StandardBacktracking"
+        assert PVSystem(tracking_algorithm=None).tracking_algorithm == "StandardBacktracking"
+
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            ("slopeawarebacktracking", "SlopeAwareBacktracking"),
+            ("STANDARDBACKTRACKING", "StandardBacktracking"),
+            (" SunTracking ", "SunTracking"),
+        ],
+    )
+    def test_tracking_algorithm_is_case_insensitive(self, value, expected):
+        plant = PVSystem(tracking_algorithm=value)
+        assert plant.tracking_algorithm == expected
+        plant.tracking_algorithm = value.lower()
+        assert plant.tracking_algorithm == expected
+
+    @pytest.mark.parametrize("value", ["CustomRotations", "Backtracking", 1])
+    def test_tracking_algorithm_rejects_invalid_values(self, value):
+        with pytest.raises(ValueError, match="tracking_algorithm"):
+            PVSystem(tracking_algorithm=value)
+
+    @pytest.mark.parametrize(
+        "value", [None, "SlopeAwareBacktracking", "StandardBacktracking", "SunTracking"]
+    )
+    def test_tracking_algorithm_maps_to_tracker_payload(self, bern_2d_racks_inputs, value):
+        plant = PVSystem(
+            latitude=45.0, longitude=10.0, mounting="Tracker", tracking_algorithm=value
+        )
+        plant.pan_files = {
+            "CanadianSolar_CS6U-330M_APP": f"{bern_2d_racks_inputs}/CanadianSolar_CS6U-330M_APP.PAN"
+        }
+        plant.ond_files = {"Sungrow_SG125HV_APP": f"{bern_2d_racks_inputs}/Sungrow_SG125HV_APP.OND"}
+
+        payload = json.loads(construct_plant(plant))
+        tracker_system = next(iter(payload["pvPlant"]["trackerSystems"].values()))
+
+        assert tracker_system["trackerAlgorithm"] == (value or "StandardBacktracking")
+        assert "isBacktracking" not in tracker_system
+        assert "useSlopeAwareBacktracking" not in tracker_system
+
+    def test_tracking_algorithm_survives_file_roundtrip(self, tmp_path):
+        path = tmp_path / "plant.json"
+        PVSystem(tracking_algorithm="suntracking").to_file(path)
+        assert PVSystem.from_file(path).tracking_algorithm == "SunTracking"
+
 
 class TestPVSystemPropertyDefaults:
     """Test cases for verifying property defaults."""
