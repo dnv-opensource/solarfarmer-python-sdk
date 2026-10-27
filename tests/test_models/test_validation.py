@@ -1,3 +1,5 @@
+from datetime import UTC
+
 import pytest
 from pydantic import ValidationError
 
@@ -428,52 +430,52 @@ class TestCalcOptionsValidation:
 
 class TestTrackerConditionValidation:
     def test_both_rotation_fields_raises(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         with pytest.raises(ValidationError, match="tracker_rotations_array_values"):
             TrackerCondition(
                 period_in_minutes=60.0,
-                start_of_period=datetime(2020, 1, 1, tzinfo=timezone.utc),
+                start_of_period=datetime(2020, 1, 1, tzinfo=UTC),
                 tracker_rotations_array_values=[1234, -500],
                 tracker_rotation_unique_value=0,
             )
 
     def test_unique_value_out_of_range_raises(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         with pytest.raises(ValidationError, match="tracker_rotation_unique_value"):
             TrackerCondition(
                 period_in_minutes=5.0,
-                start_of_period=datetime(2018, 1, 1, tzinfo=timezone.utc),
+                start_of_period=datetime(2018, 1, 1, tzinfo=UTC),
                 tracker_rotation_unique_value=9000,  # > 8990
             )
 
     def test_unique_value_negative_out_of_range_raises(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         with pytest.raises(ValidationError, match="tracker_rotation_unique_value"):
             TrackerCondition(
                 period_in_minutes=5.0,
-                start_of_period=datetime(2018, 1, 1, tzinfo=timezone.utc),
+                start_of_period=datetime(2018, 1, 1, tzinfo=UTC),
                 tracker_rotation_unique_value=-9000,  # < -8990
             )
 
     def test_array_value_out_of_range_raises(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         with pytest.raises(ValidationError, match="tracker_rotations_array_values"):
             TrackerCondition(
                 period_in_minutes=5.0,
-                start_of_period=datetime(2018, 1, 1, tzinfo=timezone.utc),
+                start_of_period=datetime(2018, 1, 1, tzinfo=UTC),
                 tracker_rotations_array_values=[-1570, 9000],  # 9000 > 8990
             )
 
     def test_boundary_values_are_valid(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         cond = TrackerCondition(
             period_in_minutes=5.0,
-            start_of_period=datetime(2018, 1, 1, tzinfo=timezone.utc),
+            start_of_period=datetime(2018, 1, 1, tzinfo=UTC),
             tracker_rotations_array_values=[-8990, 0, 8990],
         )
         assert cond.tracker_rotations_array_values == [-8990, 0, 8990]

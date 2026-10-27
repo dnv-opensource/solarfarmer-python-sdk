@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import gzip
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -66,7 +66,7 @@ def _make_dataset(
 
 class TestDotnetTicksConversion:
     def test_utc_roundtrip(self) -> None:
-        dt = datetime(2020, 6, 15, 12, 30, 0, tzinfo=timezone.utc)
+        dt = datetime(2020, 6, 15, 12, 30, 0, tzinfo=UTC)
         item1, item2 = _datetime_to_dotnet_ticks(dt)
         result = _dotnet_ticks_to_datetime(item1, item2)
         assert result == dt
@@ -90,10 +90,10 @@ class TestDotnetTicksConversion:
         item1, item2 = _datetime_to_dotnet_ticks(naive)
         assert item2 == 0  # UTC offset = 0
         result = _dotnet_ticks_to_datetime(item1, item2)
-        assert result == datetime(2020, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        assert result == datetime(2020, 1, 1, 0, 0, 0, tzinfo=UTC)
 
     def test_zero_offset_item2(self) -> None:
-        _, item2 = _datetime_to_dotnet_ticks(datetime(2020, 1, 1, tzinfo=timezone.utc))
+        _, item2 = _datetime_to_dotnet_ticks(datetime(2020, 1, 1, tzinfo=UTC))
         assert item2 == 0
 
     def test_one_hour_offset_item2(self) -> None:
@@ -148,12 +148,12 @@ class TestProtobufRoundTrip:
             data=[
                 TrackerCondition(
                     period_in_minutes=60.0,
-                    start_of_period=datetime(2020, 1, 1, 0, tzinfo=timezone.utc),
+                    start_of_period=datetime(2020, 1, 1, 0, tzinfo=UTC),
                     tracker_rotation_unique_value=0,  # explicitly zero — must survive
                 ),
                 TrackerCondition(
                     period_in_minutes=60.0,
-                    start_of_period=datetime(2020, 1, 1, 1, tzinfo=timezone.utc),
+                    start_of_period=datetime(2020, 1, 1, 1, tzinfo=UTC),
                     # unique_value absent → null
                 ),
             ]
@@ -185,7 +185,7 @@ class TestProtobufRoundTrip:
             data=[
                 TrackerCondition(
                     period_in_minutes=30.0,
-                    start_of_period=datetime(2020, 1, 1, tzinfo=timezone.utc),
+                    start_of_period=datetime(2020, 1, 1, tzinfo=UTC),
                     tracker_rotation_unique_value=100,
                 )
             ],
@@ -209,7 +209,7 @@ class TestProtobufRoundTrip:
 class TestFromProtobufFiles:
     def test_multi_file_combines_records(self) -> None:
         ds_a = _make_dataset(n=2, use_array=False)
-        tz = timezone.utc
+        tz = UTC
         ds_b = TrackersConditionsDataset(
             data=[
                 TrackerCondition(
@@ -254,7 +254,7 @@ class TestFromProtobufDir:
         assert len(loaded.data) == len(ds.data)
 
     def test_multi_part_files_discovered_in_order(self) -> None:
-        tz = timezone.utc
+        tz = UTC
         ds1 = TrackersConditionsDataset(
             data=[
                 TrackerCondition(

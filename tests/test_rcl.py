@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -116,12 +116,12 @@ class TestRateLimitInfo:
         info = self._make()
         dt = info.reset_datetime
         assert isinstance(dt, datetime)
-        assert dt.tzinfo == timezone.utc
+        assert dt.tzinfo == UTC
 
     def test_reset_datetime_value(self):
         # Unix epoch 0 should map to 1970-01-01T00:00:00Z
         info = RCLRateLimitInfo(remaining=50, limit=100, reset_timestamp=0)
-        assert info.reset_datetime == datetime(1970, 1, 1, tzinfo=timezone.utc)
+        assert info.reset_datetime == datetime(1970, 1, 1, tzinfo=UTC)
 
     def test_usage_percent_normal(self):
         info = self._make(remaining=75, limit=100)

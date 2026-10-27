@@ -9,6 +9,7 @@ Use this workflow when the user already has a complete set of SolarFarmer API in
 Below is an example mapping to existing API payload files (folders with `.json`, PAN, OND, met data)
 ```python
 import solarfarmer as sf
+
 sf.configure_logging()  # SDK is silent by default — call this to see progress
 
 result = sf.run_energy_calculation(
@@ -27,6 +28,7 @@ Build a plant from scratch with `PVSystem`:
 ```python
 import solarfarmer as sf
 from pathlib import Path
+
 sf.configure_logging()
 
 plant = sf.PVSystem(
@@ -35,7 +37,7 @@ plant = sf.PVSystem(
     longitude=10.3,
     dc_capacity_MW=10.0,
     ac_capacity_MW=10.0,
-    mounting="Fixed",     # or "Tracker"
+    mounting="Fixed",  # or "Tracker"
     bifacial=False,
 )
 plant.pan_files = {"MyModule": Path("module.PAN")}
@@ -140,8 +142,9 @@ Polling frequency and connection timeout are controlled by `MODELCHAIN_ASYNC_POL
 The SDK uses a `NullHandler` by default (no output). Always call `configure_logging()` before running:
 ```python
 import solarfarmer as sf
-sf.configure_logging()          # INFO level
-sf.configure_logging(verbose=True)   # DEBUG level
+
+sf.configure_logging()  # INFO level
+sf.configure_logging(verbose=True)  # DEBUG level
 sf.configure_logging(level="WARNING")  # Minimal output
 ```
 

@@ -7,7 +7,7 @@ name = "dnv-solarfarmer"
 version = "0.7.0"
 description = "Python SDK for SolarFarmer, a bankable solar PV design and energy yield assessment tool by DNV."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "DNV", email = "solarfarmer@dnv.com" }]
 keywords = ["solar", "pv", "photovoltaic", "solarfarmer", "dnv", "sdk", "api"]
@@ -16,7 +16,6 @@ classifiers = [
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -52,11 +51,8 @@ all = [
 
 [dependency-groups]
 docs = [
-  # Python 3.10 cannot use the latest docs toolchain; pin to the last 3.10-compatible releases.
-  "zensical>=0.0.20,<0.0.68; python_version < '3.11'",
-  "zensical>=0.0.68; python_version >= '3.11'",
-  "mkdocstrings[python]>=1.0.6,<1.0.7; python_version < '3.11'",
-  "mkdocstrings[python]>=1.0.8; python_version >= '3.11'",
+  "zensical>=0.0.68",
+  "mkdocstrings[python]>=1.0.8",
 ]
 
 test = [
@@ -84,7 +80,7 @@ solarfarmer = ["py.typed"]
 
 [tool.ruff]
 # Target Python 3.10+
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 
 # Exclude common directories

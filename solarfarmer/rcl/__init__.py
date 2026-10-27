@@ -12,7 +12,7 @@ SolarFarmer API.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
 
@@ -74,7 +74,7 @@ class RCLRateLimitInfo:
     @property
     def reset_datetime(self) -> datetime:
         """Reset time as a UTC-aware datetime."""
-        return datetime.fromtimestamp(self.reset_timestamp, tz=timezone.utc)
+        return datetime.fromtimestamp(self.reset_timestamp, tz=UTC)
 
     @property
     def usage_percent(self) -> float:
