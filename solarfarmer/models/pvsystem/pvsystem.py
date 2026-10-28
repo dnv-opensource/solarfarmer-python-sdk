@@ -448,6 +448,11 @@ class PVSystem:
 
     @property
     def horizon_file(self) -> Path | None:
+        """Path to a horizon file, or ``None`` if not set (string or Path accepted).
+
+        Alternatively, define the horizon with :meth:`horizon` using elevation and
+        azimuth angle arrays.
+        """
         return self._horizon_file
 
     @horizon_file.setter
@@ -1411,7 +1416,7 @@ class PVSystem:
         **kwargs,
     ) -> CalculationResults | None:
         """
-        Runs the SolarFArmer API calculation for the defined PV plant.
+        Runs the SolarFarmer API calculation for the defined PV plant.
 
         Parameters
         ----------

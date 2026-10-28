@@ -5,21 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.0] - 2026-10-28
 
 ### Added
 
-- `PVSystem` enum inputs (`mounting`, `module_orientation`, `inverter_type`) accept case-insensitive strings,
-  at construction and on assignment.
-- `PVSystem.with_defaults_applied()` returns a copy with all unset derived inputs resolved.
+- `PVSystem` enum inputs (`mounting`, `module_orientation`, `inverter_type`) accept case-insensitive strings, at construction and on assignment.
 - `PVSystem.terrain_azimuth` and `PVSystem.terrain_slope` set the terrain orientation of all layouts
   (default `0.0`). They are ignored for flush-mount fixed-tilt systems.
+- `PVSystem.with_defaults_applied()` returns a copy with all unset derived inputs resolved.
+- `PVSystem.tracking_algorithm` selects the tracker rotation algorithm (`StandardBacktracking` (default),
+  `SlopeAwareBacktracking` or `SunTracking`, case-insensitive). The generated `TrackerSystem` now sets
+  `tracker_algorithm` instead of the deprecated `is_backtracking`/`use_slope_aware_backtracking`.
 
 ### Changed
 
-- Derived `PVSystem` inputs (`mounting_height`, ohmic losses, bifacial parameters, transformer losses) are now
-  resolved when the payload is built; they read as `None` until set explicitly. Use `describe()` or
-  `with_defaults_applied()` to see effective values.
+- Derived `PVSystem` inputs (`mounting_height`, ohmic losses, bifacial parameters, transformer losses) are now  resolved when the payload is built; they read as `None` until set explicitly. Use `describe()` or `with_defaults_applied()` to see effective values.
 - `PVSystem.payload` is now an output-only snapshot (JSON string) and is no longer read back; it is omitted
   from `to_file()` output.
 - Building a payload no longer overwrites the plant's `dc_capacity_MW`, `ac_capacity_MW` or `gcr`.
@@ -39,6 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   metadata of the `dnv-solarfarmer` distribution.
 - `__released__` now reports the release date of installed wheels instead of `"unreleased"` or the tag
   date of whichever git repository the user's working directory belonged to.
+
+### Removed
+
+- Support for Python 3.10 has been dropped.
+
+### Security
+
+- Updated `requests` to version 2.34.2 or later and added `certifi>=2026.10.19` following [PYSEC-2026-4320](https://osv.dev/vulnerability/PYSEC-2026-4320).
 
 ## [0.7.0] - 2026-10-07
 
