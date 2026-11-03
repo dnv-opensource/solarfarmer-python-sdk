@@ -1,5 +1,5 @@
 from . import custom_rotations, rcl
-from .__version__ import __version__
+from .__version__ import __released__, __version__
 from .api import SolarFarmerAPIError
 from .config import (
     ABOUT_ENDPOINT_URL,
@@ -108,6 +108,7 @@ from .weather import (
 )
 
 __all__ = [
+    "__released__",
     "__version__",
     "custom_rotations",
     "custom_rotations_csv_to_protobuf",
