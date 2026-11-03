@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `__released__` now reports the release date of installed wheels instead of `"unreleased"` or the tag
+  date of whichever git repository the user's working directory belonged to. It is also exposed at the
+  package top level, like `solarfarmer.__version__`; previously `import solarfarmer as sf; sf.__released__`
+  raised `AttributeError`.
+
 ## [0.8.0] - 2026-10-28
 
 ### Added
@@ -37,8 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-ASCII characters (e.g. in module or inverter file names) instead of escaping them as `\uXXXX`.
 - `solarfarmer.__version__` no longer returns `"unknown"` for pip-installed packages; it now reads the
   metadata of the `dnv-solarfarmer` distribution.
-- `__released__` now reports the release date of installed wheels instead of `"unreleased"` or the tag
-  date of whichever git repository the user's working directory belonged to.
 
 ### Removed
 
