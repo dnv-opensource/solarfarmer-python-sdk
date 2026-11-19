@@ -310,9 +310,9 @@ class TestWithRacks3d:
         """PVPlant.racks serializes Rack objects with correct camelCase keys."""
         quad = QuadDouble(
             p1=Vector3Double(x=0.0, y=0.0, z=0.0),
-            p2=Vector3Double(x=4.0, y=0.0, z=0.0),
+            p2=Vector3Double(x=0.0, y=2.0, z=1.0),
             p3=Vector3Double(x=4.0, y=2.0, z=1.0),
-            p4=Vector3Double(x=0.0, y=2.0, z=1.0),
+            p4=Vector3Double(x=4.0, y=0.0, z=0.0),
         )
         rack = Rack(id=0, mounting_type_id="mount_r", pitch_to_front=5.0, quad=quad)
 
@@ -425,9 +425,9 @@ class TestWithRacks3d:
                     mounting_type_id="m1",
                     quad=QuadDouble(
                         p1=Vector3Double(x=0.0, y=0.0, z=0.0),
-                        p2=Vector3Double(x=4.0, y=0.0, z=0.0),
+                        p2=Vector3Double(x=0.0, y=2.0, z=1.0),
                         p3=Vector3Double(x=4.0, y=2.0, z=1.0),
-                        p4=Vector3Double(x=0.0, y=2.0, z=1.0),
+                        p4=Vector3Double(x=4.0, y=0.0, z=0.0),
                     ),
                 ),
                 Rack(
@@ -435,9 +435,9 @@ class TestWithRacks3d:
                     mounting_type_id="m1",
                     quad=QuadDouble(
                         p1=Vector3Double(x=0.0, y=6.0, z=0.0),
-                        p2=Vector3Double(x=4.0, y=6.0, z=0.0),
+                        p2=Vector3Double(x=0.0, y=8.0, z=1.0),
                         p3=Vector3Double(x=4.0, y=8.0, z=1.0),
-                        p4=Vector3Double(x=0.0, y=8.0, z=1.0),
+                        p4=Vector3Double(x=4.0, y=6.0, z=0.0),
                     ),
                 ),
             ]
@@ -539,9 +539,9 @@ class TestWith3DInverterInputs:
 
         quad = QuadDouble(
             p1=Vector3Double(x=0.0, y=0.0, z=10.0),
-            p2=Vector3Double(x=30.0, y=0.0, z=10.0),
+            p2=Vector3Double(x=0.0, y=2.0, z=10.2),
             p3=Vector3Double(x=30.0, y=2.0, z=10.2),
-            p4=Vector3Double(x=0.0, y=2.0, z=10.2),
+            p4=Vector3Double(x=30.0, y=0.0, z=10.0),
         )
         rack_a = Rack(id=100, mounting_type_id="FT_Rack_14", pitch_to_front=1.55, quad=quad)
         rack_b = Rack(
