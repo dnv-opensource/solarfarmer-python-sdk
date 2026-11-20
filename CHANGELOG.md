@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `QuadDouble.width`, `depth`, `front_normal`, `tilt` and `azimuth` report how a rack's corners will be
   interpreted.
-- Constructing a `Rack` whose front face points below the horizon issues a `RackOrientationWarning`.
-  This almost always means the corners are in the reverse order, which passes validation but gives
-  badly wrong energy.
+- `PVPlant` and `Racks` issue one `RackOrientationWarning` listing any racks whose front face points
+  below the horizon. This almost always means the corners are in the reverse order, which passes
+  validation but gives badly wrong energy. The check is one pass over all racks, so large layouts
+  stay fast and get a single warning rather than one per rack.
 
 ### Fixed
 

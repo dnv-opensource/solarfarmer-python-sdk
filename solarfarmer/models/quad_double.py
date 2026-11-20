@@ -31,8 +31,9 @@ class QuadDouble(SolarFarmerBaseModel):
 
     The reverse order also passes schema validation, but gives badly wrong
     energy, consistent with the calculation treating the back of the modules as
-    the front. :class:`~solarfarmer.models.Rack` warns when a quad's front face
-    points below the horizon.
+    the front. :class:`~solarfarmer.models.PVPlant` and
+    :class:`~solarfarmer.models.Racks` warn about racks whose front face points
+    below the horizon.
 
     Attributes
     ----------
@@ -70,9 +71,7 @@ class QuadDouble(SolarFarmerBaseModel):
         ValueError
             If ``P1``, ``P2`` and ``P4`` are collinear, so the quad has no area
         """
-        ax, ay, az = _difference(self.p4, self.p1)
-        bx, by, bz = _difference(self.p2, self.p1)
-        normal = (ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx)
+        normal = self._unscaled_normal()
         length = math.hypot(*normal)
         if length < 1e-12:
             raise ValueError("Quad corners P1, P2 and P4 are collinear, so the quad has no area")
@@ -96,3 +95,9 @@ class QuadDouble(SolarFarmerBaseModel):
         """
         nx, ny, _ = self.front_normal
         return math.degrees(math.atan2(nx, ny)) % 360.0
+
+    def _unscaled_normal(self) -> tuple[float, float, float]:
+        """``(P4 - P1) x (P2 - P1)``; its length is twice the area of triangle P1, P2, P4."""
+        ax, ay, az = _difference(self.p4, self.p1)
+        bx, by, bz = _difference(self.p2, self.p1)
+        return (ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx)
