@@ -79,19 +79,18 @@ def _warn_on_reversed_racks(racks: list[Rack] | None) -> None:
         listed += f" and {more} more" if more > 0 else ""
         return f"{len(rack_ids)} of {len(racks)} racks (IDs {listed})"
 
-    # warn -> this function -> model validator -> pydantic entry point -> caller
+    problems = []
     if facing_down:
-        warnings.warn(
+        problems.append(
             f"{describe(facing_down)} have a front face pointing below the horizon, so the "
             "calculation would treat the back of their modules as the front. Their corners "
             "are probably in the reverse order; for a south-facing rack use P1 SW-low, "
-            "P2 NW-high, P3 NE-high, P4 SE-low. QuadDouble.tilt shows how a rack is read.",
-            RackOrientationWarning,
-            stacklevel=4,
+            "P2 NW-high, P3 NE-high, P4 SE-low. QuadDouble.tilt shows how a rack is read."
         )
     if no_area:
-        warnings.warn(
-            f"{describe(no_area)} have a quad with no area: corners P1, P2 and P4 are collinear.",
-            RackOrientationWarning,
-            stacklevel=4,
+        problems.append(
+            f"{describe(no_area)} have a quad with no area: corners P1, P2 and P4 are collinear."
         )
+    if problems:
+        # warn -> this function -> model validator -> pydantic entry point -> caller
+        warnings.warn(" ".join(problems), RackOrientationWarning, stacklevel=4)

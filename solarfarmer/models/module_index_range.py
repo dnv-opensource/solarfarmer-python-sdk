@@ -19,8 +19,8 @@ class ModuleIndexRange(SolarFarmerBaseModel):
         First index (inclusive) of this range of modules along the length of
         a row on the mount. On a rack, index 0 is the module at the ``P1``
         end; see :class:`~solarfarmer.models.QuadDouble`. May be larger than
-        ``end_x``: the range then covers the same modules, wired in the
-        opposite direction along the row
+        ``end_x``; either endpoint order covers the same inclusive module
+        positions
     end_x : int
         Last index (inclusive) of this range of modules along the length of
         a row on the mount. May be smaller than ``start_x``

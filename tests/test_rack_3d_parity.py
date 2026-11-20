@@ -227,6 +227,12 @@ def _annual(inputs, api_key, label):
         "near_shading": effects["nearShadingIrradiance"],
     }
     print(f"{label}: {summary}")
+    # Reject non-producing or invalid results, which the relative comparisons would accept.
+    for key in ("effective_irradiation", "net_energy"):
+        assert math.isfinite(summary[key]) and summary[key] > 0, f"{label}: {key} = {summary[key]}"
+    assert math.isfinite(summary["near_shading"]), (
+        f"{label}: near_shading = {summary['near_shading']}"
+    )
     return summary
 
 

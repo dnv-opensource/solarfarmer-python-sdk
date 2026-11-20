@@ -517,7 +517,15 @@ class TestQuadDoubleGeometry:
         assert quad.azimuth == pytest.approx(180.0)
 
     def test_modelchainasync_documentation_example(self) -> None:
-        """The rack in the web API's ModelChainAsync example faces south at about 34 degrees."""
+        """The rack in the web API's ModelChainAsync example faces south at about 34 degrees.
+
+        The example is in the "Racks and Trackers" section of the ModelChainAsync documentation:
+        https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/ModelChainAsyncEndpoint.html#racksxrefsolarfarmerapiclientpvplantsolarfarmerapiclientpvplantracks-and-trackersxrefsolarfarmerapiclientpvplantsolarfarmerapiclientpvplanttrackers
+
+        Its corners are in the order documented on QuadDouble (SW-low, NW-high, NE-high,
+        SE-low). That page calls the order "anti-clockwise around the rack", which holds only
+        when seen from below; seen from above or from the front of the modules it is clockwise.
+        """
         quad = _quad(
             (633616.55525403516, 4502376.1064225091, 308.44455607951465),
             (633616.60684414359, 4502378.5736383246, 310.10791430261804),
@@ -608,3 +616,13 @@ class TestRackOrientation:
         corners = ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (3.0, 0.0, 0.0))
         with pytest.warns(RackOrientationWarning, match="no area"):
             Racks(racks=[_rack(3, corners)])
+
+    def test_reversed_and_zero_area_racks_give_one_warning(self) -> None:
+        collinear = ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (3.0, 0.0, 0.0))
+        racks = [_rack(0, SOUTH_FACING_REVERSED), _rack(1, collinear), _rack(2, SOUTH_FACING)]
+        with pytest.warns(RackOrientationWarning) as record:
+            Racks(racks=racks)
+        assert len(record) == 1
+        message = str(record[0].message)
+        assert "1 of 3 racks (IDs 0) have a front face pointing below the horizon" in message
+        assert "1 of 3 racks (IDs 1) have a quad with no area" in message
