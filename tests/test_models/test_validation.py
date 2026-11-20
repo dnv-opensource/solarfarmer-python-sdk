@@ -1,3 +1,6 @@
+import json
+import math
+import warnings
 from datetime import UTC
 
 import pytest
@@ -12,10 +15,16 @@ from solarfarmer.models import (
     MountingTypeSpecification,
     OndFileSupplements,
     PanFileSupplements,
+    PVPlant,
+    QuadDouble,
+    Rack,
+    RackOrientationWarning,
+    Racks,
     TrackerCondition,
     TrackerSystem,
     TransformerLossModelTypes,
     TransformerSpecification,
+    Vector3Double,
 )
 
 # ---------------------------------------------------------------------------
@@ -479,3 +488,141 @@ class TestTrackerConditionValidation:
             tracker_rotations_array_values=[-8990, 0, 8990],
         )
         assert cond.tracker_rotations_array_values == [-8990, 0, 8990]
+
+
+# ---------------------------------------------------------------------------
+# QuadDouble / Rack orientation
+# ---------------------------------------------------------------------------
+
+
+def _quad(*corners: tuple[float, float, float]) -> QuadDouble:
+    p1, p2, p3, p4 = (Vector3Double(x=x, y=y, z=z) for x, y, z in corners)
+    return QuadDouble(p1=p1, p2=p2, p3=p3, p4=p4)
+
+
+# South-facing rack in the documented order (P1 SW-low, P2 NW-high, P3 NE-high,
+# P4 SE-low): 10 m wide, 5 m deep, rising 3 m over 4 m
+SOUTH_FACING = ((0.0, 0.0, 0.0), (0.0, 4.0, 3.0), (10.0, 4.0, 3.0), (10.0, 0.0, 0.0))
+# The same corners in the reverse order (P1 SW-low, P2 SE-low, P3 NE-high, P4 NW-high)
+SOUTH_FACING_REVERSED = tuple(SOUTH_FACING[i] for i in (0, 3, 2, 1))
+
+
+class TestQuadDoubleGeometry:
+    def test_south_facing_rack(self) -> None:
+        quad = _quad(*SOUTH_FACING)
+        assert quad.width == pytest.approx(10.0)
+        assert quad.depth == pytest.approx(5.0)
+        assert quad.front_normal == pytest.approx((0.0, -0.6, 0.8))
+        assert quad.tilt == pytest.approx(math.degrees(math.atan2(3.0, 4.0)))
+        assert quad.azimuth == pytest.approx(180.0)
+
+    def test_modelchainasync_documentation_example(self) -> None:
+        """The rack in the web API's ModelChainAsync example faces south at about 34 degrees.
+
+        The example is in the "Racks and Trackers" section of the ModelChainAsync documentation:
+        https://mysoftware.dnv.com/download/public/renewables/solarfarmer/manuals/latest/WebApi/Endpoints/ModelChainAsyncEndpoint.html#racksxrefsolarfarmerapiclientpvplantsolarfarmerapiclientpvplantracks-and-trackersxrefsolarfarmerapiclientpvplantsolarfarmerapiclientpvplanttrackers
+
+        Its corners are in the order documented on QuadDouble (SW-low, NW-high, NE-high,
+        SE-low). That page calls the order "anti-clockwise around the rack", which holds only
+        when seen from below; seen from above or from the front of the modules it is clockwise.
+        """
+        quad = _quad(
+            (633616.55525403516, 4502376.1064225091, 308.44455607951465),
+            (633616.60684414359, 4502378.5736383246, 310.10791430261804),
+            (633640.11553953763, 4502378.5736383246, 309.37877723037911),
+            (633640.0639494292, 4502376.1064225091, 307.71541900727573),
+        )
+        assert quad.tilt == pytest.approx(34.0, abs=0.1)
+        assert quad.azimuth == pytest.approx(177.4, abs=0.1)
+        assert quad.depth == pytest.approx(2.976, abs=0.001)
+
+    def test_east_facing_rack(self) -> None:
+        # Low edge on the east side; seen from the front, P1 is the south end of it
+        quad = _quad((4.0, 0.0, 0.0), (0.0, 0.0, 3.0), (0.0, 10.0, 3.0), (4.0, 10.0, 0.0))
+        assert quad.azimuth == pytest.approx(90.0)
+        assert quad.tilt == pytest.approx(math.degrees(math.atan2(3.0, 4.0)))
+
+    def test_horizontal_quad_faces_up(self) -> None:
+        quad = _quad((0.0, 0.0, 0.0), (0.0, 5.0, 0.0), (10.0, 5.0, 0.0), (10.0, 0.0, 0.0))
+        assert quad.front_normal == pytest.approx((0.0, 0.0, 1.0))
+        assert quad.tilt == pytest.approx(0.0)
+
+    def test_reversed_order_faces_down(self) -> None:
+        quad = _quad(*SOUTH_FACING_REVERSED)
+        assert quad.front_normal[2] < 0
+        assert quad.tilt > 90.0
+
+    def test_collinear_corners_have_no_normal(self) -> None:
+        quad = _quad((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (3.0, 0.0, 0.0))
+        with pytest.raises(ValueError, match="no area"):
+            _ = quad.front_normal
+
+
+def _rack(rack_id: int, corners) -> Rack:
+    return Rack(id=rack_id, mounting_type_id="m1", quad=_quad(*corners))
+
+
+class TestRackOrientation:
+    def test_documented_order_does_not_warn(self) -> None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RackOrientationWarning)
+            Racks(racks=[_rack(0, SOUTH_FACING)])
+
+    def test_single_rack_is_checked_by_its_collection(self) -> None:
+        """Racks are checked per collection, so a large layout gives one warning, not one per rack."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RackOrientationWarning)
+            rack = _rack(0, SOUTH_FACING_REVERSED)
+        with pytest.warns(RackOrientationWarning):
+            Racks(racks=[rack])
+
+    def test_many_reversed_racks_give_one_warning(self) -> None:
+        racks = [_rack(i, SOUTH_FACING_REVERSED) for i in range(25)]
+        with pytest.warns(RackOrientationWarning, match="reverse order") as record:
+            Racks(racks=racks)
+        assert len(record) == 1
+        message = str(record[0].message)
+        assert "25 of 25 racks (IDs 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 and 15 more)" in message
+        assert record[0].filename == __file__  # points at the caller, not pydantic
+
+    def test_plant_lists_only_reversed_racks(self) -> None:
+        racks = [_rack(0, SOUTH_FACING), _rack(7, SOUTH_FACING_REVERSED)]
+        with pytest.warns(RackOrientationWarning) as record:
+            PVPlant(transformers=[], mounting_type_specifications={}, racks=racks)
+        assert len(record) == 1
+        assert "1 of 2 racks (IDs 7)" in str(record[0].message)
+        assert record[0].filename == __file__
+
+    def test_reversed_order_warns_when_loaded_from_json(self) -> None:
+        corners = {
+            f"p{i}": dict(zip("xyz", c, strict=True))
+            for i, c in enumerate(SOUTH_FACING_REVERSED, 1)
+        }
+        payload = json.dumps({"racks": [{"id": 0, "mountingTypeID": "m1", "quad": corners}]})
+
+        with pytest.warns(RackOrientationWarning):
+            Racks.model_validate_json(payload)
+
+    def test_vertical_rack_does_not_warn(self) -> None:
+        """A vertical (e.g. bifacial fence) rack faces the horizon, not below it."""
+        quad = _quad((0.0, 0.0, 0.0), (0.0, 0.0, 2.0), (10.0, 0.0, 2.0), (10.0, 0.0, 0.0))
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RackOrientationWarning)
+            Racks(racks=[Rack(id=0, mounting_type_id="m1", quad=quad)])
+        assert quad.tilt == pytest.approx(90.0)
+        assert quad.azimuth == pytest.approx(180.0)
+
+    def test_zero_area_quad_warns(self) -> None:
+        corners = ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (3.0, 0.0, 0.0))
+        with pytest.warns(RackOrientationWarning, match="no area"):
+            Racks(racks=[_rack(3, corners)])
+
+    def test_reversed_and_zero_area_racks_give_one_warning(self) -> None:
+        collinear = ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (3.0, 0.0, 0.0))
+        racks = [_rack(0, SOUTH_FACING_REVERSED), _rack(1, collinear), _rack(2, SOUTH_FACING)]
+        with pytest.warns(RackOrientationWarning) as record:
+            Racks(racks=racks)
+        assert len(record) == 1
+        message = str(record[0].message)
+        assert "1 of 3 racks (IDs 0) have a front face pointing below the horizon" in message
+        assert "1 of 3 racks (IDs 1) have a quad with no area" in message
