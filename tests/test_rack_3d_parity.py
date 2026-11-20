@@ -44,10 +44,14 @@ DEAD_STRING_LENGTH = 18  # Voc 18 x 45.9 V = 826 V, below the MPPT window: produ
 MODULE_WIDTH = 0.992
 MODULE_LENGTH = 1.960
 LOW_EDGE_HEIGHT = 1.0
+# Racks in one row are this far apart, end to end. A neighbour can then shade a rack only with
+# the sun within about 6 degrees of the horizon in the east or west, mostly behind these
+# south-facing modules.
+RACK_GAP = 20.0
 
 # Tolerances for unshaded racks, 3D against the equivalent 2D layout. In our runs (API 7.0.15)
-# the largest difference was 0.00076% (annual AC energy, mixed orientations) and near shading
-# was at most 0.000003. A reversed rack is off by about 85%, so 0.1% leaves room for numerical
+# the largest difference was 0.0034% (annual AC energy, mixed orientations) and near shading
+# was at most 0.00003. A reversed rack is off by about 85%, so 0.1% leaves room for numerical
 # changes in the engine while still catching that.
 ENERGY_TOLERANCE = 0.001  # relative, for both effective irradiation and annual AC energy
 MAX_NEAR_SHADING = 0.001  # absolute annual near-shading irradiance effect
@@ -248,8 +252,8 @@ def test_two_row_racks_match_2d(api_key):
     """Two identical south-facing racks of two portrait rows, one string per row.
 
     The wiring follows the ModelChainAsync documentation example: each string is one row, and
-    the first runs from the last index back to 0. The racks are 200 m apart, each on its own
-    inverter.
+    the first runs from the last index back to 0. The racks stand in one row, RACK_GAP apart,
+    each on its own inverter.
     """
     tilt, azimuth, long, high = 30.0, 180.0, STRING_LENGTH, 2
     mounting = {"rack": _mounting(tilt, long, high)}
@@ -259,7 +263,7 @@ def test_two_row_racks_match_2d(api_key):
     )
 
     racks, inverters, corners = [], [], []
-    for rack_id, x in enumerate((0.0, 200.0)):
+    for rack_id, x in enumerate((0.0, long * MODULE_WIDTH + RACK_GAP)):
         quad = _rack_quad(
             (x, 0.0, LOW_EDGE_HEIGHT), azimuth, tilt, long * MODULE_WIDTH, high * MODULE_LENGTH
         )
@@ -279,8 +283,12 @@ def test_two_row_racks_match_2d(api_key):
 
 
 def test_mixed_orientation_racks_match_2d(api_key):
-    """Two racks with different azimuth and tilt, one inverter each, far enough apart not to shade."""
-    orientations = {"east": (90.0, 20.0, (0.0, 0.0)), "west_southwest": (250.0, 35.0, (200.0, 0.0))}
+    """Two racks with different azimuth and tilt, one inverter each.
+
+    Their nearest corners are 40 m apart, so either can shade the other only with the sun within
+    about 2 degrees of the horizon.
+    """
+    orientations = {"east": (90.0, 20.0, (0.0, 0.0)), "west_southwest": (250.0, 35.0, (40.0, 0.0))}
     mounting = {name: _mounting(tilt, STRING_LENGTH) for name, (_, tilt, _) in orientations.items()}
 
     plant_2d = _plant(
@@ -316,7 +324,7 @@ def test_module_index_x_starts_at_p1(api_key):
     the same irradiance. Here a wall shades the P1 (west) end of a south-facing rack of 48
     modules. The rack is fully wired: a 30-module string feeds one inverter, and the other 18
     modules feed a second inverter whose voltage stays below the MPPT window, so they produce
-    almost nothing. A second, unshaded rack far away holds one more such string. The plant's
+    almost nothing. A second rack, RACK_GAP east along the row, holds one more such string. The plant's
     energy is therefore the 30-module string's energy. With x = 0 at P1, that string is behind
     the wall when it starts at index 0, and in the open when it starts at index 18.
     """
@@ -328,7 +336,7 @@ def test_module_index_x_starts_at_p1(api_key):
     )
     assert quad.p4.x > quad.p1.x  # P1 is the west end
     spare = _rack_quad(
-        (200.0, 0.0, LOW_EDGE_HEIGHT),
+        (long * MODULE_WIDTH + RACK_GAP, 0.0, LOW_EDGE_HEIGHT),
         azimuth,
         tilt,
         DEAD_STRING_LENGTH * MODULE_WIDTH,
