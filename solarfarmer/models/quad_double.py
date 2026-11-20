@@ -35,6 +35,31 @@ class QuadDouble(SolarFarmerBaseModel):
     :class:`~solarfarmer.models.Racks` warn about racks whose front face points
     below the horizon.
 
+    Modules sit on the quad in the grid set by the rack's
+    :class:`~solarfarmer.models.MountingTypeSpecification`:
+    ``number_of_modules_long`` positions along the row and
+    ``number_of_modules_high`` rows up the slope.
+    :class:`~solarfarmer.models.ModuleIndexRange` addresses them by ``x``,
+    counting along the row from the ``P1`` end, and ``y``, counting rows up the
+    slope from the ``P1``-``P4`` edge. For a rack 3 modules long and 2 high::
+
+        P2 +----------+----------+----------+ P3
+           |  (0, 1)  |  (1, 1)  |  (2, 1)  |
+           +----------+----------+----------+
+           |  (0, 0)  |  (1, 0)  |  (2, 0)  |
+        P1 +----------+----------+----------+ P4
+
+    Module ``(0, 0)`` is at the ``P1`` corner, inset by ``frame_end_width``
+    along the row and ``frame_bottom_width`` up the slope. Each step in ``x``
+    moves ``x_spacing_between_modules`` along the row, and each step in ``y``
+    moves ``y_spacing_between_modules`` up the slope. ``modules_are_landscape``
+    decides which side of the module lies along the row.
+
+    The corner order says nothing about the quad's size, and the SDK does not
+    check it. To hold its modules, the quad should be ``2 * frame_end_width +
+    (number_of_modules_long - 1) * x_spacing_between_modules`` plus one module
+    side wide, and ``rack_height`` deep.
+
     Attributes
     ----------
     p1 : Vector3Double

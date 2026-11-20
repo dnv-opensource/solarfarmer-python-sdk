@@ -21,7 +21,8 @@ class Rack(SolarFarmerBaseModel):
     geometry is described by a quadrilateral (``quad``) in world coordinates.
 
     The order of the ``quad`` corners determines which face is the front of
-    the modules; see :class:`~solarfarmer.models.QuadDouble`.
+    the modules, and which end holds module index 0; see
+    :class:`~solarfarmer.models.QuadDouble`.
     :class:`~solarfarmer.models.PVPlant` and :class:`~solarfarmer.models.Racks`
     check all of their racks and issue one :class:`RackOrientationWarning`
     listing any whose front face points below the horizon, which almost always
