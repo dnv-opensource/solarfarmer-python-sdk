@@ -17,13 +17,16 @@ class ModuleIndexRange(SolarFarmerBaseModel):
         an ``id`` in ``PVPlant.racks`` or ``PVPlant.trackers``
     start_x : int
         First index (inclusive) of this range of modules along the length of
-        a row on the mount. May be larger than ``end_x`` when the string runs
-        in the reverse direction along the rack
+        a row on the mount. On a rack, index 0 is the module at the ``P1``
+        end; see :class:`~solarfarmer.models.QuadDouble`. May be larger than
+        ``end_x``; either endpoint order covers the same inclusive module
+        positions
     end_x : int
         Last index (inclusive) of this range of modules along the length of
         a row on the mount. May be smaller than ``start_x``
     y : int
-        Row index on the mount where the range is located (0 = bottom edge)
+        Row index on the mount where the range is located, counting up the
+        slope from 0 at the bottom edge (on a rack, the ``P1``-``P4`` edge)
     """
 
     mounting_id: int = Field(..., alias="mountingID", ge=0)

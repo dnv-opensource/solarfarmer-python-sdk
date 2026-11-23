@@ -36,7 +36,7 @@ from .pvsystem.plant_defaults import InverterType, MountingType, OrientationType
 from .pvsystem.pvsystem import PVSystem
 from .pvsystem.validation import ValidationMessage
 from .quad_double import QuadDouble
-from .rack import Rack
+from .rack import Rack, RackOrientationWarning
 from .racks import Racks
 from .shading_objects import ShadingObjects
 from .simple_terrain import SimpleTerrain
@@ -84,6 +84,7 @@ __all__ = [
     "PVSystem",
     "QuadDouble",
     "Rack",
+    "RackOrientationWarning",
     "Racks",
     "ShadingObjects",
     "SimpleTerrain",

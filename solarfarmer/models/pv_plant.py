@@ -8,7 +8,7 @@ from ._base import SolarFarmerBaseModel
 from .auxiliary_losses import AuxiliaryLosses
 from .indexed_object3d import IndexedObject3D
 from .mounting_type_specification import MountingTypeSpecification
-from .rack import Rack
+from .rack import Rack, _warn_on_reversed_racks
 from .simple_terrain import SimpleTerrain
 from .tracker import Tracker
 from .tracker_system import TrackerSystem
@@ -40,7 +40,9 @@ class PVPlant(SolarFarmerBaseModel):
     auxiliary_losses : AuxiliaryLosses or None
         Plant-level auxiliary losses
     racks : list[Rack] or None
-        Fixed-tilt rack objects for 3D calculations. Not required for 2D
+        Fixed-tilt rack objects for 3D calculations. Not required for 2D. One
+        :class:`~solarfarmer.models.RackOrientationWarning` lists any racks
+        whose front face points below the horizon
     shading_objects : list[IndexedObject3D] or None
         3D shading obstacles (buildings, terrain features, etc.). Used for
         3D calculations; ignored for 2D
@@ -89,4 +91,10 @@ class PVPlant(SolarFarmerBaseModel):
                     f"Transformer {i} references spec ID '{spec_id}' which is "
                     f"not in transformer_specifications. Available: {available}"
                 )
+        return self
+
+    @model_validator(mode="after")
+    def _check_rack_orientation(self) -> PVPlant:
+        """Warn once about racks whose front face points below the horizon."""
+        _warn_on_reversed_racks(self.racks)
         return self

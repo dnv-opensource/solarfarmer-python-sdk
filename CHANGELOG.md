@@ -7,8 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QuadDouble.width`, `depth`, `front_normal`, `tilt` and `azimuth` report how a rack's corners will be
+  interpreted.
+- `PVPlant` and `Racks` issue one `RackOrientationWarning` listing any racks whose front face points
+  below the horizon, or whose quad has no area. A rack facing below the horizon almost always has its
+  corners in the reverse order, which passes validation but gives badly wrong energy. The check is one
+  pass over all racks, so large layouts stay fast and get a single warning rather than one per rack.
+
 ### Fixed
 
+- The `QuadDouble` and `Rack` docstrings now document the corner order: P1 at the low corner, P1→P2 up
+  the slope and P1→P4 along the row (SW-low, NW-high, NE-high, SE-low for a south-facing rack), with x
+  east, y north and z up. The rack fixtures in `tests/test_models/test_composition.py` used the reverse
+  order and have been corrected.
+- `QuadDouble` and `ModuleIndexRange` now document where modules sit on a rack: index `x` counts along
+  the row from the P1 end, `y` counts rows up the slope, and the frame widths and module spacing set
+  each module's position. A range with `start_x > end_x` covers the same modules as the ascending one.
 - `__released__` now reports the release date of installed wheels instead of `"unreleased"` or the tag
   date of whichever git repository the user's working directory belonged to. It is also exposed at the
   package top level, like `solarfarmer.__version__`; previously `import solarfarmer as sf; sf.__released__`
