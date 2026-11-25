@@ -16,14 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy Documentation
+  build:
+    name: Build Documentation
     if: github.repository == 'dnv-opensource/solarfarmer-python-sdk'
     runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
@@ -85,6 +81,19 @@ jobs:
         with:
           path: site
 
+  # Deploying from a separate job avoids a race where deploy-pages lists artifacts
+  # before the one just uploaded is visible (actions/deploy-pages#451), and lets a
+  # failed deployment be re-run without uploading a duplicate artifact.
+  deploy:
+    name: Deploy Documentation
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
