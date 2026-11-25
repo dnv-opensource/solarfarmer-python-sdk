@@ -17,7 +17,7 @@ The official Python SDK for [SolarFarmer](https://www.dnv.com/software/services/
 
 ## Requirements
 
-- Python >= 3.11 (tested on 3.11, 3.12, 3.13)
+- Python >= 3.11 (tested on 3.11, 3.12, 3.13, 3.14, 3.15)
 - A SolarFarmer API key (commercial licence required; see [API Key](#api-key))
 
 For compatibility with Python 3.10, use version 0.7.0 or prior.
