@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for Python 3.14 and 3.15. Both are added to the CI test matrix and the package classifiers.
 - `PVSystem.power_binning` overrides the `power_binning_effect` of the module's `PanFileSupplements`
   (per unit, range [-0.1, 0.1], validated on construction and assignment). When `None` (default), no
   override is written and the value is inferred from the PAN file. It is listed by `PVSystem.describe(verbose=True)`.
