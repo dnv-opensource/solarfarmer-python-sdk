@@ -351,6 +351,28 @@ class TestGeneratePanFileSupplements:
         pan_key = module_info_without_lid["pan_filename"]
         assert supplements[pan_key].lid_loss is None
 
+    def test_power_binning_is_none_by_default(self, module_info_with_lid):
+        """No override is written when plant.power_binning is unset."""
+        supplements = generate_pan_file_supplements(
+            PVSystem(latitude=0, longitude=0), module_info_with_lid, bifaciality_factor=0.0
+        )
+        pan_key = module_info_with_lid["pan_filename"]
+        assert supplements[pan_key].power_binning_effect is None
+
+    def test_plant_power_binning_overrides_module_default(self, module_info_with_lid):
+        plant = PVSystem(latitude=0, longitude=0, power_binning=-0.02)
+        supplements = generate_pan_file_supplements(
+            plant, module_info_with_lid, bifaciality_factor=0.0
+        )
+        pan_key = module_info_with_lid["pan_filename"]
+        assert supplements[pan_key].power_binning_effect == pytest.approx(-0.02)
+
+    def test_power_binning_reaches_payload(self, plant):
+        plant.power_binning = 0.01
+        payload = json.loads(plant.produce_payload())
+        supplements = next(iter(payload["panFileSupplements"].values()))
+        assert supplements["powerBinningEffect"] == pytest.approx(0.01)
+
 
 class TestListPathInput:
     """Verify pan_files and ond_files accept list[Path] in addition to dict."""

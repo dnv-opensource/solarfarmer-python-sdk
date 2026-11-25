@@ -936,6 +936,30 @@ class TestPVSystemDerivedDefaults:
 
         assert "Mounting Height: 1.5" in capsys.readouterr().out
 
+    def test_describe_shows_power_binning(self, capsys):
+        PVSystem(latitude=45.0, longitude=10.0, power_binning=0.01).describe(verbose=True)
+
+        assert "Power Binning Effect: 0.01" in capsys.readouterr().out
+
+    @pytest.mark.parametrize("value", [-0.1, 0.0, 0.1, None])
+    def test_power_binning_accepts_values_within_range(self, value):
+        assert PVSystem(power_binning=value).power_binning == value
+
+    @pytest.mark.parametrize("value", [-0.11, 0.11])
+    def test_power_binning_out_of_range_raises(self, value):
+        with pytest.raises(ValueError, match="power_binning"):
+            PVSystem(power_binning=value)
+        plant = PVSystem()
+        with pytest.raises(ValueError, match="power_binning"):
+            plant.power_binning = value
+        assert plant.power_binning is None
+
+    def test_power_binning_round_trips_through_file(self, tmp_path):
+        path = tmp_path / "plant.json"
+        PVSystem(power_binning=0.02).to_file(path)
+
+        assert PVSystem.from_file(path).power_binning == 0.02
+
 
 class TestPVSystemPersistence:
     """Tests for to_file() / from_file() round-trip (Phase 3 bug fix)."""

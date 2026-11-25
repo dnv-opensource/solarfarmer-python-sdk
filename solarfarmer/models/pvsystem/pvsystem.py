@@ -6,7 +6,9 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
+
+from pydantic import TypeAdapter, ValidationError
 
 from ... import rcl
 from ...logging import get_logger
@@ -71,6 +73,11 @@ _ENUM_FIELDS: dict[str, type[Enum]] = {
     "module_orientation": OrientationType,
     "inverter_type": InverterType,
 }
+
+# Reuses the PanFileSupplements field constraints so the accepted range has a single source of truth.
+_POWER_BINNING_ADAPTER: TypeAdapter[float | None] = TypeAdapter(
+    Annotated[float | None, *PanFileSupplements.model_fields["power_binning_effect"].metadata]
+)
 
 # CustomRotations is excluded: PVSystem has no way to supply a rotation table.
 _PVSYSTEM_TRACKING_ALGORITHMS: tuple[TrackerAlgorithm, ...] = (
@@ -240,6 +247,12 @@ class PVSystem:
         Loss due to light-induced degradation (LID) (per unit). When set, overrides the
         LIDLoss value in the PAN file. When ``None`` (default), the value from the PAN
         file is used. If the PAN file also has no LIDLoss key, the SF API defaults to 0.0.
+    power_binning: Optional[float] = None
+        Power binning effect of the module (per unit), range [-0.1, 0.1]. When set, it is
+        written to the ``power_binning_effect`` field of the module's ``PanFileSupplements``,
+        overriding the module default. When ``None`` (default), no override is written and
+        the value is inferred from the PAN file by the calculation. The range is validated on
+        construction and assignment, using the ``PanFileSupplements`` constraints.
     module_iam_model_override: Optional[IAMModelTypeForOverride] = None
         Override for the module IAM model used in the calculation (default is None,
         which will use the values from the module's PAN file).
@@ -360,6 +373,7 @@ class PVSystem:
     recalculate_modeling_correction_factor: bool = True
     module_quality_factor: float | None = 0.0
     lid_loss: float | None = None
+    power_binning: float | None = None
     module_iam_model_override: str | None = None
     constant_heat_coefficient: float | None = CONSTANT_HEAT_COEFFICIENT
     convective_heat_coefficient: float | None = CONVECTIVE_HEAT_COEFFICIENT
@@ -683,6 +697,14 @@ class PVSystem:
         return dict(self._ond_files)
 
     def __setattr__(self, name: str, value: Any) -> None:
+        if name == "power_binning":
+            try:
+                value = _POWER_BINNING_ADAPTER.validate_python(value)
+            except ValidationError as err:
+                raise ValueError(
+                    f"Invalid power_binning {value!r}: {err.errors()[0]['msg']} "
+                    "(per unit, range [-0.1, 0.1])."
+                ) from err
         if name == "tracking_algorithm":
             value = _coerce_tracking_algorithm(value)
         enum_cls = _ENUM_FIELDS.get(name)
@@ -911,6 +933,7 @@ class PVSystem:
             print(f"Module Mismatch Loss: {self.module_mismatch} (per unit)")
             print(f"Module Quality Factor: {self.module_quality_factor} (per unit)")
             print(f"LID Loss: {self.lid_loss} (per unit)")
+            print(f"Power Binning Effect: {self.power_binning} (per unit)")
             print(f"Transformer Fixed Loss: {plant.transformer_fixed_loss} (per unit)")
             print(f"Transformer Variable Loss: {plant.transformer_variable_loss} (per unit)")
             print(f"Auxiliary Loss (Fixed Factor): {self.aux_loss_fixed_factor} (per unit)")
@@ -1935,6 +1958,7 @@ def generate_pan_file_supplements(
         recalculate_modeling_correction_factor=plant.recalculate_modeling_correction_factor,
         module_quality_factor=plant.module_quality_factor,
         lid_loss=lid_loss,
+        power_binning_effect=plant.power_binning,
         bifaciality_factor=bifaciality_factor,
         iam_model_type_override=plant.module_iam_model_override,
     )
