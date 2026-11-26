@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `TSV_COLUMNS["missing_value_sentinel"]` is now the tuple `(9999, -9999)` instead of the integer `9999`,
   as both `9999` and `-9999` mark a missing value in TSV weather files.
+- The RCL documentation, examples and tests now use `take` instead of `top` as the page-size argument of
+  `sf.rcl.list_modules()` and `sf.rcl.list_inverters()`. `top` is deprecated; replace `top=N` with
+  `take=N`. `PVSystem.set_module_from_rcl()` and `PVSystem.set_inverter_from_rcl()` now call the catalog
+  with `take`.
 
 ### Fixed
 
