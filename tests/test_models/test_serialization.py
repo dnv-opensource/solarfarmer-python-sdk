@@ -195,6 +195,25 @@ class TestRoundTrip:
         assert d["returnTrackerRotationsTimeSeries"] is True
         assert d["returnTrackerIncidenceAnglesTimeSeries"] is True
 
+    def test_new_options_defaults(self) -> None:
+        opts = EnergyCalculationOptions(diffuse_model=DiffuseModel.PEREZ, include_horizon=False)
+        assert opts.force_horizontal_terrain is False
+        assert opts.use_spectral_factor_from_met_data_when_available is None
+        assert opts.use_bifacial_factors_from_met_data_when_available is None
+
+    def test_new_options_serialize(self) -> None:
+        opts = EnergyCalculationOptions(
+            diffuse_model=DiffuseModel.PEREZ,
+            include_horizon=False,
+            force_horizontal_terrain=True,
+            use_spectral_factor_from_met_data_when_available=False,
+            use_bifacial_factors_from_met_data_when_available=False,
+        )
+        d = opts.model_dump(by_alias=True)
+        assert d["forceHorizontalTerrain"] is True
+        assert d["useSpectralFactorFromMetDataWhenAvailable"] is False
+        assert d["useBifacialFactorsFromMetDataWhenAvailable"] is False
+
     def test_custom_tracker_rotations_at_middle_round_trip(self) -> None:
         opts = EnergyCalculationOptions(
             diffuse_model=DiffuseModel.PEREZ,

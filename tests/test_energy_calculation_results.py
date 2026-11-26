@@ -244,6 +244,7 @@ def _make_annual_year(calendar_year: int, net_energy: float, soiling: float) -> 
             "percentComplete": 100.0,
             "averageTemperature": 12.5,
             "ghi": 1250.0,
+            "ghiWithThreshold": 1248.0,
             "gi": 1450.0,
             "giWithHorizon": 1440.0,
             "gainOnTiltedPlane": 0.16,
@@ -276,6 +277,7 @@ def _make_monthly_year(calendar_year: int) -> dict:
                 "pac": 18000.0,
                 "pdc": 19000.0,
                 "ghi": 100.0,
+                "ghiWithThreshold": 99.5,
                 "gi": 110.0,
                 "giWithHorizon": 109.0,
                 "gainOnTiltedPlane": 0.10,
@@ -497,6 +499,11 @@ class TestGetAnnualResultsTable:
         assert row2["calendar_year"] == 2023
         assert row2["net_energy"] == 245000.0
 
+    def test_energy_results_include_ghi_with_threshold(self, results):
+        """Energy results rows should expose the thresholded GHI."""
+        row1, _ = results.get_annual_results_table()["energy_results"]
+        assert row1["ghi_with_threshold"] == 1248.0
+
     def test_effects_field_values(self, results):
         """Effects rows should carry correct soiling values."""
         row1, row2 = results.get_annual_results_table()["effects"]
@@ -597,6 +604,11 @@ class TestGetMonthlyResultsTable:
         data = results.get_monthly_results_table(project_years=project_years)
         assert len(data["energy_results"]) == 12
         assert all(row["calendar_year"] == exp_calendar_year for row in data["energy_results"])
+
+    def test_energy_results_include_ghi_with_threshold(self, results):
+        """Monthly energy results rows should expose the thresholded GHI."""
+        data = results.get_monthly_results_table(project_years=[1])
+        assert all(row["ghi_with_threshold"] == 99.5 for row in data["energy_results"])
 
     def test_month_names_present(self, results):
         """Each row should carry a non-empty month_name, Jan through Dec."""

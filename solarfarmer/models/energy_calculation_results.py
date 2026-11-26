@@ -49,6 +49,7 @@ ANNUAL_RECORD_COUNT = "recordCount"
 ANNUAL_PERCENT_COMPLETE = "percentComplete"
 ANNUAL_AVERAGE_TEMPERATURE = "averageTemperature"
 ANNUAL_GHI = "ghi"
+ANNUAL_GHI_WITH_THRESHOLD = "ghiWithThreshold"
 ANNUAL_GI = "gi"
 ANNUAL_GI_WITH_HORIZON = "giWithHorizon"
 ANNUAL_GAIN_ON_TILTED_PLANE = "gainOnTiltedPlane"
@@ -909,6 +910,7 @@ class CalculationResults:
                         "percent_complete": yield_results.get(ANNUAL_PERCENT_COMPLETE),
                         "average_temperature": yield_results.get(ANNUAL_AVERAGE_TEMPERATURE),
                         "ghi": yield_results.get(ANNUAL_GHI),
+                        "ghi_with_threshold": yield_results.get(ANNUAL_GHI_WITH_THRESHOLD),
                         "gi": yield_results.get(ANNUAL_GI),
                         "gi_with_horizon": yield_results.get(ANNUAL_GI_WITH_HORIZON),
                         "gain_on_tilted_plane": yield_results.get(ANNUAL_GAIN_ON_TILTED_PLANE),
@@ -1084,6 +1086,7 @@ class CalculationResults:
                             "percent_complete": yield_results.get(ANNUAL_PERCENT_COMPLETE),
                             "average_temperature": yield_results.get(ANNUAL_AVERAGE_TEMPERATURE),
                             "ghi": yield_results.get(ANNUAL_GHI),
+                            "ghi_with_threshold": yield_results.get(ANNUAL_GHI_WITH_THRESHOLD),
                             "gi": yield_results.get(ANNUAL_GI),
                             "gi_with_horizon": yield_results.get(ANNUAL_GI_WITH_HORIZON),
                             "gain_on_tilted_plane": yield_results.get(ANNUAL_GAIN_ON_TILTED_PLANE),

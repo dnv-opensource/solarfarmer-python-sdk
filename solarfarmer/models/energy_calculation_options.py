@@ -43,6 +43,11 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
         When using a custom rotation table, specifies whether the supplied
         rotation values represent the middle of each time-step (``True``) or
         the start (``False``). If ``None``, the engine uses its own default.
+    force_horizontal_terrain : bool or None
+        Override any terrain characteristics (layout terrain slope and azimuth,
+        and tracker system plane tilt) and force horizontal (flat) terrain.
+        Only applies to 2D calculations; 3D calculations are not affected.
+        Default is ``False``. A ``None`` value is treated as ``False``.
     calculate_dhi : bool
         Whether to calculate diffuse horizontal irradiance (DHI) from global
         horizontal irradiance (GHI) when the ``DHI`` column is missing from the
@@ -127,6 +132,12 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
         values. If ``True`` and the ``Soiling`` column is present, monthly soiling
         values are ignored. If the column is absent, falls back to
         ``monthly_soiling_loss``. Engine default is ``True``.
+    use_spectral_factor_from_met_data_when_available : bool or None
+        Use the time-dependent spectral factor in the calculation when it is
+        provided within the solar resource data. Engine default is ``True``.
+    use_bifacial_factors_from_met_data_when_available : bool or None
+        Use any of the time-dependent bifacial factors in the calculation when
+        they are provided within the solar resource data. Engine default is ``True``.
     module_mismatch_bin_width : float or None
         Bin width for module mismatch deduplication. Advanced setting
     connector_resistance_bin_width : float or None
@@ -155,6 +166,7 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
     calculation_year: int = 1990
     default_wind_speed: float = 0.0
     custom_tracker_rotations_are_at_middle_of_period: bool | None = None
+    force_horizontal_terrain: bool | None = False
     calculate_dhi: bool = Field(False, alias="calculateDHI")
 
     # --- Horizon options ---
@@ -207,6 +219,8 @@ class EnergyCalculationOptions(SolarFarmerBaseModel):
     # --- Met data source options ---
     use_albedo_from_met_data_when_available: bool | None = None
     use_soiling_from_met_data_when_available: bool | None = None
+    use_spectral_factor_from_met_data_when_available: bool | None = None
+    use_bifacial_factors_from_met_data_when_available: bool | None = None
 
     # --- Advanced tuning parameters ---
     module_mismatch_bin_width: float | None = None
