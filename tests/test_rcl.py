@@ -64,7 +64,7 @@ class TestQueryBuilder:
         assert params["skip"] == 0
 
     def test_pagination_custom(self):
-        params = _build_query_params(top=100, skip=50)
+        params = _build_query_params(take=100, skip=50)
         assert params["top"] == 100
         assert params["skip"] == 50
 
@@ -285,7 +285,7 @@ class TestListModulesUnit:
     def test_passes_filter_params(self, MockClient):
         mock_get = MockClient.return_value.get
         mock_get.return_value = _fake_catalog_response([])
-        rcl.list_modules(manufacturer_contains="SMA", p_nom_gte=400, top=10)
+        rcl.list_modules(manufacturer_contains="SMA", p_nom_gte=400, take=10)
         _, kwargs = mock_get.call_args
         params = kwargs["params"]
         assert params["filter.manufacturer.contains"] == "SMA"
@@ -320,7 +320,7 @@ class TestListInvertersUnit:
     def test_passes_inverter_filter_params(self, MockClient):
         mock_get = MockClient.return_value.get
         mock_get.return_value = _fake_catalog_response([])
-        rcl.list_inverters(effic_max_gte=0.98, nb_mppt_gte=2, top=5)
+        rcl.list_inverters(effic_max_gte=0.98, nb_mppt_gte=2, take=5)
         _, kwargs = mock_get.call_args
         params = kwargs["params"]
         assert params["filter.efficMax.gte"] == 0.98
@@ -447,7 +447,7 @@ class TestRCLIntegration:
     """Integration tests that call the real RCL API."""
 
     def test_list_modules_basic(self, api_key):
-        result = rcl.list_modules(top=5, api_key=api_key)
+        result = rcl.list_modules(take=5, api_key=api_key)
         assert "items" in result
         assert isinstance(result["items"], list)
         assert "total" in result
@@ -456,7 +456,7 @@ class TestRCLIntegration:
     def test_list_modules_with_manufacturer_filter(self, api_key):
         result = rcl.list_modules(
             manufacturer_contains="LONGi",
-            top=5,
+            take=5,
             api_key=api_key,
         )
         for item in result["items"]:
@@ -467,7 +467,7 @@ class TestRCLIntegration:
             p_nom_gte=600,
             p_nom_lte=650,
             output_parameter=["pNom", "manufacturer", "model"],
-            top=10,
+            take=10,
             api_key=api_key,
         )
         for item in result["items"]:
@@ -478,7 +478,7 @@ class TestRCLIntegration:
     def test_list_modules_output_parameter_filters_fields(self, api_key):
         result = rcl.list_modules(
             output_parameter=["pNom", "manufacturer"],
-            top=3,
+            take=3,
             api_key=api_key,
         )
         for item in result["items"]:
@@ -486,14 +486,14 @@ class TestRCLIntegration:
             assert "pNom" in item or "manufacturer" in item
 
     def test_list_inverters_basic(self, api_key):
-        result = rcl.list_inverters(top=5, api_key=api_key)
+        result = rcl.list_inverters(take=5, api_key=api_key)
         assert "items" in result
         assert isinstance(result["items"], list)
 
     def test_list_inverters_with_filter(self, api_key):
         result = rcl.list_inverters(
             manufacturer_contains="SMA",
-            top=5,
+            take=5,
             api_key=api_key,
         )
         for item in result["items"]:
@@ -509,7 +509,7 @@ class TestRCLIntegration:
     def test_kwargs_passthrough(self, api_key):
         # Unknown kwargs should not cause a crash — API ignores unrecognised params
         result = rcl.list_modules(
-            top=1,
+            take=1,
             api_key=api_key,
             lifecycle_status="active",
         )

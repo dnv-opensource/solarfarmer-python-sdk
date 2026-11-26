@@ -41,7 +41,7 @@ Search for PV modules using manufacturer, model, power, and other filters:
 
 ```python
 # Basic search - first 10 modules
-result = sf.rcl.list_modules(top=10)
+result = sf.rcl.list_modules(take=10)
 print(f"Found {result['total']} modules total")
 
 # Filtered search with ordering
@@ -50,7 +50,7 @@ result = sf.rcl.list_modules(
     p_nom_gte=600,
     order_by="pNom",
     order_dir="DESC",
-    top=10,
+    take=10,
     api_key=api_key
 )
 
@@ -82,7 +82,7 @@ result = sf.rcl.list_inverters(
     manufacturer_contains="Sungrow",
     p_nom_conv_gte=100,  # Min 100 kW rated power
     effic_max_gte=98.5,  # Min 98.5% efficiency
-    top=10,
+    take=10,
 )
 
 for item in result["items"]:
@@ -111,7 +111,7 @@ Use `output_parameter` to request only specific fields:
 result = sf.rcl.list_modules(
     manufacturer_contains="LONGi",
     output_parameter=["pNom", "bifacialityFactor", "technol"],
-    top=20,
+    take=20,
 )
 ```
 
@@ -125,7 +125,7 @@ result = sf.rcl.list_modules(
 
 ### Pagination
 
-For large result sets, use `top` and `skip` for pagination:
+For large result sets, use `take` and `skip` for pagination:
 
 ```python
 all_items = []
@@ -135,7 +135,7 @@ page_size = 100
 while True:
     result = sf.rcl.list_modules(
         manufacturer_contains="Trina",
-        top=page_size,
+        take=page_size,
         skip=skip,
     )
     all_items.extend(result["items"])
@@ -169,7 +169,7 @@ if status.usage_percent > 80:
 Every catalog response includes rate limit info:
 
 ```python
-result = sf.rcl.list_modules(top=5)
+result = sf.rcl.list_modules(take=5)
 if result["rate_limit"]:
     print(f"Remaining: {result['rate_limit'].remaining}")
 ```
@@ -191,7 +191,7 @@ if result["rate_limit"]:
 result = sf.rcl.list_modules(
     manufacturer="Canadian Solar",        # Exact manufacturer name
     model="CS7N-715TB-AG",                # Exact model name
-    top=1,                                # Only need one result
+    take=1,                               # Only need one result
 )
 
 # Get the first (and only) result item
@@ -248,7 +248,7 @@ if not dest.exists():
 Catalog items are plain `dict`s with the API's original camelCase keys — there is no wrapper class to instantiate. `list_modules()` and `list_inverters()` are typed to return `RCLModuleCatalogResponse`/`RCLInverterCatalogResponse`, whose `items` list is typed as `RCLModuleItemDict`/`RCLInverterItemDict`. This gives IDE autocomplete and key-name checking directly on the returned dicts, with no extra step:
 
 ```python
-result = sf.rcl.list_modules(manufacturer_contains="Canadian", top=1)
+result = sf.rcl.list_modules(manufacturer_contains="Canadian", take=1)
 
 item = result["items"][0]
 
@@ -361,14 +361,14 @@ modules = sf.rcl.list_modules(
     p_nom_gte=550,
     bifaciality_factor_gte=0.7,
     output_parameter=["pNom", "bifacialityFactor"],
-    top=5,
+        take=5,
 )
 print(f"Found {modules['total']} matching modules")
 
 inverters = sf.rcl.list_inverters(
     manufacturer_contains="Huawei",
     p_nom_conv_gte=200,
-    top=5,
+    take=5,
 )
 print(f"Found {inverters['total']} matching inverters")
 

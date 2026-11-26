@@ -1188,7 +1188,7 @@ class PVSystem:
             model_contains=model_contains,
             p_nom=p_nom,
             output_parameter=_OUTPUT_FIELDS,
-            top=10000,
+            take=10000,
             api_key=api_key,
             **kwargs,
         )
@@ -1342,7 +1342,7 @@ class PVSystem:
             nb_mppt_gte=nb_mppt,
             transfo=transfo,
             output_parameter=_OUTPUT_FIELDS,
-            top=10000,
+            take=10000,
             api_key=api_key,
             **kwargs,
         )
