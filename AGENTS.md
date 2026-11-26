@@ -67,7 +67,7 @@ result = sf.rcl.list_modules(
     manufacturer_contains="LONGi",
     p_nom_gte=550,
     bifaciality_factor_gte=0.7,
-    top=10,
+    take=10,
 )
 print(f"Found {result['total']} matching modules")
 
