@@ -140,6 +140,38 @@ class TestFromDataframe:
         assert "+05:30" in lines[1]
         assert "+05:30" in lines[2]
 
+    def test_tsv_aliases_renamed_by_default(self, tmp_path):
+        pd = pytest.importorskip("pandas")
+        idx = pd.date_range("2020-01-01", periods=2, freq="h", tz="UTC")
+        df = pd.DataFrame(
+            {
+                "Glob": [0, 100],
+                "Temp": [5.0, 6.0],
+                "spectral_factor": [1.0, 1.0],
+                "bifacialShade": [0.02, 0.02],
+                "Custom": [1, 2],
+            },
+            index=idx,
+        )
+        out = from_dataframe(df, tmp_path / "out.tsv")
+        header = out.read_text().splitlines()[0].split("\t")
+        assert header == [
+            "DateTime",
+            "GHI",
+            "TAmb",
+            "SpectralFactor",
+            "BifacialShadeFactor",
+            "Custom",
+        ]
+
+    def test_alias_not_renamed_when_canonical_present(self, tmp_path):
+        pd = pytest.importorskip("pandas")
+        idx = pd.date_range("2020-01-01", periods=2, freq="h", tz="UTC")
+        df = pd.DataFrame({"GHI": [0, 100], "Glob": [1, 2]}, index=idx)
+        out = from_dataframe(df, tmp_path / "out.tsv")
+        header = out.read_text().splitlines()[0].split("\t")
+        assert header == ["DateTime", "GHI", "Glob"]
+
     def test_returns_path(self, tmp_path, sample_df):
         result = from_dataframe(sample_df, tmp_path / "weather.tsv")
         assert isinstance(result, Path)

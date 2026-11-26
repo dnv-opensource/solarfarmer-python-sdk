@@ -2,7 +2,12 @@
 
 :data:`TSV_COLUMNS` documents the SolarFarmer tab-separated values (TSV)
 meteorological file format: required and optional columns, units, valid
-ranges, missing-value sentinel, and accepted header aliases.
+ranges, missing-value sentinels (``9999`` or ``-9999``), and accepted header
+aliases.
+
+Optional per-unit factor columns (``SpectralFactor``, ``BifacialShadeFactor``,
+``TransmissionFactor``, ``BifacialMismatchFactor``) can also be supplied.  They make SunSolve
+weather data compatible with SolarFarmer (SunSolve to SolarFarmer).
 
 Example (tab-separated, from SF-Core test data)::
 
@@ -105,6 +110,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+from collections.abc import Hashable, Iterable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -188,6 +194,31 @@ SOLCAST_COLUMN_MAP: dict[str, str] = {
 }
 
 
+def _tsv_alias_map(columns: Iterable[Hashable]) -> dict[Hashable, str]:
+    """Map column names matching a :data:`TSV_COLUMNS` alias to canonical names.
+
+    Aliases are matched exactly (case-sensitive, as listed in ``TSV_COLUMNS``).
+    A column is skipped when its canonical name is already present or has
+    already been claimed by another column, to avoid creating duplicate headers.
+    The ``DateTime`` column is not considered because it is written from the index.
+    """
+    present = set(columns)
+    alias_to_name = {
+        alias: spec["name"]
+        for spec in (*TSV_COLUMNS["required"], *TSV_COLUMNS["optional"])
+        if spec["name"] != "DateTime"
+        for alias in spec["aliases"]
+    }
+    rename: dict[Hashable, str] = {}
+    for col in columns:
+        target = alias_to_name.get(col) if isinstance(col, str) else None
+        if target is None or target == col or target in present:
+            continue
+        rename[col] = target
+        present.add(target)
+    return rename
+
+
 def from_dataframe(
     df: pd.DataFrame,
     output_path: str | pathlib.Path,
@@ -207,8 +238,11 @@ def from_dataframe(
     output_path : str or Path
         Destination file path.
     column_map : dict[str, str], optional
-        DataFrame column names → SolarFarmer TSV column names.
-        Columns not in the map are passed through unchanged.
+        DataFrame column names → SolarFarmer TSV column names, applied first.
+        Remaining columns whose names match a :data:`TSV_COLUMNS` alias
+        (e.g. ``Glob``, ``Temp``, ``spectral_factor``) are renamed to the
+        canonical SolarFarmer name automatically, unless that name is already
+        present in the DataFrame.  Other columns are passed through unchanged.
     year : int, optional
         Remap all timestamps to this calendar year (needed for TMY data).
     pressure_pa_to_mbar : bool, default False
@@ -240,6 +274,8 @@ def from_dataframe(
 
     if column_map:
         out = out.rename(columns=column_map)
+
+    out = out.rename(columns=_tsv_alias_map(out.columns))
 
     if pressure_pa_to_mbar and "Pressure" in out.columns:
         out["Pressure"] = out["Pressure"] / 100
@@ -503,7 +539,78 @@ TSV_COLUMNS: dict = {
             "note": "Used when EnergyCalculationOptions.use_soiling_from_met_data_when_available=True.",
             "aliases": ["Soiling", "SL", "SoilingLoss", "Slg"],
         },
+        {
+            "name": "SpectralFactor",
+            "unit": "per unit",
+            "range": (0.1, 2),
+            "note": "Spectral factor. When set, overrides the spectral factor model.",
+            "aliases": [
+                "SpectralFactor",
+                "spectralFactor",
+                "spectralfactor",
+                "spectral_factor",
+                "Spectral",
+                "spectral",
+            ],
+        },
+        {
+            "name": "BifacialShadeFactor",
+            "unit": "per unit",
+            "range": (0, 1),
+            "note": (
+                "Bifacial shade factor. Accounts for the rear of the modules being "
+                "shaded by items such as junction boxes."
+            ),
+            "aliases": [
+                "BifacialShadeFactor",
+                "bifacialShadeFactor",
+                "bifacialshadefactor",
+                "bifacial_shade_factor",
+                "BifacialShade",
+                "bifacialShade",
+                "bifacialshade",
+                "bifacial_shade",
+            ],
+        },
+        {
+            "name": "TransmissionFactor",
+            "unit": "per unit",
+            "range": (0, 1),
+            "note": (
+                "Transmission factor. Accounts for light passing through the "
+                "racks/trackers and reaching the ground, increasing the "
+                "ground-reflected light that illuminates the back side of the modules."
+            ),
+            "aliases": [
+                "TransmissionFactor",
+                "transmissionFactor",
+                "transmissionfactor",
+                "transmission_factor",
+                "Transmission",
+                "transmission",
+            ],
+        },
+        {
+            "name": "BifacialMismatchFactor",
+            "unit": "per unit",
+            "range": (-1, 1),
+            "note": (
+                "Bifacial mismatch factor. Accounts for the irradiance mismatch on "
+                "the rear side of the modules. Can be negative (a gain)."
+            ),
+            "aliases": [
+                "BifacialMismatchFactor",
+                "bifacialMismatchFactor",
+                "bifacialmismatchfactor",
+                "bifacial_mismatch_factor",
+                "BifacialMismatch",
+                "bifacialMismatch",
+                "bifacialmismatch",
+                "bifacial_mismatch",
+            ],
+        },
     ],
     "delimiter": "\t",
-    "missing_value_sentinel": 9999,
+    # Either sign marks a missing value.
+    "missing_value_sentinel": (9999, -9999),
 }
