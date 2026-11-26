@@ -13,13 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PVSystem.power_binning` overrides the `power_binning_effect` of the module's `PanFileSupplements`
   (per unit, range [-0.1, 0.1], validated on construction and assignment). When `None` (default), no
   override is written and the value is inferred from the PAN file. It is listed by `PVSystem.describe(verbose=True)`.
-
 - `QuadDouble.width`, `depth`, `front_normal`, `tilt` and `azimuth` report how a rack's corners will be
   interpreted.
 - `PVPlant` and `Racks` issue one `RackOrientationWarning` listing any racks whose front face points
   below the horizon, or whose quad has no area. A rack facing below the horizon almost always has its
   corners in the reverse order, which passes validation but gives badly wrong energy. The check is one
   pass over all racks, so large layouts stay fast and get a single warning rather than one per rack.
+- `TSV_COLUMNS` documents four new optional per-unit weather columns: `SpectralFactor` (0.1 to 2, overrides
+  the spectral factor model), `BifacialShadeFactor` (0 to 1), `TransmissionFactor` (0 to 1) and
+  `BifacialMismatchFactor` (-1 to 1, negative values are a gain). Each accepts PascalCase, camelCase,
+  lowercase and snake_case aliases, with or without the word "Factor". These columns make SunSolve
+  weather data compatible with SolarFarmer: SunSolve to SolarFarmer.
+- `from_dataframe()` (and so `from_pvlib()` and `from_solcast()`) now also renames columns that match a
+  `TSV_COLUMNS` alias, such as `Glob`, `Temp` or `spectral_factor`, to the canonical SolarFarmer name.
+  An alias column is left unchanged if the canonical name is already present. An explicit `column_map`
+  is applied first.
+
+### Changed
+
+- `TSV_COLUMNS["missing_value_sentinel"]` is now the tuple `(9999, -9999)` instead of the integer `9999`,
+  as both `9999` and `-9999` mark a missing value in TSV weather files.
 
 ### Fixed
 
