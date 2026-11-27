@@ -83,7 +83,9 @@ hPa which equals mbar, so no pressure conversion is needed.
 ``period_end`` may be in the legacy form (``2025-04-16T06:00:00.0000000Z``) or
 carry an explicit UTC offset (``2025-04-16T14:00:00+01:30``).  Both are
 accepted, as is a string index; mixed offsets (e.g. across a DST change) are
-normalised to UTC.  ``air_temp`` may be integer or floating point. that are present in the DataFrame are mapped; ``period_end``,
+normalised to UTC.  ``air_temp`` may be integer or floating point.
+
+Only columns that are present in the DataFrame are mapped; ``period_end``,
 ``air_temp``, and ``ghi`` are the most commonly available columns but the
 others are all optional.  The ``gti`` (plane-of-array irradiance) column is
 not mapped; SolarFarmer derives POA irradiance internally from GHI/DHI.
@@ -412,8 +414,9 @@ def from_solcast(
 
     if not isinstance(out.index, pd.DatetimeIndex):
         raise ValueError(
-            "DataFrame must have a DatetimeIndex. "
-            "Use df.set_index(pd.to_datetime(df['period_end'], utc=True)) or similar."
+            "DataFrame must have a DatetimeIndex. Use "
+            "df.set_index(pd.to_datetime(df['period_end'], utc=True, format='ISO8601')) "
+            "or similar."
         )
 
     # Solcast timestamps are period_end; SolarFarmer expects period_beginning.
