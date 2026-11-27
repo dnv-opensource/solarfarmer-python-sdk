@@ -335,6 +335,64 @@ class TestFromSolcast:
         first_data = out.read_text().splitlines()[1].split("\t")
         assert float(first_data[soiling_idx]) == pytest.approx(0.01)
 
+    @pytest.mark.parametrize(
+        ("period_end", "expected_first"),
+        [
+            (  # legacy: 7 fractional digits, Z suffix
+                ["2025-04-16T06:30:00.0000000Z", "2025-04-16T07:00:00.0000000Z"],
+                "2025-04-16T06:00+00:00",
+            ),
+            (  # new: explicit (non-whole-hour) UTC offset, no fractional seconds
+                ["2025-04-16T14:30:00+01:30", "2025-04-16T15:00:00+01:30"],
+                "2025-04-16T14:00+01:30",
+            ),
+        ],
+    )
+    def test_period_end_formats(self, tmp_path, period_end, expected_first):
+        pd = pytest.importorskip("pandas")
+        df = pd.DataFrame(
+            {"ghi": [0, 500], "air_temp": [30, 30.2]}, index=pd.to_datetime(period_end)
+        )
+        out = from_solcast(df, tmp_path / "out.tsv")
+        first_data = out.read_text().splitlines()[1].split("\t")
+        assert first_data[0] == expected_first
+
+    def test_string_index_with_mixed_offsets(self, tmp_path):
+        """A string index spanning a DST change (mixed offsets) is normalised to UTC."""
+        pd = pytest.importorskip("pandas")
+        df = pd.DataFrame(
+            {"ghi": [0, 500], "air_temp": [10.1, 10.4]},
+            index=["2025-03-30T01:30:00+01:00", "2025-03-30T03:00:00+02:00"],
+        )
+        out = from_solcast(df, tmp_path / "out.tsv")
+        rows = [line.split("\t")[0] for line in out.read_text().splitlines()[1:]]
+        assert rows == ["2025-03-30T00:00+00:00", "2025-03-30T00:30+00:00"]
+
+    @pytest.mark.parametrize(
+        "period_end",
+        [
+            ["2025-04-16T06:30:00.0000000Z", "2025-04-16T09:00:00+02:00"],
+            ["2025-04-16T08:30:00+02:00", "2025-04-16T07:00:00.0000000Z"],
+        ],
+    )
+    def test_string_index_with_mixed_legacy_and_new_formats(self, tmp_path, period_end):
+        """Fractional-seconds Z and offset timestamps in one raw index are both parsed."""
+        pd = pytest.importorskip("pandas")
+        df = pd.DataFrame({"ghi": [0, 500], "air_temp": [30, 30.2]}, index=period_end)
+        out = from_solcast(df, tmp_path / "out.tsv")
+        rows = [line.split("\t")[0] for line in out.read_text().splitlines()[1:]]
+        assert rows == ["2025-04-16T06:00+00:00", "2025-04-16T06:30+00:00"]
+
+    def test_float_air_temp_preserved(self, tmp_path):
+        """One-decimal air_temp values are written without being truncated to int."""
+        pd = pytest.importorskip("pandas")
+        idx = pd.to_datetime(["2025-04-16T14:30:00+01:30", "2025-04-16T15:00:00+01:30"])
+        df = pd.DataFrame({"ghi": [0, 500], "air_temp": [30.2, 30.7]}, index=idx)
+        out = from_solcast(df, tmp_path / "out.tsv")
+        lines = out.read_text().splitlines()
+        tamb = lines[0].split("\t").index("TAmb")
+        assert [float(r.split("\t")[tamb]) for r in lines[1:]] == [30.2, 30.7]
+
 
 class TestShiftPeriodEndToBeginning:
     """Tests for shift_period_end_to_beginning()."""
